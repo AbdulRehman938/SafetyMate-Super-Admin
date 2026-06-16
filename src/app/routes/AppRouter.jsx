@@ -27,6 +27,10 @@ import { WorkforcePage } from '../../features/client/pages/WorkforcePage.jsx'
 import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
 import { CertificatesPage } from '../../features/client/pages/CertificatesPage.jsx'
 import { PPEPage } from '../../features/client/pages/PPEPage.jsx'
+import { TrainingDashboardPage } from '../../features/client/pages/TrainingDashboardPage.jsx'
+import { FleetDashboardPage } from '../../features/client/pages/FleetDashboardPage.jsx'
+import { FireExtinguisherDashboardPage } from '../../features/client/pages/FireExtinguisherDashboardPage.jsx'
+import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
 import { useAuth } from '../providers/authContext.js'
 
 export function AppRouter() {
@@ -77,10 +81,20 @@ export function AppRouter() {
   if (!authReady) {
     return (
       <section className="login-shell">
-        <article className="panel login-card">
-          <h1>Safety Mate Admin</h1>
-          <p className="subtle">Checking session…</p>
-        </article>
+        <div className="login-content-wrap">
+          <header className="login-header">
+            <img className="login-logo-img" src="/logo.png" alt="SafetyMate" />
+            <h1 className="login-brand">
+              <span className="brand-safety">Safety</span>
+              <span className="brand-mate">Mate</span>
+            </h1>
+          </header>
+          <article className="panel login-card loading-state-card">
+            <div className="loading-spinner" aria-hidden="true" />
+            <p className="loading-state-title">Initializing</p>
+            <p className="loading-state-sub">Checking your session…</p>
+          </article>
+        </div>
       </section>
     )
   }
@@ -92,10 +106,20 @@ export function AppRouter() {
   if (loadingProfile) {
     return (
       <section className="login-shell">
-        <article className="panel login-card">
-          <h1>Safety Mate Admin</h1>
-          <p className="subtle">Verifying access…</p>
-        </article>
+        <div className="login-content-wrap">
+          <header className="login-header">
+            <img className="login-logo-img" src="/logo.png" alt="SafetyMate" />
+            <h1 className="login-brand">
+              <span className="brand-safety">Safety</span>
+              <span className="brand-mate">Mate</span>
+            </h1>
+          </header>
+          <article className="panel login-card loading-state-card">
+            <div className="loading-spinner" aria-hidden="true" />
+            <p className="loading-state-title">Verifying Access</p>
+            <p className="loading-state-sub">Loading your profile and permissions…</p>
+          </article>
+        </div>
       </section>
     )
   }
@@ -103,17 +127,27 @@ export function AppRouter() {
   if (profileStatus === 'forbidden') {
     return (
       <section className="login-shell">
-        <article className="panel login-card">
-          <h1>Safety Mate Admin</h1>
-          <p className="subtle">
-            Firestore permission denied while reading your profile. Deploy rules that allow
-            SUPER_ADMIN users (and users reading their own{' '}
-            <code>user_profiles/{"{uid}"}</code>) to read required documents.
-          </p>
-          <button className="primary-btn login-btn" type="button" onClick={() => signOut()}>
-            Sign out
-          </button>
-        </article>
+        <div className="login-content-wrap">
+          <header className="login-header">
+            <img className="login-logo-img" src="/logo.png" alt="SafetyMate" />
+            <h1 className="login-brand">
+              <span className="brand-safety">Safety</span>
+              <span className="brand-mate">Mate</span>
+            </h1>
+          </header>
+          <article className="panel login-card loading-state-card loading-state-card--error">
+            <div className="loading-state-icon loading-state-icon--error">⛔</div>
+            <p className="loading-state-title">Permission Denied</p>
+            <p className="loading-state-sub">
+              Firestore blocked access to your profile. Ensure rules allow{' '}
+              <code className="loading-state-code">SUPER_ADMIN</code> and{' '}
+              <code className="loading-state-code">user_profiles/{'{uid}'}</code> reads.
+            </p>
+            <button className="secure-signin-btn" style={{ marginTop: '20px' }} type="button" onClick={() => signOut()}>
+              Sign out
+            </button>
+          </article>
+        </div>
       </section>
     )
   }
@@ -121,18 +155,74 @@ export function AppRouter() {
   if (profileStatus === 'loaded' && profile && !organizationId && !isSuperAdmin) {
     return (
       <section className="login-shell">
-        <article className="panel login-card">
-          <h1>Safety Mate</h1>
-          <p className="subtle">Your account is not linked to an organization yet. Contact your administrator.</p>
-          <button className="primary-btn login-btn" type="button" onClick={() => signOut()}>
-            Sign out
-          </button>
-        </article>
+        <div className="login-content-wrap">
+          <header className="login-header">
+            <img className="login-logo-img" src="/logo.png" alt="SafetyMate" />
+            <h1 className="login-brand">
+              <span className="brand-safety">Safety</span>
+              <span className="brand-mate">Mate</span>
+            </h1>
+          </header>
+          <article className="panel login-card loading-state-card loading-state-card--warn">
+            <div className="loading-state-icon loading-state-icon--warn">🔗</div>
+            <p className="loading-state-title">No Organization Linked</p>
+            <p className="loading-state-sub">
+              Your account is not linked to an organization yet. Contact your administrator to get assigned.
+            </p>
+            <button className="secure-signin-btn" style={{ marginTop: '20px' }} type="button" onClick={() => signOut()}>
+              Sign out
+            </button>
+          </article>
+        </div>
       </section>
     )
   }
 
   if (isClientUser) {
+    if (role === 'TRAINING_PROVIDER') {
+      return (
+        <Routes>
+          <Route element={<ClientLayout />}>
+            <Route path="/training/dashboard" element={<TrainingDashboardPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/training/dashboard" replace />} />
+        </Routes>
+      )
+    }
+
+    if (role === 'FLEET') {
+      return (
+        <Routes>
+          <Route element={<ClientLayout />}>
+            <Route path="/fleet/dashboard" element={<FleetDashboardPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/fleet/dashboard" replace />} />
+        </Routes>
+      )
+    }
+
+    if (role === 'FIRE_EXTINGUISHER') {
+      return (
+        <Routes>
+          <Route element={<ClientLayout />}>
+            <Route path="/extinguisher/dashboard" element={<FireExtinguisherDashboardPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/extinguisher/dashboard" replace />} />
+        </Routes>
+      )
+    }
+
+    if (role === 'FIRE_DETECTION') {
+      return (
+        <Routes>
+          <Route element={<ClientLayout />}>
+            <Route path="/detection/dashboard" element={<FireDetectionDashboardPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/detection/dashboard" replace />} />
+        </Routes>
+      )
+    }
+
     return (
       <Routes>
         <Route element={<ClientLayout />}>

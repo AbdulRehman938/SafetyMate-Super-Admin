@@ -15,16 +15,39 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../app/providers/authContext.js'
 import { GlobalSearch } from './components/GlobalSearch.jsx'
+import { getDashboardPathForRole } from '../../shared/auth/currentUser.js'
 import './client.css'
 
-const NAV = [
-  { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList },
-  { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle },
-  { to: '/client/certificates', label: 'Certificates', icon: Award },
-  { to: '/client/workforce', label: 'Workforce', icon: Users },
-  { to: '/client/ppe', label: 'PPE & Assets', icon: Package },
-]
+const NAVS_BY_ROLE = {
+  COMPANY: [
+    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList },
+    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle },
+    { to: '/client/certificates', label: 'Certificates', icon: Award },
+    { to: '/client/workforce', label: 'Workforce', icon: Users },
+    { to: '/client/ppe', label: 'PPE & Assets', icon: Package },
+  ],
+  client_admin: [
+    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList },
+    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle },
+    { to: '/client/certificates', label: 'Certificates', icon: Award },
+    { to: '/client/workforce', label: 'Workforce', icon: Users },
+    { to: '/client/ppe', label: 'PPE & Assets', icon: Package },
+  ],
+  TRAINING_PROVIDER: [
+    { to: '/training/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  ],
+  FLEET: [
+    { to: '/fleet/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  ],
+  FIRE_EXTINGUISHER: [
+    { to: '/extinguisher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  ],
+  FIRE_DETECTION: [
+    { to: '/detection/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  ],
+}
 
 const SIDEBAR_W = 280
 const MOBILE_BP = '(max-width: 960px)'
@@ -35,6 +58,8 @@ export function ClientLayout() {
   const navigate = useNavigate()
   const { profile, signOut } = useAuth()
   const displayName = profile?.fullName || profile?.name || profile?.email || '—'
+  const role = profile?.role || 'COMPANY'
+  const navItems = NAVS_BY_ROLE[role] || NAVS_BY_ROLE.COMPANY
 
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_BP).matches)
   const [sidebarOpen, setSidebarOpen] = useState(() => !window.matchMedia(MOBILE_BP).matches)
@@ -75,7 +100,7 @@ export function ClientLayout() {
           className="brand-row brand-home"
           onClick={() => {
             closeSidebarIfMobile()
-            navigate('/client/dashboard')
+            navigate(getDashboardPathForRole(role))
           }}
           aria-label="Go to Dashboard"
         >
@@ -87,7 +112,7 @@ export function ClientLayout() {
         </button>
 
         <nav className="sidebar-nav client-sidebar-nav">
-          {NAV.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon
             return (
               <NavLink

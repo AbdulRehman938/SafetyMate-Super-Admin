@@ -5,3 +5,23 @@ export function getOrganizationLabel(profile) {
   return profile.organizationName || profile.organizationId
 }
 
+export function getDashboardPathForRole(role) {
+  switch (role) {
+    case 'TRAINING_PROVIDER':
+      return '/training/dashboard'
+    case 'FLEET':
+      return '/fleet/dashboard'
+    case 'FIRE_EXTINGUISHER':
+      return '/extinguisher/dashboard'
+    case 'FIRE_DETECTION':
+      return '/detection/dashboard'
+    case 'SUPER_ADMIN':
+      return '/dashboard'
+    case 'COMPANY':
+    case 'client_admin':
+    default:
+      return '/client/dashboard'
+  }
+}
+
+
