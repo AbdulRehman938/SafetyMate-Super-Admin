@@ -1,0 +1,13 @@
+{
+  "name": "safetymate-admin-functions",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.5.0",
+    "firebase-functions": "^5.1.1"
+  }
+}
+

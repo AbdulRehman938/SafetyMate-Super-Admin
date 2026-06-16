@@ -1,0 +1,182 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { AppLayout } from '../layout/AppLayout.jsx'
+import { DashboardPage } from '../../features/dashboard/pages/DashboardPage.jsx'
+import { CompanyPage } from '../../features/company/pages/CompanyPage.jsx'
+import { CompanyDetailPage } from '../../features/company/pages/CompanyDetailPage.jsx'
+import { NewSubscriberPage } from '../../features/company/pages/NewSubscriberPage.jsx'
+import { SubscriberCreatedPage } from '../../features/company/pages/SubscriberCreatedPage.jsx'
+import { SuspendSuccessPage } from '../../features/company/pages/SuspendSuccessPage.jsx'
+import { UpgradePlanPage } from '../../features/company/pages/UpgradePlanPage.jsx'
+import { UpgradeSuccessPage } from '../../features/company/pages/UpgradeSuccessPage.jsx'
+import { ExtendSubscriptionPage } from '../../features/company/pages/ExtendSubscriptionPage.jsx'
+import { BillingHistoryPage } from '../../features/company/pages/BillingHistoryPage.jsx'
+import { InvoiceDetailPage } from '../../features/company/pages/InvoiceDetailPage.jsx'
+import { SubscriptionPage } from '../../features/subscription/pages/SubscriptionPage.jsx'
+import { AnnouncementComposerPage } from '../../features/announcement/pages/AnnouncementComposerPage.jsx'
+import { BillingPage } from '../../features/billing/pages/BillingPage.jsx'
+import { SecurityLogsPage } from '../../features/security/pages/SecurityLogsPage.jsx'
+import { SettingsPage } from '../../features/settings/pages/SettingsPage.jsx'
+import { UserProfilePage } from '../../features/users/pages/UserProfilePage.jsx'
+import { LoginPage } from '../../features/auth/pages/LoginPage.jsx'
+import { MobileAppBlockedPage } from '../../features/mobile/pages/MobileAppBlockedPage.jsx'
+import { ClientLayout } from '../../features/client/ClientLayout.jsx'
+import { ClientDashboardPage } from '../../features/client/pages/ClientDashboardPage.jsx'
+import { RiskAssessmentPage } from '../../features/client/pages/RiskAssessmentPage.jsx'
+import { WorkforcePage } from '../../features/client/pages/WorkforcePage.jsx'
+import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
+import { CertificatesPage } from '../../features/client/pages/CertificatesPage.jsx'
+import { PPEPage } from '../../features/client/pages/PPEPage.jsx'
+import { useAuth } from '../providers/authContext.js'
+
+export function AppRouter() {
+  const {
+    authReady,
+    authUser,
+    role,
+    organizationId,
+    loadingProfile,
+    profileStatus,
+    profile,
+    error,
+    setError,
+    signOut,
+  } = useAuth()
+
+  const isSuperAdmin = role === 'SUPER_ADMIN'
+  const isClientUser =
+    Boolean(profile && organizationId && profileStatus === 'loaded' && !isSuperAdmin)
+
+  useEffect(() => {
+    if (!authReady) return
+    if (!authUser) return
+    if (loadingProfile) return
+    if (profileStatus === 'forbidden') return
+    if (isSuperAdmin) return
+    if (isClientUser) return
+    // Handled in-render: show “no organization” panel instead of signing out.
+    if (profileStatus === 'loaded' && profile && !organizationId) return
+
+    if (profileStatus === 'missing' || profileStatus === 'error') {
+      signOut()
+      setError('Unauthorized: sign in with a valid Safety Mate account.')
+    }
+  }, [
+    authReady,
+    authUser,
+    loadingProfile,
+    profileStatus,
+    profile,
+    organizationId,
+    isSuperAdmin,
+    isClientUser,
+    setError,
+    signOut,
+  ])
+
+  if (!authReady) {
+    return (
+      <section className="login-shell">
+        <article className="panel login-card">
+          <h1>Safety Mate Admin</h1>
+          <p className="subtle">Checking session…</p>
+        </article>
+      </section>
+    )
+  }
+
+  if (!authUser) {
+    return <LoginPage initialError={error} />
+  }
+
+  if (loadingProfile) {
+    return (
+      <section className="login-shell">
+        <article className="panel login-card">
+          <h1>Safety Mate Admin</h1>
+          <p className="subtle">Verifying access…</p>
+        </article>
+      </section>
+    )
+  }
+
+  if (profileStatus === 'forbidden') {
+    return (
+      <section className="login-shell">
+        <article className="panel login-card">
+          <h1>Safety Mate Admin</h1>
+          <p className="subtle">
+            Firestore permission denied while reading your profile. Deploy rules that allow
+            SUPER_ADMIN users (and users reading their own{' '}
+            <code>user_profiles/{"{uid}"}</code>) to read required documents.
+          </p>
+          <button className="primary-btn login-btn" type="button" onClick={() => signOut()}>
+            Sign out
+          </button>
+        </article>
+      </section>
+    )
+  }
+
+  if (profileStatus === 'loaded' && profile && !organizationId && !isSuperAdmin) {
+    return (
+      <section className="login-shell">
+        <article className="panel login-card">
+          <h1>Safety Mate</h1>
+          <p className="subtle">Your account is not linked to an organization yet. Contact your administrator.</p>
+          <button className="primary-btn login-btn" type="button" onClick={() => signOut()}>
+            Sign out
+          </button>
+        </article>
+      </section>
+    )
+  }
+
+  if (isClientUser) {
+    return (
+      <Routes>
+        <Route element={<ClientLayout />}>
+          <Route path="/client/dashboard" element={<ClientDashboardPage />} />
+          <Route path="/client/risk-assessment" element={<RiskAssessmentPage />} />
+          <Route path="/client/incidents" element={<IncidentsPage />} />
+          <Route path="/client/certificates" element={<CertificatesPage />} />
+          <Route path="/client/workforce" element={<WorkforcePage />} />
+          <Route path="/client/ppe" element={<PPEPage />} />
+        </Route>
+        <Route path="/" element={<Navigate to="/client/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
+      </Routes>
+    )
+  }
+
+  if (!isSuperAdmin) {
+    return <LoginPage initialError={error || 'Unauthorized: Super Admin access required.'} />
+  }
+
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/company" element={<CompanyPage />} />
+        <Route path="/company/new" element={<NewSubscriberPage />} />
+        <Route path="/company/created" element={<SubscriberCreatedPage />} />
+        <Route path="/company/:companyId" element={<CompanyDetailPage />} />
+        <Route path="/company/:companyId/suspend-success" element={<SuspendSuccessPage />} />
+        <Route path="/company/:companyId/upgrade" element={<UpgradePlanPage />} />
+        <Route path="/company/:companyId/upgrade-success" element={<UpgradeSuccessPage />} />
+        <Route path="/company/:companyId/extend" element={<ExtendSubscriptionPage />} />
+        <Route path="/company/:companyId/billing-history" element={<BillingHistoryPage />} />
+        <Route path="/company/:companyId/billing-history/:invoiceDocId" element={<InvoiceDetailPage />} />
+        <Route path="/invoices/:invoiceDocId" element={<InvoiceDetailPage />} />
+        <Route path="/subscription" element={<SubscriptionPage />} />
+        <Route path="/announcements" element={<AnnouncementComposerPage />} />
+        <Route path="/billing" element={<BillingPage />} />
+        <Route path="/security-logs" element={<SecurityLogsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/users/:uid" element={<UserProfilePage />} />
+        <Route path="/mobile" element={<MobileAppBlockedPage />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Route>
+    </Routes>
+  )
+}
