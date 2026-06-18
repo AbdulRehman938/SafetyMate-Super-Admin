@@ -2,20 +2,172 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   Award,
   Search,
-  Calendar,
-  ChevronDown,
-  CheckCircle,
   Info,
   ArrowLeft,
   AlertTriangle,
   Clock,
   Printer,
   Download,
+  Upload,
   X,
-  Upload
+  Check,
+  ChevronDown,
 } from 'lucide-react'
 import { useToast } from '../../../shared/toast/toastContext.js'
 import { CertificateTemplateDownloads } from '../components/CertificateTemplateDownloads.jsx'
+import { CustomSelect } from '../components/CustomSelect.jsx'
+import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
+
+/* ── Employee searchable dropdown ────────────────────────────────── */
+function empInitials(name) {
+  return (name || '').split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+}
+
+function EmployeeSelect({ employees, selected, onSelect, onClear, error }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const containerRef = useRef(null)
+  const searchRef = useRef(null)
+  const [panelStyle, setPanelStyle] = useState({})
+
+  const filtered = query.trim()
+    ? employees.filter((e) => {
+        const name = (e.fullName || e.displayName || '').toLowerCase()
+        const email = (e.email || '').toLowerCase()
+        const q = query.toLowerCase()
+        return name.includes(q) || email.includes(q)
+      })
+    : employees
+
+  function reposition() {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const panelH = 300
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    let top = rect.bottom + 4
+    let left = rect.left
+    const width = Math.max(rect.width, 260)
+    if (top + panelH > vh - 12) top = rect.top - panelH - 4
+    if (left + width > vw - 12) left = vw - width - 12
+    if (left < 12) left = 12
+    setPanelStyle({ position: 'fixed', top: `${top}px`, left: `${left}px`, width: `${width}px`, zIndex: 9999 })
+  }
+
+  useEffect(() => {
+    if (open) {
+      setQuery('')
+      requestAnimationFrame(() => { reposition(); searchRef.current?.focus() })
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const h = () => reposition()
+    window.addEventListener('scroll', h, true)
+    window.addEventListener('resize', h)
+    return () => { window.removeEventListener('scroll', h, true); window.removeEventListener('resize', h) }
+  }, [open])
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        const panel = document.getElementById('emp-select-panel')
+        if (panel && panel.contains(e.target)) return
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const displayName = selected
+    ? (selected.fullName || selected.displayName || selected.email || 'Selected')
+    : null
+
+  return (
+    <div
+      ref={containerRef}
+      className={['prov-emp-select', open ? 'prov-emp-select--open' : '', error ? 'prov-emp-select--error' : ''].filter(Boolean).join(' ')}
+    >
+      <button
+        type="button"
+        className="prov-emp-select-trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        {selected ? (
+          <>
+            <span className="prov-emp-select-avatar">{empInitials(displayName)}</span>
+            <span className="prov-emp-select-name">{displayName}</span>
+            <span className="prov-emp-select-email">{selected.email}</span>
+            <button
+              type="button"
+              className="prov-emp-select-clear"
+              onClick={(e) => { e.stopPropagation(); onClear(); setOpen(false) }}
+              tabIndex={-1}
+              aria-label="Clear"
+            >
+              <X size={13} />
+            </button>
+          </>
+        ) : (
+          <>
+            <Search size={14} className="prov-emp-select-search-icon" />
+            <span className="prov-emp-select-placeholder">Search employee name or email…</span>
+            <ChevronDown size={14} className={`prov-custom-select-chevron${open ? ' prov-custom-select-chevron--open' : ''}`} />
+          </>
+        )}
+      </button>
+
+      {open && (
+        <div id="emp-select-panel" className="prov-emp-select-panel" style={panelStyle}>
+          <div className="prov-emp-select-search-row">
+            <Search size={13} className="prov-emp-select-search-icon" />
+            <input
+              ref={searchRef}
+              type="text"
+              className="prov-emp-select-search-input"
+              placeholder="Search by name or email…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button type="button" className="prov-custom-select-search-clear" onClick={() => setQuery('')} tabIndex={-1}>
+                <X size={11} />
+              </button>
+            )}
+          </div>
+          <ul className="prov-emp-select-list">
+            {filtered.length === 0 ? (
+              <li className="prov-custom-select-empty">No employees found</li>
+            ) : (
+              filtered.map((emp) => {
+                const name = emp.fullName || emp.displayName || emp.email || '—'
+                const isSel = selected?.uid === emp.uid
+                return (
+                  <li
+                    key={emp.uid}
+                    className={`prov-emp-select-option${isSel ? ' prov-emp-select-option--selected' : ''}`}
+                    onMouseDown={(e) => { e.preventDefault(); onSelect(emp); setOpen(false) }}
+                  >
+                    <span className="prov-emp-option-avatar">{empInitials(name)}</span>
+                    <span className="prov-emp-option-body">
+                      <span className="prov-emp-option-name">{name}</span>
+                      <span className="prov-emp-option-email">{emp.email || 'No email'}</span>
+                    </span>
+                    {isSel && <Check size={13} className="prov-custom-select-check" />}
+                  </li>
+                )
+              })
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const ISSUING_BODY_MAP = [
   { match: /fire/i, body: 'National Fire Inst.' },
@@ -755,91 +907,40 @@ export function IssueCertificatePage({ onCancel, employees = [], organizations =
           <CertificateTemplateDownloads />
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Employee Name Autocomplete Search */}
-            <div className="prov-form-group prov-form-group--full" style={{ position: 'relative' }}>
+            {/* Employee Name — searchable dropdown */}
+            <div className="prov-form-group prov-form-group--full">
               <label className="prov-field-label">Employee Name</label>
-              <div className="prov-input-wrapper">
-                <span className="prov-input-icon">
-                  <Search size={16} />
-                </span>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  className={`prov-input-field prov-input-field--with-icon ${errors.employee ? 'prov-input-field--error' : ''}`}
-                  placeholder="Start typing employee name..."
-                  value={employeeSearch}
-                  onChange={(e) => {
-                    setEmployeeSearch(e.target.value)
-                    setIsDropdownOpen(true)
-                    setHighlightedIndex(0)
-                    if (selectedEmployee) {
-                      setSelectedEmployee(null) // Reset selection if edited
-                    }
-                  }}
-                  onFocus={() => {
-                    setIsDropdownOpen(true)
-                    setHighlightedIndex(0)
-                  }}
-                  onKeyDown={handleSearchKeyDown}
-                />
-                {!selectedEmployee && (
-                  <div className="prov-shortcut-badge">
-                    <span className="prov-key-cap">Cmd</span>
-                    <span className="prov-key-cap">K</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Suggestions Dropdown */}
-              {isDropdownOpen && employeeSearch.trim() !== '' && (
-                <div className="prov-autocomplete-dropdown" ref={dropdownRef}>
-                  {filteredEmployees.length === 0 ? (
-                    <div className="prov-autocomplete-empty">No matching employees found</div>
-                  ) : (
-                    filteredEmployees.map((emp, idx) => (
-                      <div
-                        key={emp.uid}
-                        className={`prov-autocomplete-item ${idx === highlightedIndex ? 'prov-autocomplete-item--highlighted' : ''}`}
-                        onClick={() => selectEmployee(emp)}
-                      >
-                        <span className="prov-autocomplete-name">{emp.fullName || emp.displayName}</span>
-                        <span className="prov-autocomplete-email">{emp.email || 'No email registered'}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
+              <EmployeeSelect
+                employees={employees}
+                selected={selectedEmployee}
+                onSelect={(emp) => {
+                  selectEmployee(emp)
+                  setErrors((prev) => ({ ...prev, employee: null }))
+                }}
+                onClear={() => {
+                  setSelectedEmployee(null)
+                  setEmployeeSearch('')
+                }}
+                error={!!errors.employee}
+              />
               {errors.employee && (
                 <span className="prov-input-error-msg">{errors.employee}</span>
               )}
             </div>
 
-            {/* Certificate Type and Issuing Body Row */}
+            {/* Certificate Type (searchable) and Issuing Body */}
             <div className="prov-form-row">
-              {/* Certificate Type Dropdown */}
               <div className="prov-form-group">
                 <label className="prov-field-label">Certificate Type</label>
-                <div className="prov-input-wrapper">
-                  <select
-                    className="prov-input-field"
-                    style={{ appearance: 'none', paddingRight: '38px' }}
-                    value={certificateType}
-                    onChange={(e) => setCertificateType(e.target.value)}
-                  >
-                    {COURSES_LIST.map((course) => (
-                      <option key={course} value={course} style={{ background: '#0b0f19' }}>
-                        {course}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="prov-input-icon" style={{ left: 'auto', right: '12px' }}>
-                    <ChevronDown size={16} />
-                  </span>
-                </div>
+                <CustomSelect
+                  value={certificateType}
+                  onChange={setCertificateType}
+                  options={COURSES_LIST}
+                  searchable
+                  searchPlaceholder="Search certificate..."
+                />
               </div>
 
-              {/* Issuing Body Text Field */}
               <div className="prov-form-group">
                 <label className="prov-field-label">Issuing Body</label>
                 <input
@@ -857,44 +958,61 @@ export function IssueCertificatePage({ onCancel, employees = [], organizations =
               {/* Issue Date */}
               <div className="prov-form-group">
                 <label className="prov-field-label">Issue Date</label>
-                <div className="prov-input-wrapper">
-                  <span className="prov-input-icon">
-                    <Calendar size={16} />
-                  </span>
-                  <input
-                    type="date"
-                    className={`prov-input-field prov-input-field--with-icon ${errors.issueDate ? 'prov-input-field--error' : ''}`}
-                    value={issueDate}
-                    onChange={(e) => handleIssueDateChange(e.target.value)}
-                  />
-                </div>
+                <CustomDatePicker
+                  value={issueDate}
+                  onChange={handleIssueDateChange}
+                  error={!!errors.issueDate}
+                  placeholder="Select issue date"
+                />
                 {errors.issueDate && (
                   <span className="prov-input-error-msg">{errors.issueDate}</span>
                 )}
               </div>
 
-              {/* Expiry Date */}
+              {/* Expiry Date — locked until issue date chosen */}
               <div className="prov-form-group">
                 <label className="prov-field-label">Expiry Date</label>
-                <div className="prov-input-wrapper">
-                  <span className="prov-input-icon">
-                    <Calendar size={16} />
-                  </span>
-                  <input
-                    type="date"
-                    className={`prov-input-field prov-input-field--with-icon ${errors.expiryDate ? 'prov-input-field--error' : ''}`}
-                    value={expiryDate}
-                    onChange={(e) => {
-                      setExpiryDate(e.target.value)
-                      setErrors((prev) => ({ ...prev, expiryDate: null }))
-                    }}
-                  />
-                </div>
+                <CustomDatePicker
+                  value={expiryDate}
+                  onChange={(val) => {
+                    setExpiryDate(val)
+                    setErrors((prev) => ({ ...prev, expiryDate: null }))
+                  }}
+                  minDate={issueDate || undefined}
+                  highlightDate={issueDate || undefined}
+                  lockAll={!issueDate}
+                  lockMessage="Select an issue date first to enable expiry date"
+                  error={!!errors.expiryDate}
+                  placeholder="Select expiry date"
+                />
                 {errors.expiryDate && (
                   <span className="prov-input-error-msg">{errors.expiryDate}</span>
                 )}
               </div>
             </div>
+
+            {/* Day difference badge */}
+            {issueDate && expiryDate && (() => {
+              const diff = Math.round(
+                (new Date(expiryDate) - new Date(issueDate)) / (1000 * 60 * 60 * 24)
+              )
+              if (diff <= 0) return null
+              const years = Math.floor(diff / 365)
+              const months = Math.floor((diff % 365) / 30)
+              const parts = []
+              if (years > 0) parts.push(`${years} yr${years > 1 ? 's' : ''}`)
+              if (months > 0) parts.push(`${months} mo`)
+              return (
+                <div className="prov-date-diff-badge">
+                  <span className="prov-date-diff-icon">⟷</span>
+                  <span className="prov-date-diff-text">
+                    <strong>{diff} days</strong>
+                    {parts.length > 0 && <span className="prov-date-diff-approx"> ≈ {parts.join(' ')}</span>}
+                    {' '}validity period
+                  </span>
+                </div>
+              )
+            })()}
           </form>
         </div>
 

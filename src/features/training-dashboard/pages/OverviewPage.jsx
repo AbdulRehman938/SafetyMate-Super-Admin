@@ -194,14 +194,13 @@ export function OverviewPage({
           ) : (
             <>
               {/* Simplified overview rows */}
-              <div style={{ padding: '16px 20px' }}>
+              <div className="prov-overview-requests-list">
                 {displayedRequests.map((req) => {
                   const badgeColor = getBadgeColorClass(req.company)
                   return (
                     <div
                       key={req.id}
-                      className="prov-req-row-card"
-                      style={{ gridTemplateColumns: '1.5fr 1.5fr 70px 1.5fr 120px' }}
+                      className="prov-req-row-card prov-req-row-card--overview"
                     >
                       <div className="prov-company-cell">
                         <div className={`prov-company-badge prov-company-badge--${badgeColor}`}>
@@ -227,7 +226,7 @@ export function OverviewPage({
                         <span className="prov-dates-sub">{req.timeDetail || 'TBD'}</span>
                       </div>
 
-                      <div className="prov-actions-cell" style={{ justifyContent: 'flex-end' }}>
+                      <div className="prov-actions-cell prov-actions-cell--right">
                         <button
                           type="button"
                           className="prov-action-btn-circle prov-action-btn-circle--approve"

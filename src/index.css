@@ -457,6 +457,7 @@ b {
   font-weight: 500;
   font-size: 15px;
   border: 1px solid transparent;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
 }
 
 .nav-icon {
@@ -574,10 +575,16 @@ b {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  transition: background 180ms ease, border-color 180ms ease, transform 120ms ease;
 }
 
 .sidebar-toggle:hover {
   background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.88);
 }
 
 .sidebar-overlay {

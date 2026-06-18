@@ -19,145 +19,102 @@ export function CalendarEventDetailModal({ isOpen, onClose, event, onUpdate, onC
   if (!isOpen || !event) return null
 
   const handleSave = () => {
-    onUpdate(event.id, {
-      classroom,
-      instructor,
-      priority,
-    })
+    onUpdate(event.id, { classroom, instructor, priority })
     setIsEditing(false)
   }
 
-  const handleComplete = () => {
-    onComplete(event.id)
-    onClose()
-  }
+  const handleComplete = () => { onComplete(event.id); onClose() }
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to cancel this training deployment? This will remove it from the schedule.')) {
-      onDelete(event.id)
-      onClose()
+    if (window.confirm('Cancel this training deployment? It will be removed from the schedule.')) {
+      onDelete(event.id); onClose()
     }
   }
 
   const priorityColor =
-    event.priority === 'High Priority' ? '#f87171' : event.priority === 'Completed' ? '#4deba0' : '#3a82ff'
+    event.priority === 'High Priority' ? '#f87171'
+    : event.priority === 'Completed' ? '#4deba0'
+    : '#3a82ff'
 
   return (
-    <div className="prov-modal-overlay">
-      <div className="prov-modal" style={{ maxWidth: '460px' }}>
-        <div className="prov-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="prov-modal-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: priorityColor }} />
-            Deployment Details
-          </h3>
-          <button type="button" onClick={onClose} className="prov-modal-close-btn" style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-            <X size={18} />
+    <div className="cal-modal-overlay" onClick={onClose}>
+      <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
+
+        {/* Drag handle (mobile) */}
+        <div className="cal-modal-handle" />
+
+        {/* Header */}
+        <div className="cal-modal-header">
+          <div className="cal-modal-header-left">
+            <span className="cal-modal-priority-dot" style={{ background: priorityColor }} />
+            <span className="cal-modal-header-label">Deployment Details</span>
+          </div>
+          <button type="button" className="cal-modal-close" onClick={onClose} aria-label="Close">
+            <X size={17} />
           </button>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: '#fff' }}>{event.course}</h2>
-          <p style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 600, margin: '0 0 16px 0' }}>{event.company}</p>
-
-          {!isEditing ? (
-            <div style={{ display: 'grid', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-                <Calendar size={15} style={{ color: '#94a3b8' }} />
-                <span>{event.preferredDate}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-                <Clock size={15} style={{ color: '#94a3b8' }} />
-                <span>{event.timeDetail || 'TBD'}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-                <MapPin size={15} style={{ color: '#94a3b8' }} />
-                <span>{event.classroom || 'Not assigned'}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-                <User size={15} style={{ color: '#94a3b8' }} />
-                <span>{event.instructor || 'Not assigned'}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-                <Users size={15} style={{ color: '#94a3b8' }} />
-                <span>{event.workers || 0} Workforce Candidates</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cbd5e1' }}>
-                <ShieldAlert size={15} style={{ color: '#94a3b8' }} />
-                <span style={{ color: priorityColor, fontWeight: 700 }}>{event.priority || 'Active'}</span>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Classroom / Room</label>
-                <input
-                  type="text"
-                  value={classroom}
-                  onChange={(e) => setClassroom(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', background: '#0a0e1c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: '13px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Instructor</label>
-                <input
-                  type="text"
-                  value={instructor}
-                  onChange={(e) => setInstructor(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', background: '#0a0e1c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: '13px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>Status Category</label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', background: '#0a0e1c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: '13px' }}
-                >
-                  <option value="Active">Active Course (Blue)</option>
-                  <option value="Completed">Completed (Green)</option>
-                  <option value="High Priority">High Priority (Red)</option>
-                </select>
-              </div>
-            </div>
-          )}
+        {/* Title */}
+        <div className="cal-modal-title-block">
+          <h2 className="cal-modal-course">{event.course}</h2>
+          <p className="cal-modal-company">{event.company}</p>
         </div>
 
-        <div className="prov-modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', marginTop: '16px' }}>
-          <div>
-            {!isEditing ? (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '6px', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px' }}
-              >
-                Edit
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSave}
-                style={{ padding: '8px 14px', background: '#10b981', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Save
-              </button>
-            )}
+        {/* Detail / Edit body */}
+        {!isEditing ? (
+          <div className="cal-modal-details">
+            {[
+              { Icon: Calendar, value: event.preferredDate },
+              { Icon: Clock,    value: event.timeDetail || 'TBD' },
+              { Icon: MapPin,   value: event.classroom || 'Not assigned' },
+              { Icon: User,     value: event.instructor || 'Not assigned' },
+              { Icon: Users,    value: `${event.workers || 0} Workforce Candidates` },
+              { Icon: ShieldAlert, value: event.priority || 'Active', colored: true },
+            ].map(({ Icon, value, colored }, i) => (
+              <div key={i} className="cal-modal-detail-row">
+                <Icon size={14} className="cal-modal-detail-icon" />
+                <span className="cal-modal-detail-val" style={colored ? { color: priorityColor, fontWeight: 700 } : undefined}>
+                  {value}
+                </span>
+              </div>
+            ))}
           </div>
+        ) : (
+          <div className="cal-modal-edit-form">
+            <div className="cal-modal-edit-field">
+              <label className="cal-modal-edit-label">Classroom / Room</label>
+              <input type="text" value={classroom} onChange={(e) => setClassroom(e.target.value)} className="cal-modal-edit-input" />
+            </div>
+            <div className="cal-modal-edit-field">
+              <label className="cal-modal-edit-label">Instructor</label>
+              <input type="text" value={instructor} onChange={(e) => setInstructor(e.target.value)} className="cal-modal-edit-input" />
+            </div>
+            <div className="cal-modal-edit-field">
+              <label className="cal-modal-edit-label">Status Category</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="cal-modal-edit-select">
+                <option value="Active">Active Course (Blue)</option>
+                <option value="Completed">Completed (Green)</option>
+                <option value="High Priority">High Priority (Red)</option>
+              </select>
+            </div>
+          </div>
+        )}
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Action footer */}
+        <div className="cal-modal-footer">
+          <div>
+            {!isEditing
+              ? <button type="button" className="cal-modal-btn cal-modal-btn--ghost" onClick={() => setIsEditing(true)}>Edit</button>
+              : <button type="button" className="cal-modal-btn cal-modal-btn--save" onClick={handleSave}>Save</button>
+            }
+          </div>
+          <div className="cal-modal-footer-right">
             {event.status !== 'completed' && (
-              <button
-                type="button"
-                onClick={handleComplete}
-                style={{ padding: '8px 14px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', color: '#4deba0', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
+              <button type="button" className="cal-modal-btn cal-modal-btn--complete" onClick={handleComplete}>
                 Mark Completed
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleDelete}
-              style={{ padding: '8px 14px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-            >
+            <button type="button" className="cal-modal-btn cal-modal-btn--danger" onClick={handleDelete}>
               Cancel Course
             </button>
           </div>

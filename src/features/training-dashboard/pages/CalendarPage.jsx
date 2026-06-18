@@ -1,7 +1,52 @@
-import React, { useState, useEffect } from 'react'
-import { SlidersHorizontal, ChevronLeft, ChevronRight, Clock, RotateCw } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { SlidersHorizontal, ChevronLeft, ChevronRight, Clock, RotateCw, ChevronDown, Check, X } from 'lucide-react'
 import { ScheduleSessionPage } from './ScheduleSessionPage.jsx'
 import { CalendarEventDetailModal } from '../components/CalendarEventDetailModal.jsx'
+
+// ── Custom animated dropdown (shared) ───────────────────────────────────────
+function CustomSelect({ label, value, onChange, options }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const selected = options.find((o) => o.value === value)
+
+  return (
+    <div className="prov-custom-select" ref={ref} style={{ flex: 1 }}>
+      <button
+        type="button"
+        className={`prov-custom-select-trigger ${open ? 'prov-custom-select-trigger--open' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="prov-custom-select-label">{label}</span>
+        <span className="prov-custom-select-value">{selected?.label ?? value}</span>
+        <ChevronDown size={12} className={`prov-custom-select-chevron ${open ? 'prov-custom-select-chevron--open' : ''}`} />
+      </button>
+      {open && (
+        <div className="prov-custom-select-menu">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`prov-custom-select-option ${opt.value === value ? 'prov-custom-select-option--active' : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+            >
+              {opt.label}
+              {opt.value === value && <Check size={12} className="prov-custom-select-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function getMonthAbbr(d) {
   return d.toLocaleString('en-US', { month: 'short' }).toUpperCase()
@@ -234,109 +279,153 @@ export function CalendarPage({
     for (let i = 0; i < firstDay; i++) cells.push(null)
     for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
+    // Build list of days-with-events for the mobile agenda view
+    const daysWithEvents = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      const evs = filteredEvents.filter((e) => e.dates.includes(d))
+      if (evs.length > 0) daysWithEvents.push({ day: d, events: evs })
+    }
+    const weekdayOf = (d) => new Date(activeYear, activeMonth, d)
+      .toLocaleDateString('en-US', { weekday: 'short' })
+
     return (
-      <div className="prov-calendar-container" style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className="prov-calendar-grid" style={{ margin: 0 }}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="prov-cal-day-header" style={{ paddingBottom: '12px' }}>{d}</div>
-          ))}
-          {cells.map((day, i) => {
-            if (day === null) {
+      <>
+        {/* ── Desktop / tablet: 7-col grid ── */}
+        <div className="prov-cal-month-grid-wrap">
+          <div className="prov-calendar-grid">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <div key={d} className="prov-cal-day-header">{d}</div>
+            ))}
+            {cells.map((day, i) => {
+              if (day === null) {
+                return <div key={`empty-${i}`} className="prov-cal-day-empty" />
+              }
+
+              const dayEvents = filteredEvents.filter((e) => e.dates.includes(day))
+              const isToday =
+                day === new Date().getDate() &&
+                activeMonth === new Date().getMonth() &&
+                activeYear === new Date().getFullYear()
+
               return (
                 <div
-                  key={`empty-${i}`}
-                  style={{
-                    minHeight: '110px',
-                    border: '1px solid rgba(255, 255, 255, 0.02)',
-                    background: 'transparent'
-                  }}
-                />
+                  key={day}
+                  className={`prov-cal-day${isToday ? ' prov-cal-day--today' : ''}`}
+                >
+                  <div className="prov-cal-day-num">{String(day).padStart(2, '0')}</div>
+                  <div className="prov-cal-day-events">
+                    {dayEvents.map((event) => {
+                      const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
+                      return (
+                        <div
+                          key={event.id}
+                          className={`prov-cal-event${event.id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
+                          onClick={() => { setSelectedEvent(event); setEventDetailOpen(true) }}
+                          style={{ background: eventBg, border: `1px solid ${eventBorder}`, color: eventText }}
+                          title={`${event.course} - ${event.classroom}`}
+                        >
+                          <span className="prov-cal-event-name">{event.course}</span>
+                          <span className="prov-cal-event-meta">{event.classroom} · {event.instructor}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               )
-            }
+            })}
+          </div>
+        </div>
 
-            const dayEvents = filteredEvents.filter((e) => e.dates.includes(day))
-            const isToday =
-              day === currentDate.getDate() &&
-              activeMonth === currentDate.getMonth() &&
-              activeYear === currentDate.getFullYear()
-
-            return (
-              <div
-                key={day}
-                className={`prov-cal-day ${isToday ? 'prov-cal-day--today' : ''}`}
-                style={{
-                  minHeight: '110px',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  background: isToday ? 'rgba(58, 130, 255, 0.06)' : 'rgba(10, 14, 28, 0.45)',
-                  borderColor: isToday ? 'rgba(58, 130, 255, 0.35)' : 'rgba(255, 255, 255, 0.05)',
-                  padding: '8px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px'
-                }}
-              >
-                <div
-                  className="prov-cal-day-num"
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: isToday ? '#3b82f6' : 'rgba(148, 163, 184, 0.65)',
-                    marginBottom: '4px'
+        {/* ── Mobile: compact dot-grid + agenda list ── */}
+        <div className="prov-cal-mobile-month">
+          {/* Dot grid — 7-col, very compact, just day number + dots */}
+          <div className="prov-cal-dot-grid">
+            {['S','M','T','W','T','F','S'].map((d, i) => (
+              <div key={i} className="prov-cal-dot-header">{d}</div>
+            ))}
+            {cells.map((day, i) => {
+              if (day === null) return <div key={`e-${i}`} />
+              const dayEvents = filteredEvents.filter((e) => e.dates.includes(day))
+              const isToday =
+                day === new Date().getDate() &&
+                activeMonth === new Date().getMonth() &&
+                activeYear === new Date().getFullYear()
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  className={`prov-cal-dot-day${isToday ? ' prov-cal-dot-day--today' : ''}${dayEvents.length > 0 ? ' prov-cal-dot-day--has-events' : ''}`}
+                  onClick={() => {
+                    if (dayEvents.length === 1) {
+                      setSelectedEvent(dayEvents[0])
+                      setEventDetailOpen(true)
+                    } else if (dayEvents.length > 1) {
+                      setSelectedEvent(dayEvents[0])
+                      setEventDetailOpen(true)
+                    }
                   }}
                 >
-                  {String(day).padStart(2, '0')}
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflowY: 'auto', flex: 1 }}>
-                  {dayEvents.map((event) => {
-                    const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
-                    const isHighlighted = event.id === highlightedSessionId
+                  <span className="prov-cal-dot-num">{day}</span>
+                  {dayEvents.length > 0 && (
+                    <span className="prov-cal-dot-indicators">
+                      {dayEvents.slice(0, 3).map((ev) => {
+                        const { eventBorder } = getEventStyles(ev.priority)
+                        return (
+                          <span
+                            key={ev.id}
+                            className="prov-cal-dot-pip"
+                            style={{ background: eventBorder }}
+                          />
+                        )
+                      })}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
 
-                    return (
-                      <div
-                        key={event.id}
-                        className={`prov-cal-event ${isHighlighted ? 'prov-cal-event--highlighted' : ''}`}
-                        onClick={() => {
-                          setSelectedEvent(event)
-                          setEventDetailOpen(true)
-                        }}
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          padding: '5px 8px',
-                          borderRadius: '6px',
-                          background: eventBg,
-                          border: `1px solid ${eventBorder}`,
-                          color: eventText,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '1px',
-                          lineHeight: '1.2',
-                          transition: 'all 0.15s ease'
-                        }}
-                        title={`${event.course} - ${event.classroom}`}
-                      >
-                        <span style={{ fontWeight: 800, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                          {event.course}
-                        </span>
-                        <span style={{ fontSize: '8.5px', opacity: 0.75, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                          {event.classroom} • {event.instructor}
-                        </span>
-                      </div>
-                    )
-                  })}
+          {/* Agenda list — days with events */}
+          {daysWithEvents.length === 0 ? (
+            <div className="prov-cal-agenda-empty">No sessions scheduled this month.</div>
+          ) : (
+            <div className="prov-cal-agenda-list">
+              <p className="prov-cal-agenda-title">Sessions This Month</p>
+              {daysWithEvents.map(({ day, events }) => (
+                <div key={day} className="prov-cal-agenda-day">
+                  <div className="prov-cal-agenda-date">
+                    <span className="prov-cal-agenda-daynum">{String(day).padStart(2, '0')}</span>
+                    <span className="prov-cal-agenda-weekday">{weekdayOf(day)}</span>
+                  </div>
+                  <div className="prov-cal-agenda-events">
+                    {events.map((event) => {
+                      const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
+                      return (
+                        <button
+                          key={event.id}
+                          type="button"
+                          className={`prov-cal-agenda-event${event.id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
+                          style={{ background: eventBg, borderLeft: `3px solid ${eventBorder}`, color: eventText }}
+                          onClick={() => { setSelectedEvent(event); setEventDetailOpen(true) }}
+                        >
+                          <span className="prov-cal-agenda-course">{event.course}</span>
+                          <span className="prov-cal-agenda-info">
+                            {event.classroom} · {event.instructor}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      </>
     )
   }
 
   const renderWeekView = () => {
-    // Generate dates for the current week (Sun - Sat)
     const dayOfWeek = currentDate.getDay()
     const sunDate = new Date(currentDate)
     sunDate.setDate(currentDate.getDate() - dayOfWeek)
@@ -348,8 +437,10 @@ export function CalendarPage({
       weekDays.push(d)
     }
 
+    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', minHeight: '380px' }}>
+      <div className="prov-cal-week-grid">
         {weekDays.map((dayDate, i) => {
           const day = dayDate.getDate()
           const dayEvents = filteredEvents.filter((e) => e.dates.includes(day) && dayDate.getMonth() === activeMonth)
@@ -358,61 +449,32 @@ export function CalendarPage({
             dayDate.getMonth() === new Date().getMonth() &&
             dayDate.getFullYear() === new Date().getFullYear()
 
-          const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
           return (
-            <div
-              key={i}
-              style={{
-                background: 'rgba(10, 14, 28, 0.45)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: '8px',
-                padding: '12px 10px',
-                borderColor: isToday ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}
-            >
-              <div style={{ textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(148,163,184,0.5)', fontWeight: 700 }}>
-                  {weekdayNames[i]}
-                </div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: isToday ? '#3b82f6' : '#fff', marginTop: '2px' }}>
-                  {day}
-                </div>
+            <div key={i} className={`prov-cal-week-col${isToday ? ' prov-cal-week-col--today' : ''}`}>
+              <div className="prov-cal-week-col-header">
+                <span className="prov-cal-week-col-name">{weekdayNames[i]}</span>
+                <span className={`prov-cal-week-col-num${isToday ? ' prov-cal-week-col-num--today' : ''}`}>{day}</span>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, overflowY: 'auto' }}>
-                {dayEvents.map((event) => {
-                  const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
-                  const isHighlighted = event.id === highlightedSessionId
-
-                  return (
-                    <div
-                      key={event.id}
-                      className={`prov-cal-event ${isHighlighted ? 'prov-cal-event--highlighted' : ''}`}
-                      onClick={() => {
-                        setSelectedEvent(event)
-                        setEventDetailOpen(true)
-                      }}
-                      style={{
-                        padding: '8px',
-                        background: eventBg,
-                        border: `1px solid ${eventBorder}`,
-                        borderRadius: '6px',
-                        color: eventText,
-                        fontSize: '11px',
-                        cursor: 'pointer',
-                        lineHeight: '1.3'
-                      }}
-                    >
-                      <div style={{ fontWeight: 800 }}>{event.course}</div>
-                      <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '2px' }}>{event.classroom}</div>
-                      <div style={{ fontSize: '9px', opacity: 0.8 }}>{event.instructor}</div>
-                    </div>
-                  )
-                })}
+              <div className="prov-cal-week-col-events">
+                {dayEvents.length === 0 ? (
+                  <span className="prov-cal-week-col-empty">—</span>
+                ) : (
+                  dayEvents.map((event) => {
+                    const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
+                    return (
+                      <div
+                        key={event.id}
+                        className={`prov-cal-week-event${event.id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
+                        onClick={() => { setSelectedEvent(event); setEventDetailOpen(true) }}
+                        style={{ background: eventBg, borderColor: eventBorder, color: eventText }}
+                      >
+                        <span className="prov-cal-week-event-name">{event.course}</span>
+                        <span className="prov-cal-week-event-meta">{event.classroom}</span>
+                        <span className="prov-cal-week-event-meta">{event.instructor}</span>
+                      </div>
+                    )
+                  })
+                )}
               </div>
             </div>
           )
@@ -424,56 +486,38 @@ export function CalendarPage({
   const renderDayView = () => {
     const day = currentDate.getDate()
     const dayEvents = filteredEvents.filter((e) => e.dates.includes(day))
+    const dateLabel = currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
     return (
-      <div style={{ background: 'rgba(10, 14, 28, 0.45)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
-        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, color: '#fff', fontSize: '15px' }}>
-            Schedule for {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          </h3>
+      <div className="prov-cal-day-view">
+        <div className="prov-cal-day-view-header">
+          <h3 className="prov-cal-day-view-title">Schedule for {dateLabel}</h3>
         </div>
-
         {dayEvents.length === 0 ? (
-          <div style={{ padding: '40px 0', textAlign: 'center', color: 'rgba(148,163,184,0.5)' }}>
-            No courses scheduled for this date.
-          </div>
+          <div className="prov-cal-day-view-empty">No courses scheduled for this date.</div>
         ) : (
-          <div style={{ display: 'grid', gap: '10px' }}>
+          <div className="prov-cal-day-view-list">
             {dayEvents.map((event) => {
               const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
-              const isHighlighted = event.id === highlightedSessionId
-
               return (
                 <div
                   key={event.id}
-                  className={`prov-cal-event ${isHighlighted ? 'prov-cal-event--highlighted' : ''}`}
-                  onClick={() => {
-                    setSelectedEvent(event)
-                    setEventDetailOpen(true)
-                  }}
-                  style={{
-                    padding: '16px',
-                    background: eventBg,
-                    border: `1px solid ${eventBorder}`,
-                    borderRadius: '8px',
-                    color: eventText,
-                    cursor: 'pointer',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    alignItems: 'center',
-                    gap: '20px'
-                  }}
+                  className={`prov-cal-day-event${event.id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
+                  onClick={() => { setSelectedEvent(event); setEventDetailOpen(true) }}
+                  style={{ background: eventBg, borderLeft: `4px solid ${eventBorder}`, color: eventText }}
                 >
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}>{event.course}</h4>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.8 }}>
-                      🏢 Client: {event.company} • 🗺 Location: {event.classroom} • 👤 Instructor: {event.instructor}
+                  <div className="prov-cal-day-event-main">
+                    <h4 className="prov-cal-day-event-title">{event.course}</h4>
+                    <p className="prov-cal-day-event-meta">
+                      🏢 {event.company} · 📍 {event.classroom} · 👤 {event.instructor}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                    <Clock size={14} />
-                    <span>{event.timeDetail}</span>
-                  </div>
+                  {event.timeDetail && (
+                    <div className="prov-cal-day-event-time">
+                      <Clock size={13} />
+                      <span>{event.timeDetail}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -517,33 +561,23 @@ export function CalendarPage({
   const isPrevDisabled = isDateBeforeLimit(prevDate)
 
   return (
-    <section className="prov-subpage" style={{ paddingBottom: '60px' }}>
+    <section className="prov-subpage prov-cal-page" style={{ paddingBottom: '60px' }}>
       {/* Calendar Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 className="prov-subpage-title" style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: '6px' }}>Course Calendar</h1>
-          <p className="prov-subpage-sub" style={{ fontSize: '13px' }}>Manage certification schedules and instructor deployments.</p>
+      <div className="prov-cal-header-row">
+        <div className="prov-cal-header-text">
+          <h1 className="prov-subpage-title prov-cal-title">Course Calendar</h1>
+          <p className="prov-subpage-sub prov-cal-subtitle">Manage certification schedules and instructor deployments.</p>
         </div>
 
         {/* Month/Week/Day tabs + Filters Button */}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', background: 'rgba(10, 14, 28, 0.6)', borderRadius: '8px', padding: '3px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="prov-cal-controls">
+          <div className="prov-cal-view-tabs">
             {['Month', 'Week', 'Day'].map((type) => (
               <button
                 key={type}
                 type="button"
+                className={`prov-cal-view-tab${viewType === type ? ' prov-cal-view-tab--active' : ''}`}
                 onClick={() => setViewType(type)}
-                style={{
-                  padding: '6px 16px',
-                  background: viewType === type ? '#3a82ff' : 'transparent',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: viewType === type ? '#fff' : 'rgba(148, 163, 184, 0.65)',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
               >
                 {type}
               </button>
@@ -552,22 +586,8 @@ export function CalendarPage({
 
           <button
             type="button"
-            className={`prov-btn-filters ${showFilters ? 'prov-icon-btn--active' : ''}`}
+            className={`prov-btn-filters${showFilters ? ' prov-icon-btn--active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              background: showFilters ? 'rgba(58, 130, 255, 0.12)' : 'rgba(10, 14, 28, 0.6)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              color: showFilters ? '#3b82f6' : '#cbd5e1',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '12.5px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}
           >
             <SlidersHorizontal size={13} />
             Filters
@@ -577,139 +597,84 @@ export function CalendarPage({
 
       {/* Filter panel slide down */}
       {showFilters && (
-        <div
-          style={{
-            background: 'rgba(10, 14, 28, 0.6)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
-            borderRadius: '8px',
-            padding: '16px',
-            marginBottom: '20px',
-            display: 'flex',
-            gap: '16px',
-            alignItems: 'center'
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>Course</label>
-            <select
-              value={courseFilter}
-              onChange={(e) => setCourseFilter(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px', background: '#0a0e1c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: '12px' }}
-            >
-              <option value="All">All Courses</option>
-              {uniqueCourses.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>Location</label>
-            <select
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px', background: '#0a0e1c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: '12px' }}
-            >
-              <option value="All">All Locations</option>
-              {uniqueLocations.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>Instructor</label>
-            <select
-              value={instructorFilter}
-              onChange={(e) => setInstructorFilter(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px', background: '#0a0e1c', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', color: '#fff', fontSize: '12px' }}
-            >
-              <option value="All">All Instructors</option>
-              {uniqueInstructors.map((ins) => (
-                <option key={ins} value={ins}>{ins}</option>
-              ))}
-            </select>
-          </div>
+        <div className="prov-cal-filter-panel">
+          <CustomSelect
+            label="Course"
+            value={courseFilter}
+            onChange={setCourseFilter}
+            options={[
+              { value: 'All', label: 'All Courses' },
+              ...uniqueCourses.map((c) => ({ value: c, label: c })),
+            ]}
+          />
+          <CustomSelect
+            label="Location"
+            value={locationFilter}
+            onChange={setLocationFilter}
+            options={[
+              { value: 'All', label: 'All Locations' },
+              ...uniqueLocations.map((l) => ({ value: l, label: l })),
+            ]}
+          />
+          <CustomSelect
+            label="Instructor"
+            value={instructorFilter}
+            onChange={setInstructorFilter}
+            options={[
+              { value: 'All', label: 'All Instructors' },
+              ...uniqueInstructors.map((ins) => ({ value: ins, label: ins })),
+            ]}
+          />
           {(courseFilter !== 'All' || locationFilter !== 'All' || instructorFilter !== 'All') && (
             <button
               type="button"
+              className="prov-cal-filter-clear"
               onClick={() => {
                 setCourseFilter('All')
                 setLocationFilter('All')
                 setInstructorFilter('All')
               }}
-              style={{
-                alignSelf: 'flex-end',
-                padding: '7px 12px',
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '6px',
-                color: '#f87171',
-                fontSize: '12px',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
             >
-              Clear Filters
+              <X size={13} />
+              Clear
             </button>
           )}
         </div>
       )}
 
-      {/* Control row: Current Month + Legend */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'rgba(10, 14, 28, 0.3)', padding: '12px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#fff', margin: 0 }}>
+      {/* Control row: Current Month + nav + Legend */}
+      <div className="prov-cal-nav-row">
+        <div className="prov-cal-nav-left">
+          <h2 className="prov-cal-month-label">
             {viewType === 'Month'
               ? currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
               : viewType === 'Week'
               ? `Week of ${currentDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
               : currentDate.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </h2>
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div className="prov-cal-nav-btns">
             <button
               type="button"
+              className="prov-cal-nav-arrow"
               onClick={handlePrev}
               disabled={isPrevDisabled}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '24px',
-                height: '24px',
-                borderRadius: '4px',
-                background: 'rgba(255,255,255,0.05)',
-                border: 'none',
-                color: isPrevDisabled ? 'rgba(255,255,255,0.15)' : '#fff',
-                cursor: isPrevDisabled ? 'not-allowed' : 'pointer'
-              }}
               aria-label="Previous"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               type="button"
+              className="prov-cal-nav-arrow"
               onClick={handleNext}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', cursor: 'pointer' }}
               aria-label="Next"
             >
               <ChevronRight size={16} />
             </button>
             <button
               type="button"
-              className={`prov-cal-refresh-btn ${isRefreshing ? 'prov-cal-refresh-btn--spinning' : ''}`}
+              className={`prov-cal-nav-arrow prov-cal-refresh-btn${isRefreshing ? ' prov-cal-refresh-btn--spinning' : ''}`}
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '24px',
-                height: '24px',
-                borderRadius: '4px',
-                background: 'rgba(255,255,255,0.05)',
-                border: 'none',
-                color: isRefreshing ? 'rgba(255,255,255,0.35)' : '#fff',
-                cursor: isRefreshing ? 'not-allowed' : 'pointer',
-              }}
               aria-label="Refresh calendar"
             >
               <RotateCw size={14} className="prov-cal-refresh-icon" />
@@ -718,61 +683,37 @@ export function CalendarPage({
         </div>
 
         {/* Status Legends */}
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.08em', color: '#cbd5e1' }}>
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} />
-            ACTIVE COURSES
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.08em', color: '#cbd5e1' }}>
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-            COMPLETED
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.08em', color: '#cbd5e1' }}>
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
-            HIGH PRIORITY
-          </div>
+        <div className="prov-cal-legend">
+          <span className="prov-cal-legend-item">
+            <span className="prov-cal-legend-dot prov-cal-legend-dot--blue" />
+            <span className="prov-cal-legend-label">Active</span>
+          </span>
+          <span className="prov-cal-legend-item">
+            <span className="prov-cal-legend-dot prov-cal-legend-dot--green" />
+            <span className="prov-cal-legend-label">Completed</span>
+          </span>
+          <span className="prov-cal-legend-item">
+            <span className="prov-cal-legend-dot prov-cal-legend-dot--red" />
+            <span className="prov-cal-legend-label">High Priority</span>
+          </span>
         </div>
       </div>
 
       {/* Main Content Split: Left Calendar + Right widgets */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+      <div className="prov-cal-main-split">
         {/* Left column: active view renderer */}
-        <div className="prov-section-card" style={{ padding: '20px' }}>
+        <div className="prov-section-card prov-cal-card">
           {newSessionFeedback && (
-            <div
-              className="prov-cal-session-banner"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                padding: '12px 16px',
-                marginBottom: '16px',
-                background: 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                color: '#4deba0',
-              }}
-            >
+            <div className="prov-cal-session-banner">
               <span>
                 📅 Session successfully scheduled for {newSessionFeedback.date}.
               </span>
               <button
                 type="button"
+                className="prov-cal-banner-jump"
                 onClick={() => {
                   setCurrentDate(newSessionFeedback.targetDate)
                   setNewSessionFeedback(null)
-                }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#3b82f6',
-                  fontWeight: 700,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  whiteSpace: 'nowrap',
                 }}
               >
                 Jump to {newSessionFeedback.monthLabel}
@@ -785,78 +726,51 @@ export function CalendarPage({
         </div>
 
         {/* Right column: New Deployment + Facility Utilization */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="prov-cal-sidebar">
           {/* New Deployment Card */}
-          <div className="prov-section-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(10, 14, 28, 0.35)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div>
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '800', color: '#fff' }}>New Deployment?</h3>
-              <p style={{ margin: 0, fontSize: '11px', color: 'rgba(148, 163, 184, 0.75)', lineHeight: '1.5' }}>
-                Add a new training module to the schedule across all verified centers.
-              </p>
-            </div>
-            
+          <div className="prov-section-card prov-cal-deploy-card">
+            <h3 className="prov-cal-deploy-title">New Deployment?</h3>
+            <p className="prov-cal-deploy-desc">
+              Add a new training module to the schedule across all verified centers.
+            </p>
             <button
               type="button"
+              className="prov-cal-deploy-btn"
               onClick={() => setIsScheduling(true)}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '12px',
-                background: '#1d4ed8',
-                border: 'none',
-                borderRadius: '8px',
-                color: '#fff',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(29, 78, 216, 0.25)',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#2563eb'}
-              onMouseLeave={(e) => e.target.style.background = '#1d4ed8'}
             >
-              Schedule New<br />Course
+              Schedule New Course
             </button>
           </div>
 
           {/* Facility Utilization Card */}
-          <div className="prov-section-card" style={{ padding: '20px', background: 'rgba(10, 14, 28, 0.35)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '800', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
-              Facility Utilization
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Hall Alpha */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.75)', marginBottom: '6px' }}>
-                  <span>TRAINING HALL ALPHA</span>
-                  <span style={{ color: '#fff' }}>{alphaUtil}%</span>
+          <div className="prov-section-card prov-cal-util-card">
+            <h3 className="prov-cal-util-title">Facility Utilization</h3>
+            <div className="prov-cal-util-list">
+              <div className="prov-cal-util-row">
+                <div className="prov-cal-util-meta">
+                  <span className="prov-cal-util-name">Training Hall Alpha</span>
+                  <span className="prov-cal-util-pct">{alphaUtil}%</span>
                 </div>
-                <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${alphaUtil}%`, height: '100%', background: '#3b82f6', borderRadius: '3px' }} />
+                <div className="prov-cal-util-track">
+                  <div className="prov-cal-util-fill prov-cal-util-fill--blue" style={{ width: `${alphaUtil}%` }} />
                 </div>
               </div>
-
-              {/* VR Suite */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.75)', marginBottom: '6px' }}>
-                  <span>VR SIMULATION SUITE</span>
-                  <span style={{ color: '#fff' }}>{vrUtil}%</span>
+              <div className="prov-cal-util-row">
+                <div className="prov-cal-util-meta">
+                  <span className="prov-cal-util-name">VR Simulation Suite</span>
+                  <span className="prov-cal-util-pct">{vrUtil}%</span>
                 </div>
-                <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${vrUtil}%`, height: '100%', background: '#eab308', borderRadius: '3px' }} />
+                <div className="prov-cal-util-track">
+                  <div className="prov-cal-util-fill prov-cal-util-fill--yellow" style={{ width: `${vrUtil}%` }} />
                 </div>
               </div>
-
-              {/* Theater 2 */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.75)', marginBottom: '6px' }}>
-                  <span>LECTURE THEATER 2</span>
-                  <span style={{ color: '#fff' }}>{theaterUtil}%</span>
+              <div className="prov-cal-util-row">
+                <div className="prov-cal-util-meta">
+                  <span className="prov-cal-util-name">Lecture Theater 2</span>
+                  <span className="prov-cal-util-pct">{theaterUtil}%</span>
                 </div>
-                <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${theaterUtil}%`, height: '100%', background: '#ef4444', borderRadius: '3px' }} />
+                <div className="prov-cal-util-track">
+                  <div className="prov-cal-util-fill prov-cal-util-fill--red" style={{ width: `${theaterUtil}%` }} />
                 </div>
               </div>
             </div>

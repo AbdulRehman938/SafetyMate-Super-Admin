@@ -365,8 +365,8 @@ export function GlobalSearch() {
   }
 
   const placeholder = isTrainingProvider
-    ? 'Search requests, certificates, workers… (⌘K)'
-    : 'Search incidents, certificates, workers, PPE… (⌘K)'
+    ? 'Search requests, certificates… (⌘K)'
+    : 'Search incidents, certificates, PPE… (⌘K)'
 
   return (
     <div className="client-topbar-search client-global-search" ref={containerRef}>

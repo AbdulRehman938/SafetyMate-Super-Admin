@@ -2289,6 +2289,7 @@ audio.evidence-media {
 
 .prov-template-downloads {
   margin-top: 16px;
+  margin-bottom: 16px;
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(58, 130, 255, 0.18);
@@ -2891,18 +2892,19 @@ audio.evidence-media {
   position: absolute;
   top: 100%;
   right: 0;
-  background: #0b0f19;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  background: #0b0f1f;
+  border: 1px solid rgba(58, 130, 255, 0.15);
+  border-radius: 14px;
   padding: 16px;
   width: 280px;
   z-index: 1000;
-  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.7), 0 4px 8px -2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.75), 0 4px 12px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.04);
   margin-top: 8px;
-  animation: prov-fade-in 150ms ease-out;
+  animation: dropdown-fade-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  backdrop-filter: blur(12px);
 }
 
 .prov-filter-group {
@@ -2924,11 +2926,18 @@ audio.evidence-media {
 .prov-filter-input {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fff;
   font-size: 12px;
-  padding: 6px 10px;
+  padding: 8px 32px 8px 10px;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  transition: border-color 150ms, background-color 150ms;
 }
 
 .prov-filter-select option {
@@ -2938,7 +2947,9 @@ audio.evidence-media {
 
 .prov-filter-select:focus,
 .prov-filter-input:focus {
-  border-color: rgba(58, 130, 255, 0.4);
+  border-color: rgba(58, 130, 255, 0.5);
+  background: rgba(58, 130, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.1);
 }
 
 .prov-filter-reset-btn {
@@ -3099,31 +3110,38 @@ audio.evidence-media {
   z-index: 20;
   min-width: 210px;
   padding: 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #0c1224;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  border-radius: 14px;
+  border: 1px solid rgba(58, 130, 255, 0.15);
+  background: #0b0f1f;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.75), 0 4px 12px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  animation: dropdown-fade-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .prov-cert-sort-option {
   display: block;
   width: 100%;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: rgba(203, 213, 225, 0.9);
   font-size: 12px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: background 150ms;
+  transition: background 130ms, color 130ms;
 }
 
 .prov-cert-sort-option:hover,
 .prov-cert-sort-option--active {
-  background: rgba(58, 130, 255, 0.12);
+  background: rgba(58, 130, 255, 0.14);
   color: #8ab8ff;
+}
+
+.prov-cert-sort-option--active {
+  font-weight: 700;
+  background: rgba(58, 130, 255, 0.18);
 }
 
 .prov-cert-table-headers {
@@ -3255,28 +3273,31 @@ audio.evidence-media {
   z-index: 20;
   min-width: 150px;
   padding: 6px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #0c1224;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(58, 130, 255, 0.15);
+  background: #0b0f1f;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.75), 0 4px 12px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  animation: dropdown-fade-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .prov-cert-action-menu button {
   display: block;
   width: 100%;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: rgba(203, 213, 225, 0.9);
   font-size: 12px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+  transition: background 130ms, color 130ms;
 }
 
 .prov-cert-action-menu button:hover {
-  background: rgba(58, 130, 255, 0.12);
+  background: rgba(58, 130, 255, 0.14);
   color: #8ab8ff;
 }
 
@@ -3417,31 +3438,36 @@ audio.evidence-media {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  animation: prov-fade-in 180ms ease-out both;
 }
 
 .prov-cert-detail-modal {
   width: 100%;
-  max-width: 400px;
-  padding: 24px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #0c1224;
+  max-width: 420px;
+  padding: 28px 24px 24px;
+  border-radius: 18px;
+  border: 1px solid rgba(58, 130, 255, 0.14);
+  background: #0b0f1f;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(16px);
+  animation: dropdown-fade-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .prov-cert-detail-modal h3 {
   margin: 0 0 4px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   color: #fff;
+  line-height: 1.3;
 }
 
 .prov-cert-detail-sub {
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   font-size: 13px;
   color: rgba(148, 163, 184, 0.75);
 }
@@ -3449,38 +3475,671 @@ audio.evidence-media {
 .prov-cert-detail-list {
   margin: 0 0 20px;
   display: grid;
-  gap: 12px;
+  gap: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.prov-cert-detail-list > div {
+  padding: 11px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prov-cert-detail-list > div:last-child {
+  border-bottom: none;
 }
 
 .prov-cert-detail-list dt {
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: rgba(148, 163, 184, 0.55);
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .prov-cert-detail-list dd {
   margin: 0;
   font-size: 13px;
+  font-weight: 600;
   color: #fff;
+  text-align: right;
 }
 
 .prov-cert-detail-close {
   width: 100%;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
   color: #cbd5e1;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 150ms;
 }
 
 .prov-cert-detail-close:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   CustomSelect — Animated Dropdown Component
+   ========================================================================== */
+
+.prov-custom-select {
+  position: relative;
+  width: 100%;
+}
+
+.prov-custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: rgba(235, 242, 255, 0.92);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+  gap: 8px;
+}
+
+.prov-custom-select-trigger:hover {
+  border-color: rgba(58, 130, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.prov-custom-select--open .prov-custom-select-trigger,
+.prov-custom-select-trigger[aria-expanded="true"] {
+  border-color: rgba(58, 130, 255, 0.55);
+  background: rgba(58, 130, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.12);
+}
+
+.prov-custom-select--error .prov-custom-select-trigger {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.prov-custom-select--disabled .prov-custom-select-trigger {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prov-custom-select-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-custom-select-placeholder {
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.prov-custom-select-chevron {
+  flex-shrink: 0;
+  color: rgba(148, 163, 184, 0.6);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.prov-custom-select--open .prov-custom-select-chevron {
+  transform: rotate(180deg);
+  color: #8ab8ff;
+}
+
+/* Dropdown list */
+.prov-custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(58, 130, 255, 0.15);
+  background: #0b0f1f;
+  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.75),
+              0 6px 16px -2px rgba(0, 0, 0, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(14px);
+  max-height: 260px;
+  overflow-y: auto;
+  animation: dropdown-fade-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.prov-custom-select-dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+.prov-custom-select-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prov-custom-select-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+/* Individual option */
+.prov-custom-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(203, 213, 225, 0.9);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+  list-style: none;
+}
+
+.prov-custom-select-option:hover,
+.prov-custom-select-option--focused {
+  background: rgba(58, 130, 255, 0.12);
+  color: #c4d9ff;
+}
+
+.prov-custom-select-option--selected {
+  background: rgba(58, 130, 255, 0.15);
+  color: #8ab8ff;
+  font-weight: 700;
+}
+
+.prov-custom-select-option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-custom-select-check {
+  flex-shrink: 0;
+  color: #3b82f6;
+}
+
+/* ==========================================================================
+   CustomDatePicker — Custom Calendar Component
+   ========================================================================== */
+
+.prov-datepicker {
+  position: relative;
+  width: 100%;
+}
+
+.prov-datepicker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: rgba(235, 242, 255, 0.92);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+}
+
+.prov-datepicker-trigger:hover {
+  border-color: rgba(58, 130, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.prov-datepicker--open .prov-datepicker-trigger {
+  border-color: rgba(58, 130, 255, 0.55);
+  background: rgba(58, 130, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.12);
+}
+
+.prov-datepicker--error .prov-datepicker-trigger {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.prov-datepicker--disabled .prov-datepicker-trigger {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prov-datepicker-icon {
+  flex-shrink: 0;
+  color: #3b82f6;
+}
+
+.prov-datepicker-value {
+  flex: 1;
+}
+
+.prov-datepicker-placeholder {
+  color: rgba(148, 163, 184, 0.55);
+}
+
+/* Calendar panel — uses fixed positioning (set via JS) to avoid clipping */
+.prov-datepicker-panel {
+  position: fixed; /* overridden by inline style from JS reposition() */
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 9999;
+  width: 288px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(58, 130, 255, 0.15);
+  background: #0b0f1f;
+  box-shadow: 0 20px 48px -4px rgba(0, 0, 0, 0.85),
+              0 6px 16px -2px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  animation: dropdown-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Month navigation header */
+.prov-datepicker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prov-datepicker-month-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+
+.prov-datepicker-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(148, 163, 184, 0.8);
+  cursor: pointer;
+  transition: background 130ms, color 130ms;
+}
+
+.prov-datepicker-nav:hover {
+  background: rgba(58, 130, 255, 0.14);
+  border-color: rgba(58, 130, 255, 0.3);
+  color: #8ab8ff;
+}
+
+/* Day-of-week row */
+.prov-datepicker-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+}
+
+.prov-datepicker-dow {
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.45);
+  padding: 4px 0;
+}
+
+/* Day grid */
+.prov-datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.prov-datepicker-empty {
+  display: block;
+  height: 32px;
+}
+
+.prov-datepicker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(203, 213, 225, 0.85);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+  position: relative;
+}
+
+.prov-datepicker-day:hover:not(:disabled) {
+  background: rgba(58, 130, 255, 0.14);
+  color: #c4d9ff;
+}
+
+/* Past dates: visually muted, not clickable */
+.prov-datepicker-day--past {
+  color: rgba(148, 163, 184, 0.28) !important;
+  cursor: not-allowed !important;
+  text-decoration: line-through;
+}
+
+.prov-datepicker-day--past:hover {
+  background: transparent !important;
+  color: rgba(148, 163, 184, 0.28) !important;
+}
+
+/* Today: blue outline */
+.prov-datepicker-day--today {
+  color: #3b82f6;
+  font-weight: 800;
+  background: rgba(58, 130, 255, 0.08);
+  outline: 1px solid rgba(58, 130, 255, 0.35);
+  outline-offset: -1px;
+}
+
+/* Selected: solid blue fill */
+.prov-datepicker-day--selected {
+  background: #3b82f6 !important;
+  color: #fff !important;
+  font-weight: 800;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.45);
+}
+
+/* Highlighted: shows the issue date in the expiry picker */
+.prov-datepicker-day--highlighted {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #4deba0 !important;
+  font-weight: 700;
+  outline: 1px solid rgba(16, 185, 129, 0.4);
+  outline-offset: -1px;
+}
+
+/* Disabled (before minDate) */
+.prov-datepicker-day--disabled {
+  opacity: 0.22;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Legend row */
+.prov-datepicker-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 10px;
+  color: rgba(148, 163, 184, 0.6);
+  font-weight: 600;
+}
+
+.prov-datepicker-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.prov-datepicker-legend-dot--highlight {
+  background: rgba(16, 185, 129, 0.7);
+  outline: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.prov-datepicker-legend-dot--selected {
+  background: #3b82f6;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
+}
+
+/* Day difference badge */
+.prov-date-diff-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-top: 4px;
+  background: rgba(58, 130, 255, 0.07);
+  border: 1px solid rgba(58, 130, 255, 0.18);
+  border-radius: 10px;
+  animation: dropdown-fade-in 200ms ease both;
+}
+
+.prov-date-diff-icon {
+  font-size: 15px;
+  color: #3b82f6;
+  flex-shrink: 0;
+  letter-spacing: -1px;
+}
+
+.prov-date-diff-text {
+  font-size: 12px;
+  color: rgba(203, 213, 225, 0.85);
+  line-height: 1.4;
+}
+
+.prov-date-diff-text strong {
+  color: #8ab8ff;
+  font-weight: 800;
+}
+
+.prov-date-diff-approx {
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 11px;
+}
+
+/* ==========================================================================
+   Shared: prov-custom-select used inline in filter panels (CalendarPage etc.)
+   ========================================================================== */
+
+/* When CustomSelect is used inside filter panels with label above */
+.prov-custom-select-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.55);
+  margin-bottom: 5px;
+}
+
+/* Calendar filter panel */
+.prov-cal-filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: #0b0f1f;
+  border: 1px solid rgba(58, 130, 255, 0.12);
+  border-radius: 14px;
+  animation: dropdown-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.prov-cal-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.prov-cal-filter-clear:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+/* Cert detail new structure */
+.prov-cert-detail-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 auto 16px;
+  display: none;
+}
+
+.prov-cert-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.prov-cert-detail-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.prov-cert-detail-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.prov-cert-detail-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.prov-cert-detail-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(148, 163, 184, 0.7);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 130ms, color 130ms;
+}
+
+.prov-cert-detail-dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.prov-cert-detail-status-row {
+  margin-bottom: 16px;
+  padding-left: 52px;
+}
+
+.prov-cert-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prov-cert-detail-row:last-child {
+  border-bottom: none;
+}
+
+.prov-cert-detail-dt {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.prov-cert-detail-dd {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  text-align: right;
+}
+
+.prov-cert-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.prov-cert-detail-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms, box-shadow 150ms;
+  text-align: center;
+}
+
+.prov-cert-detail-btn--primary {
+  background: #1d4ed8;
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.prov-cert-detail-btn--primary:hover {
+  background: #2563eb;
+}
+
+.prov-cert-detail-btn--ghost {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #cbd5e1;
+}
+
+.prov-cert-detail-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Sort menu label */
+.prov-cert-sort-menu-label {
+  margin: 2px 8px 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.4);
 }
 
 @media (max-width: 960px) {
@@ -3510,12 +4169,157 @@ audio.evidence-media {
   }
 
   .prov-cert-table-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    margin: 0 12px 10px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 14px 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    background: rgba(12, 18, 36, 0.35);
+    margin: 0 0 12px 0;
+  }
+
+  .prov-cert-table-row:hover {
+    background: rgba(12, 18, 36, 0.5);
+  }
+
+  /* Employee cell: top left */
+  .prov-cert-table-row .prov-company-cell {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Action cell: top right */
+  .prov-cert-table-row .prov-cert-action-cell {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
+  /* Course cell: styled box */
+  .prov-cert-table-row > .prov-cert-cell:nth-of-type(1) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid rgba(59, 130, 246, 0.12);
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+  }
+
+  .prov-cert-table-row > .prov-cert-cell:nth-of-type(1)::before {
+    content: "Course";
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(59, 130, 246, 0.75);
+  }
+
+  /* Issuing Body cell */
+  .prov-cert-table-row > .prov-cert-cell.prov-cert-cell--muted {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    font-size: 12.5px;
+    color: rgba(235, 242, 255, 0.85);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 6px;
+  }
+
+  .prov-cert-table-row > .prov-cert-cell.prov-cert-cell--muted::before {
+    content: "Issued By";
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(148, 163, 184, 0.55);
+  }
+
+  /* Expiry Date cell */
+  .prov-cert-table-row > .prov-cert-expiry {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    font-size: 12.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 6px;
+  }
+
+  .prov-cert-table-row > .prov-cert-expiry::before {
+    content: "Expires";
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(148, 163, 184, 0.55);
+  }
+
+  /* Status cell container */
+  .prov-cert-table-row > div:nth-last-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+
+  .prov-cert-table-row > div:nth-last-child(2)::before {
+    content: "Status";
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(148, 163, 184, 0.55);
+  }
+
+  /* ── Mobile: template download button gaps ── */
+  .prov-template-downloads-actions {
+    gap: 10px;
+  }
+
+  .prov-template-download-btn {
+    flex: 1 1 calc(50% - 5px);
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* ── Mobile: detail modal → bottom-sheet ── */
+  .prov-cert-detail-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .prov-cert-detail-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 32px;
+    animation: cert-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    border-bottom: none;
+  }
+
+  .prov-cert-detail-modal h3 {
+    font-size: 16px;
+  }
+
+  .prov-cert-detail-list > div {
+    padding: 12px 12px;
   }
 }
 
@@ -5066,3 +5870,5703 @@ audio.evidence-media {
 
 
 
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE SYSTEM + CUSTOM ANIMATIONS — Training Provider Dashboard
+   Phase 1: Header & Sidebar · Phase 2: Overview Page
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Shared animation keyframes ─────────────────────────────────── */
+
+@keyframes dropdown-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cert-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Apply dropdown animation to all popover/dropdown panels ─────── */
+
+.client-notif-popover {
+  animation: dropdown-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+}
+
+.client-search-dropdown {
+  animation: dropdown-slide-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top left;
+}
+
+.topbar-bell-popover {
+  animation: dropdown-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+}
+
+.topbar-search-dropdown {
+  animation: dropdown-slide-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top left;
+}
+
+/* Filters panel slide-in */
+.prov-filters-panel-wrapper {
+  animation: dropdown-fade-in 0.18s ease both;
+}
+
+/* ── Page-level entry animation ─────────────────────────────────── */
+
+.provider-dash,
+.prov-subpage {
+  animation: page-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Micro-interactions ─────────────────────────────────────────── */
+
+/* Nav links — smooth hover/active transitions */
+.client-sidebar .nav-link {
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 100ms ease;
+}
+
+.client-sidebar .nav-link:active {
+  transform: scale(0.97);
+}
+
+/* Sidebar toggle button */
+.sidebar-toggle {
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 120ms ease;
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.88);
+}
+
+/* Bell button active state */
+.bell-btn-active {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border-radius: 8px;
+}
+
+/* Action buttons */
+.prov-action-btn-circle,
+.prov-icon-btn,
+.prov-btn-filters,
+.prov-view-all-btn,
+.prov-open-cal-btn,
+.client-notif-mark-all {
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease,
+    transform 100ms ease;
+}
+
+.prov-action-btn-circle:active,
+.prov-icon-btn:active,
+.prov-btn-filters:active {
+  transform: scale(0.9);
+}
+
+/* Stat cards hover lift */
+.prov-stat-card {
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease,
+    transform 150ms ease;
+}
+
+.prov-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  border-color: rgba(58, 130, 255, 0.18);
+}
+
+/* Section cards hover */
+.prov-section-card {
+  transition: box-shadow 200ms ease;
+}
+
+.prov-section-card:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Request row card hover */
+.prov-req-row-card {
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 150ms ease;
+}
+
+.prov-req-row-card:hover {
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* Notification items */
+.client-notif-item {
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    opacity 150ms ease;
+}
+
+/* ── TABLET BREAKPOINT (≤960px) — Topbar / Popover ─────────────── */
+
+@media (max-width: 960px) {
+  /* Search wrap: prevent flex overflow */
+  .client-topbar .topbar-search-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 240px;
+  }
+
+  /* Search dropdown: don't overflow viewport */
+  .client-search-dropdown {
+    min-width: 0;
+    width: clamp(260px, 70vw, 420px);
+    right: 0;
+    left: auto;
+  }
+
+  /* Notification popover: constrain width */
+  .client-notif-popover {
+    width: clamp(280px, 80vw, 360px);
+    right: 0;
+  }
+
+  /* Bell popover */
+  .topbar-bell-popover {
+    width: clamp(260px, 80vw, 320px);
+    right: 0;
+  }
+
+  /* Topbar spacing */
+  .client-topbar {
+    gap: 10px;
+    padding: 0 4px;
+  }
+}
+
+/* ── MOBILE BREAKPOINT (≤640px) — Full responsive ───────────────── */
+
+@media (max-width: 640px) {
+
+  /* ─── Topbar ─── */
+  .client-topbar .topbar-search-wrap {
+    max-width: 150px;
+  }
+
+  /* Search box text shrinks on mobile */
+  .client-topbar .search-box input::placeholder {
+    font-size: 12px;
+  }
+
+  .client-topbar .search-box {
+    height: 36px;
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  /* Search dropdown: viewport-anchored on mobile */
+  .client-search-dropdown {
+    position: fixed !important;
+    top: 56px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    border-radius: 12px;
+  }
+
+  /* Notification popover: fixed, full-width on mobile */
+  .client-notif-popover {
+    position: fixed !important;
+    top: 60px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    border-radius: 14px;
+  }
+
+  /* Bell popover: fixed on mobile */
+  .topbar-bell-popover {
+    position: fixed !important;
+    top: 60px !important;
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    border-radius: 14px;
+  }
+
+  /* Topbar icons gap */
+  .client-topbar-icons {
+    gap: 4px;
+  }
+
+  /* ─── Sidebar ─── */
+  .client-sidebar .profile-name {
+    font-size: 13px;
+  }
+
+  /* ─── Provider Dash Layout ─── */
+  .provider-dash {
+    padding: 16px 14px 40px;
+  }
+
+  .provider-dash-title {
+    font-size: 1.3rem;
+  }
+
+  .provider-dash-sub {
+    font-size: 12px;
+  }
+
+  .provider-dash-header {
+    margin-bottom: 20px;
+  }
+
+  /* ─── Stats Row ─── */
+  .provider-stats-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .prov-stat-value {
+    font-size: 1.9rem;
+  }
+
+  .prov-stat-card {
+    padding: 14px 16px 12px;
+  }
+
+  /* ─── Main Grid ─── */
+  .provider-main-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* ─── Overview Request Rows ─── */
+  /* Override inline grid-template-columns for overview rows */
+  .prov-req-row-card {
+    grid-template-columns: auto 1fr auto !important;
+    grid-template-rows: auto auto auto;
+    gap: 8px 10px;
+    padding: 14px;
+  }
+
+  /* Company cell spans full width */
+  .prov-company-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Course cell spans full width */
+  .prov-course-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Dates cell spans full width */
+  .prov-dates-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Actions at end, left-aligned */
+  .prov-actions-cell {
+    grid-column: 1 / -1;
+    justify-content: flex-start !important;
+    gap: 8px;
+  }
+
+  /* Workers cell hidden on mobile (shown inline in course row) */
+  .prov-workers-cell {
+    display: none;
+  }
+
+  /* ─── Requests Subpage Controls ─── */
+  .prov-controls-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  /* Filter tabs scrollable */
+  .prov-filter-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+  }
+
+  .prov-filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Filter tab text: slightly smaller */
+  .prov-filter-tab {
+    font-size: 11.5px;
+    padding: 5px 10px;
+    white-space: nowrap;
+  }
+
+  /* Right side controls stack */
+  .prov-controls-right {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Bulk bar stack */
+  .prov-bulk-bar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .prov-bulk-actions {
+    justify-content: stretch;
+  }
+
+  .prov-btn-bulk-approve,
+  .prov-btn-bulk-reject {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ─── Pagination ─── */
+  .prov-pagination-row {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+    padding: 14px 12px;
+  }
+
+  .prov-pagination-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ─── Competency Section ─── */
+  .prov-competency-list {
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .prov-competency-item {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  /* ─── Subpage layout ─── */
+  .prov-subpage {
+    padding: 16px 14px 40px;
+  }
+
+  /* ─── OCR Upload Panel ─── */
+  .prov-ocr-panel {
+    padding: 16px 14px;
+  }
+
+  /* ─── Filter Panel ─── */
+  .prov-filters-panel {
+    padding: 14px;
+  }
+
+  .prov-filter-group {
+    gap: 6px;
+  }
+}
+
+/* ── VERY SMALL SCREENS (≤420px) ───────────────────────────────── */
+
+@media (max-width: 420px) {
+  /* Stats row: single column on very small screens */
+  .provider-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Topbar search: minimal on tiny screens */
+  .client-topbar .topbar-search-wrap {
+    max-width: 100px;
+  }
+
+  .client-topbar .search-box input::placeholder {
+    font-size: 0;  /* hide placeholder text, show only icon */
+  }
+
+  /* Competency items: full width */
+  .prov-competency-item {
+    flex: 1 1 100%;
+  }
+
+  /* Provider dash title */
+  .provider-dash-title {
+    font-size: 1.15rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Phase 3: REQUESTS PAGE — Responsive
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Subpage title compact on tablet */
+@media (max-width: 960px) {
+  .prov-subpage-title {
+    font-size: 1.6rem !important;
+  }
+
+  .prov-subpage {
+    padding: 20px 18px 40px;
+  }
+
+  /* Requests header row: 7-column → hide on tablet, show scrollable table */
+  .prov-req-headers {
+    display: none; /* Hidden on tablet/mobile; info shown in card rows */
+  }
+
+  /* Requests row: become horizontal card strips */
+  .prov-req-row-card {
+    grid-template-columns: 36px 1fr 1fr 80px !important;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Subpage title */
+  .prov-subpage-title {
+    font-size: 1.4rem !important;
+  }
+
+  .prov-subpage-header {
+    margin-bottom: 16px;
+  }
+
+  /* Requests row → full card stack */
+  .prov-req-row-card {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: none;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  /* Checkbox hidden on mobile (not useful without headers) */
+  .prov-req-row-card .prov-checkbox-cell {
+    display: none;
+  }
+
+  /* Company cell: full row */
+  .prov-req-row-card .prov-company-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Course cell: full row */
+  .prov-req-row-card .prov-course-cell {
+    grid-column: 1 / -1;
+    font-size: 12.5px;
+  }
+
+  /* Dates cell: full row */
+  .prov-req-row-card .prov-dates-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Status cell: full row */
+  .prov-req-row-card .prov-status-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Actions cell: full row, left-aligned */
+  .prov-req-row-card .prov-actions-cell {
+    grid-column: 1 / -1;
+    justify-content: flex-start !important;
+    gap: 8px;
+  }
+
+  /* Controls row */
+  .prov-controls-row {
+    flex-wrap: wrap;
+  }
+
+  .prov-section-head-right {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Filter panel */
+  .prov-filters-panel {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Phase 4: CALENDAR PAGE — Responsive
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+  /* Calendar layout classes scoped to prov-subpage */
+  .prov-subpage .prov-cal-grid,
+  .prov-subpage .prov-calendar-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .prov-subpage .prov-cal-sidebar,
+  .prov-subpage .prov-schedule-sidebar {
+    order: -1; /* Put sidebar above calendar on tablet */
+  }
+}
+
+@media (max-width: 640px) {
+  /* Calendar event cards */
+  .prov-subpage .prov-cal-event-card,
+  .prov-subpage .prov-event-card {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* Calendar header buttons */
+  .prov-subpage .prov-cal-nav-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Day grid cells */
+  .prov-subpage .prov-day-cell {
+    min-height: 60px;
+    font-size: 12px;
+  }
+
+  /* Facility utilization cards row → stack */
+  .prov-subpage .prov-facility-row,
+  .prov-subpage .prov-util-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Phase 4: CERTIFICATES PAGE — Responsive
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+  /* Cert portal header row: allow wrapping */
+  .prov-cert-head,
+  .prov-subpage .prov-cert-top-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Cert stats row */
+  .prov-subpage .prov-cert-stats-row,
+  .prov-subpage .prov-cert-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Cert table → horizontal scroll */
+  .prov-subpage .prov-cert-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .prov-subpage .prov-cert-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Cert stats: single column */
+  .prov-subpage .prov-cert-stats-row,
+  .prov-subpage .prov-cert-kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Issue cert form layout */
+  .prov-subpage .prov-issue-form-grid,
+  .prov-issue-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  /* Form sections */
+  .prov-issue-section {
+    padding: 16px 14px;
+  }
+
+  /* Certificate preview card */
+  .prov-cert-preview-card {
+    padding: 16px 14px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Phase 4: SCHEDULE SESSION PAGE — Responsive
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+  /* Schedule form two-column → single column */
+  .prov-schedule-form-grid,
+  .prov-session-form-cols {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  .prov-schedule-sidebar,
+  .prov-session-sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .prov-schedule-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .prov-schedule-actions button {
+    width: 100%;
+  }
+
+  /* Employee selector grid */
+  .prov-employee-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHARED — Modal responsive fixes
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* All modals: full screen on mobile */
+  .prov-modal {
+    width: calc(100vw - 24px) !important;
+    max-width: none !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    padding: 20px 16px !important;
+  }
+
+  /* Blocker modal */
+  .prov-blocker-modal {
+    width: calc(100vw - 24px);
+    max-width: none;
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  /* Blocker actions */
+  .prov-blocker-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .prov-blocker-btn-secondary,
+  .prov-blocker-btn-danger {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Confirmation modal */
+  .prov-confirm-modal,
+  .prov-conf-modal {
+    width: calc(100vw - 24px) !important;
+    max-width: none !important;
+    border-radius: 16px;
+    padding: 20px 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   OCR Upload Panel — Responsive
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+  .prov-ocr-split {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .prov-ocr-drop-area {
+    padding: 24px 16px;
+    min-height: 140px;
+  }
+
+  .prov-ocr-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SPACING & GAP REFINEMENTS — ALL Training Dashboard Pages (Mobile & Tablet)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* --- TABLET BREAKPOINT (≤960px) --- */
+@media (max-width: 960px) {
+  /* Reduce content shell padding to save horizontal space */
+  .client-content-shell {
+    padding: 8px 12px 12px !important;
+  }
+
+  /* Reduce page wrappers padding on all training pages */
+  .provider-dash,
+  .prov-subpage,
+  .prov-cert-issue-page,
+  .schedule-session-page {
+    padding: 16px 10px 32px !important;
+  }
+
+  /* Reduce gap on topbar */
+  .client-topbar {
+    margin-bottom: 12px !important;
+  }
+
+  /* Override desktop inline grids to stack on tablet */
+  .prov-subpage > div[style*="grid-template-columns"],
+  .prov-subpage > div[style*="gridTemplateColumns"],
+  .schedule-session-page > div[style*="grid-template-columns"],
+  .schedule-session-page > div[style*="gridTemplateColumns"],
+  .prov-cert-issue-page > div[style*="grid-template-columns"],
+  .prov-cert-issue-page > div[style*="gridTemplateColumns"],
+  .prov-cert-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Reduce inline padding on section cards */
+  .prov-section-card[style*="padding"],
+  .prov-sync-card[style*="padding"] {
+    padding: 18px !important;
+  }
+
+  /* Professional vertical gaps */
+  .provider-stats-row {
+    margin-bottom: 14px !important;
+  }
+
+  .provider-main-grid {
+    margin-bottom: 16px !important;
+  }
+
+  .provider-dash-header {
+    margin-bottom: 16px !important;
+  }
+
+  .prov-subpage-header {
+    margin-bottom: 16px !important;
+  }
+}
+
+/* --- MOBILE BREAKPOINT (≤640px) --- */
+@media (max-width: 640px) {
+  /* Tighter content shell padding on mobile */
+  .client-content-shell {
+    padding: 6px 8px 10px !important;
+  }
+
+  /* Professional narrow side corners (8px outer shell + 4px page = 12px total edge margin) */
+  .provider-dash,
+  .prov-subpage,
+  .prov-cert-issue-page,
+  .schedule-session-page {
+    padding: 10px 4px 24px !important;
+  }
+
+  /* Reduce topbar margin on mobile */
+  .client-topbar {
+    margin-bottom: 10px !important;
+  }
+
+  /* Tighten inline paddings on section cards for mobile view */
+  .prov-section-card[style*="padding"],
+  .prov-sync-card[style*="padding"] {
+    padding: 14px 12px !important;
+  }
+
+  /* Tighten inline grids to stack on mobile */
+  .schedule-session-page div[style*="grid-template-columns: 1fr 1fr"],
+  .schedule-session-page div[style*="1fr 1fr"],
+  .schedule-session-page div[style*="grid-template-columns: 1fr 1fr 1fr"],
+  .schedule-session-page div[style*="1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Professional vertical gaps for elements on mobile */
+  .provider-stats-row {
+    margin-bottom: 12px !important;
+    gap: 10px !important;
+  }
+
+  .provider-main-grid {
+    margin-bottom: 12px !important;
+    gap: 12px !important;
+  }
+
+  .provider-dash-header {
+    margin-bottom: 12px !important;
+  }
+
+  .prov-subpage-header {
+    margin-bottom: 12px !important;
+  }
+
+  /* Section heads inside card */
+  .prov-section-head {
+    padding: 12px 14px 10px !important;
+  }
+
+  /* Request rows vertical margins */
+  .prov-req-row-card {
+    margin-bottom: 10px !important;
+    padding: 12px !important;
+  }
+
+  /* Competency margins on mobile */
+  .prov-competency-list {
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  /* Success mockup and actions spacing */
+  .prov-success-screen {
+    margin: 16px auto !important;
+  }
+
+  .prov-success-badge {
+    margin-bottom: 16px !important;
+  }
+
+  .prov-success-mockup-card {
+    padding: 16px !important;
+    margin-bottom: 20px !important;
+  }
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — Certificate Detail Modal (new JSX structure)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Show drag handle on mobile */
+  .prov-cert-detail-handle {
+    display: block;
+  }
+
+  /* Stack header: avatar + name take full width, dismiss goes top-right */
+  .prov-cert-detail-header {
+    align-items: flex-start;
+  }
+
+  .prov-cert-detail-header-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Tighter title on mobile */
+  .prov-cert-detail-title {
+    font-size: 14px;
+  }
+
+  /* Status row: remove left padding on mobile */
+  .prov-cert-detail-status-row {
+    padding-left: 0;
+  }
+
+  /* Full-width action buttons stacked */
+  .prov-cert-detail-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .prov-cert-detail-btn {
+    padding: 13px 16px;
+    font-size: 14px;
+  }
+
+  /* Detail row slightly more compact */
+  .prov-cert-detail-row {
+    padding: 10px 12px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — Calendar Page (all inline-style grids)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Tablet: calendar+sidebar split → single column */
+@media (max-width: 960px) {
+  /* Main content split: 1fr 300px → single col */
+  .prov-cal-main-split {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Calendar header: wrap on tablet */
+  .prov-cal-header-row {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  /* Controls row: wrap */
+  .prov-cal-controls {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  /* ── Calendar header row ── */
+  .prov-cal-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px !important;
+  }
+
+  /* Title + subtitle */
+  .prov-cal-header-row .prov-subpage-title {
+    font-size: 1.55rem !important;
+  }
+
+  /* Month/Week/Day tab strip + filters button: stack below title */
+  .prov-cal-controls {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Filter panel: full-width, single column on mobile */
+  .prov-cal-filter-panel {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .prov-cal-filter-panel .prov-custom-select {
+    width: 100%;
+    flex: none;
+  }
+
+  .prov-cal-filter-clear {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Month grid: reduce cell min-height for mobile */
+  .prov-calendar-grid {
+    gap: 2px !important;
+  }
+
+  .prov-cal-day {
+    min-height: 72px !important;
+    padding: 5px !important;
+  }
+
+  .prov-cal-day-num {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* Calendar events: compact on mobile */
+  .prov-cal-event {
+    padding: 3px 6px !important;
+    font-size: 9px !important;
+  }
+
+  /* Day-of-week headers: tighter */
+  .prov-cal-day-header {
+    font-size: 9px !important;
+    padding-bottom: 6px !important;
+  }
+
+  /* Week view: scroll horizontally on mobile */
+  .prov-cal-main-split [style*="repeat(7, 1fr)"] {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .prov-cal-main-split [style*="repeat(7, 1fr)"] > div {
+    min-width: 110px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Sidebar widgets: full width below calendar */
+  .prov-cal-main-split > div:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  .prov-cal-main-split > div:last-child > div {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 200px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — Requests Page cards (enhanced)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Each request card becomes a well-structured info card */
+  .prov-req-row-card {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    background: rgba(10, 14, 28, 0.7) !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Company header: coloured top strip */
+  .prov-req-row-card .prov-company-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 14px 14px 12px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .prov-req-row-card .prov-company-name {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+
+  .prov-req-row-card .prov-company-req-id {
+    font-size: 10.5px !important;
+  }
+
+  /* Course cell: stand-out row */
+  .prov-req-row-card .prov-course-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* Workers cell: inline badge next to dates */
+  .prov-req-row-card .prov-workers-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 14px 0 !important;
+    font-size: 11px !important;
+    color: rgba(148, 163, 184, 0.7) !important;
+    font-weight: 700 !important;
+  }
+
+  .prov-req-row-card .prov-workers-cell::before {
+    content: 'Workers:';
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(148, 163, 184, 0.45);
+  }
+
+  /* Dates cell */
+  .prov-req-row-card .prov-dates-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 8px 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    gap: 6px !important;
+  }
+
+  .prov-req-row-card .prov-dates-primary {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: rgba(235, 242, 255, 0.9) !important;
+  }
+
+  .prov-req-row-card .prov-dates-sub {
+    font-size: 11px !important;
+    color: rgba(148, 163, 184, 0.6) !important;
+  }
+
+  /* Status + actions: footer strip */
+  .prov-req-row-card .prov-status-cell {
+    padding: 10px 14px 0 !important;
+    display: flex !important;
+  }
+
+  .prov-req-row-card .prov-actions-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    padding: 10px 14px 14px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* Checkbox: hide on mobile */
+  .prov-req-row-card .prov-checkbox-cell {
+    display: none !important;
+  }
+
+  /* Approve/reject buttons: slightly larger on mobile for touch */
+  .prov-action-btn-circle {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Controls row: tighter */
+  .prov-controls-row {
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+
+  /* Section head right: wrap on mobile */
+  .prov-section-head-right {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — Overview Page
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Stats grid: 2-column on mobile (already set, make sure cards are comfortable) */
+  .prov-stat-card {
+    padding: 14px 14px 12px !important;
+  }
+
+  .prov-stat-value {
+    font-size: 1.85rem !important;
+  }
+
+  /* Upcoming courses list: more breathing room */
+  .prov-course-item {
+    padding: 12px 14px !important;
+  }
+
+  .prov-upcoming-head {
+    padding: 12px 14px 10px !important;
+  }
+
+  /* View-all and open-calendar links: full width */
+  .prov-view-all-row,
+  .prov-open-cal-row {
+    padding: 10px 14px !important;
+  }
+
+  .prov-view-all-btn,
+  .prov-open-cal-btn {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+  }
+
+  /* Competency section head */
+  .prov-competency-head {
+    padding: 12px 14px 10px !important;
+  }
+
+  /* Competency grid: 2 per row on mobile */
+  .prov-competency-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 12px 12px 14px !important;
+  }
+
+  .prov-competency-item {
+    min-width: 0 !important;
+    width: auto !important;
+    flex: none !important;
+  }
+
+  /* Section card overflow: prevent horizontal bleed */
+  .prov-section-card {
+    overflow: hidden !important;
+  }
+
+  /* Pagination: centred stacked */
+  .prov-pagination-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: center !important;
+    padding: 12px 14px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — IssueCertificatePage form
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Form card: full edge-to-edge with tight padding */
+  .prov-cert-issue-page {
+    padding: 16px 12px 32px !important;
+  }
+
+  /* Two-column form rows → single column */
+  .prov-form-row {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* CustomSelect dropdown: position right edge */
+  .prov-custom-select-dropdown {
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+
+  /* DatePicker panel: JS handles positioning via fixed, nothing to override */
+
+  /* Action bar: stack vertically */
+  .prov-action-bar {
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 14px 12px !important;
+  }
+
+  .prov-btn-cancel-return,
+  .prov-btn-issue-glowing {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Sync card: compact on mobile */
+  .prov-sync-card {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  /* Card header icon: smaller */
+  .prov-card-header-icon-wrapper {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  /* Section card form padding */
+  .prov-cert-issue-page .prov-section-card {
+    padding: 18px 14px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — CustomSelect & DatePicker inside filter panels
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Filter panel in cert page: stack */
+  .prov-cert-filters-panel {
+    width: calc(100vw - 32px) !important;
+    left: auto !important;
+    right: 0 !important;
+  }
+
+  /* Sort menu: align to right edge on mobile */
+  .prov-cert-sort-menu {
+    right: 0 !important;
+    left: auto !important;
+    min-width: min(210px, calc(100vw - 32px)) !important;
+  }
+
+  /* Action menu: align to right edge */
+  .prov-cert-action-menu {
+    right: 0 !important;
+    left: auto !important;
+  }
+
+  /* CustomSelect inside filter panels */
+  .prov-filters-panel .prov-custom-select-dropdown {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    top: auto !important;
+    z-index: 1000 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT — Section cards general improvements
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Section head: title + controls wrap cleanly */
+  .prov-section-head {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .prov-section-head h2 {
+    font-size: 13px !important;
+  }
+
+  /* Buttons: comfortable touch targets */
+  .prov-btn-filters,
+  .prov-icon-btn {
+    height: 34px !important;
+    font-size: 12px !important;
+  }
+
+  /* Search input: full width when visible */
+  .prov-search-input {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Empty state: tighter */
+  .prov-empty-state {
+    padding: 32px 16px !important;
+  }
+
+  /* Bulk bar: clean stack */
+  .prov-bulk-bar {
+    border-radius: 10px !important;
+    padding: 12px 14px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CustomSelect — Search bar inside dropdown
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-custom-select-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 4px;
+}
+
+.prov-custom-select-search-icon {
+  color: rgba(148, 163, 184, 0.5);
+  flex-shrink: 0;
+}
+
+.prov-custom-select-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: rgba(235, 242, 255, 0.92);
+  font-size: 12.5px;
+  caret-color: #3b82f6;
+}
+
+.prov-custom-select-search-input::placeholder {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+.prov-custom-select-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(148, 163, 184, 0.7);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.prov-custom-select-search-clear:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.prov-custom-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.prov-custom-select-empty {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.5);
+  text-align: center;
+}
+
+.prov-custom-select-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.prov-custom-select-option-sub {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EmployeeSelect — Searchable employee dropdown
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-emp-select {
+  position: relative;
+  width: 100%;
+}
+
+.prov-emp-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: rgba(235, 242, 255, 0.92);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+  min-height: 42px;
+}
+
+.prov-emp-select-trigger:hover {
+  border-color: rgba(58, 130, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.prov-emp-select--open .prov-emp-select-trigger {
+  border-color: rgba(58, 130, 255, 0.55);
+  background: rgba(58, 130, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.12);
+}
+
+.prov-emp-select--error .prov-emp-select-trigger {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.prov-emp-select-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(58, 130, 255, 0.2);
+  color: #8ab8ff;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.prov-emp-select-name {
+  font-weight: 700;
+  color: #fff;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-emp-select-email {
+  font-size: 11.5px;
+  color: rgba(148, 163, 184, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+.prov-emp-select-placeholder {
+  flex: 1;
+  color: rgba(148, 163, 184, 0.5);
+  font-size: 13px;
+}
+
+.prov-emp-select-search-icon {
+  color: rgba(148, 163, 184, 0.5);
+  flex-shrink: 0;
+}
+
+.prov-emp-select-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(148, 163, 184, 0.7);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 130ms, color 130ms;
+}
+
+.prov-emp-select-clear:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Panel */
+.prov-emp-select-panel {
+  border-radius: 14px;
+  border: 1px solid rgba(58, 130, 255, 0.15);
+  background: #0b0f1f;
+  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.8),
+              0 6px 16px -2px rgba(0, 0, 0, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  animation: dropdown-fade-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.prov-emp-select-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prov-emp-select-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: rgba(235, 242, 255, 0.92);
+  font-size: 13px;
+  caret-color: #3b82f6;
+}
+
+.prov-emp-select-search-input::placeholder {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+.prov-emp-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.prov-emp-select-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.prov-emp-select-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.prov-emp-select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+
+.prov-emp-select-option:hover {
+  background: rgba(58, 130, 255, 0.1);
+}
+
+.prov-emp-select-option--selected {
+  background: rgba(58, 130, 255, 0.12);
+}
+
+.prov-emp-option-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(58, 130, 255, 0.18);
+  color: #8ab8ff;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.prov-emp-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.prov-emp-option-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(235, 242, 255, 0.95);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-emp-option-email {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CustomDatePicker — lockAll / lockscreen styles
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-datepicker-lock {
+  margin-left: auto;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.prov-datepicker-lockscreen {
+  position: relative;
+}
+
+.prov-datepicker-lockscreen-icon {
+  display: block;
+  text-align: center;
+  font-size: 20px;
+  margin-bottom: 4px;
+  filter: grayscale(0.3);
+}
+
+.prov-datepicker-lockscreen-msg {
+  text-align: center;
+  font-size: 11.5px;
+  color: rgba(148, 163, 184, 0.65);
+  font-weight: 600;
+  margin: 0 0 10px;
+  padding: 0 8px;
+  line-height: 1.4;
+}
+
+.prov-datepicker-dow-row--muted .prov-datepicker-dow {
+  opacity: 0.3;
+}
+
+.prov-datepicker-grid--locked {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.prov-datepicker-grid--locked .prov-datepicker-day {
+  text-decoration: line-through;
+  cursor: not-allowed;
+  color: rgba(148, 163, 184, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE — Certificate Detail / Success View (IssueCertificatePage)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Page wrapper: kill inline padding ── */
+  .prov-cert-issue-page {
+    padding: 16px 12px 32px !important;
+  }
+
+  /* ── Breadcrumb + back-button row → stack vertically ── */
+  .prov-cert-issue-page > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    margin-bottom: 18px !important;
+  }
+
+  /* Back-to-portal button: full width */
+  .prov-success-btn-secondary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Breadcrumbs: wrap + smaller ── */
+  .prov-detail-breadcrumbs {
+    font-size: 9.5px !important;
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+  }
+
+  /* ── Title row: wrap title + pill ── */
+  .prov-detail-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .prov-detail-title {
+    font-size: 1.45rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* ── Desc: tighter ── */
+  .prov-detail-desc {
+    font-size: 12.5px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* ── Detail grid: single column (already at 960px, but tighten gap) ── */
+  .prov-detail-grid {
+    gap: 14px !important;
+  }
+
+  /* ── Left column gap ── */
+  .prov-detail-left-col {
+    gap: 12px !important;
+  }
+
+  /* ── Detail cards: less padding ── */
+  .prov-detail-card {
+    padding: 16px 14px !important;
+  }
+
+  .prov-detail-card-title {
+    font-size: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* ── Validity card ── */
+  .prov-validity-status {
+    font-size: 15px !important;
+  }
+
+  .prov-validity-days-val {
+    font-size: 1.65rem !important;
+  }
+
+  /* ── Metadata rows → horizontal (label left, value right) ── */
+  .prov-metadata-row {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .prov-metadata-label {
+    font-size: 10.5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .prov-metadata-value {
+    font-size: 12.5px !important;
+    text-align: right !important;
+  }
+
+  /* ── "Issue Another Certificate" button ── */
+  .prov-btn-cancel-return {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* ── PDF viewer: tighten ── */
+  .prov-pdf-viewer {
+    border-radius: 10px !important;
+  }
+
+  /* PDF header: filename truncates, actions stay right */
+  .prov-pdf-header {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .prov-pdf-filename-box {
+    font-size: 11.5px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .prov-pdf-filename-box span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+  }
+
+  .prov-pdf-actions {
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .prov-pdf-action-btn {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  /* PDF search bar */
+  .prov-pdf-search-bar {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+
+  /* PDF sheet container: minimal padding so certificate isn't crushed */
+  .prov-pdf-sheet-container {
+    padding: 12px !important;
+  }
+
+  /* PDF sheet: scale to fit, allow overflow-x scroll if needed */
+  .prov-pdf-sheet {
+    padding: 16px 14px !important;
+    font-size: 90% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* PDF sheet internals: scale down large text */
+  .prov-pdf-title {
+    font-size: 1rem !important;
+  }
+
+  .prov-pdf-name {
+    font-size: 1.3rem !important;
+    word-break: break-word !important;
+  }
+
+  .prov-pdf-course {
+    font-size: 0.85rem !important;
+    word-break: break-word !important;
+  }
+
+  .prov-pdf-footer {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    justify-content: center !important;
+  }
+
+  /* PDF upload box: stack vertically */
+  .prov-pdf-upload-box {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .prov-pdf-upload-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 400px) {
+  /* Very small phones: further reduce title */
+  .prov-detail-title {
+    font-size: 1.2rem !important;
+  }
+
+  .prov-pdf-sheet {
+    font-size: 82% !important;
+    padding: 12px 10px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR PAGE — Base Styles (all new class-based elements)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Page header row ── */
+.prov-cal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.prov-cal-title {
+  font-size: 2.2rem !important;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.prov-cal-subtitle {
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.75);
+  margin: 0;
+}
+
+/* ── View tab strip ── */
+.prov-cal-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.prov-cal-view-tabs {
+  display: flex;
+  background: rgba(10, 14, 28, 0.6);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 2px;
+}
+
+.prov-cal-view-tab {
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(148, 163, 184, 0.65);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+  white-space: nowrap;
+}
+
+.prov-cal-view-tab--active {
+  background: #3a82ff;
+  color: #fff;
+}
+
+.prov-cal-view-tab:not(.prov-cal-view-tab--active):hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(203, 213, 225, 0.9);
+}
+
+/* ── Nav row (month label + prev/next + legend) ── */
+.prov-cal-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  background: rgba(10, 14, 28, 0.3);
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 12px;
+}
+
+.prov-cal-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.prov-cal-month-label {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prov-cal-nav-btns {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.prov-cal-nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(203, 213, 225, 0.85);
+  cursor: pointer;
+  transition: background 130ms, color 130ms;
+}
+
+.prov-cal-nav-arrow:hover:not(:disabled) {
+  background: rgba(58, 130, 255, 0.14);
+  border-color: rgba(58, 130, 255, 0.3);
+  color: #fff;
+}
+
+.prov-cal-nav-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Legend ── */
+.prov-cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.prov-cal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prov-cal-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.prov-cal-legend-dot--blue  { background: #3b82f6; }
+.prov-cal-legend-dot--green { background: #10b981; }
+.prov-cal-legend-dot--red   { background: #ef4444; }
+
+.prov-cal-legend-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(203, 213, 225, 0.75);
+  white-space: nowrap;
+}
+
+/* ── Main split ── */
+.prov-cal-main-split {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Left calendar card ── */
+.prov-cal-card {
+  padding: 20px;
+}
+
+/* ── Session banner ── */
+.prov-cal-session-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #4deba0;
+}
+
+.prov-cal-banner-jump {
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Right sidebar ── */
+.prov-cal-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Deploy card ── */
+.prov-cal-deploy-card {
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prov-cal-deploy-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.prov-cal-deploy-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: rgba(148, 163, 184, 0.7);
+  line-height: 1.5;
+}
+
+.prov-cal-deploy-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+  transition: background 150ms, box-shadow 150ms;
+}
+
+.prov-cal-deploy-btn:hover {
+  background: #2563eb;
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4);
+}
+
+/* ── Facility utilization card ── */
+.prov-cal-util-card {
+  padding: 18px 20px;
+}
+
+.prov-cal-util-title {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.01em;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.prov-cal-util-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prov-cal-util-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prov-cal-util-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prov-cal-util-name {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.prov-cal-util-pct {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.prov-cal-util-track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.prov-cal-util-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 400ms ease;
+}
+
+.prov-cal-util-fill--blue   { background: #3b82f6; }
+.prov-cal-util-fill--yellow { background: #eab308; }
+.prov-cal-util-fill--red    { background: #ef4444; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR PAGE — Tablet (≤960px)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+  .prov-cal-main-split {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Sidebar stacks below the calendar */
+  .prov-cal-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .prov-cal-sidebar > .prov-section-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 220px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR PAGE — Mobile (≤640px) — Professional overhaul
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Page wrapper ── */
+  .prov-cal-page {
+    padding-bottom: 40px !important;
+  }
+
+  /* ── Header: title left, controls below ── */
+  .prov-cal-header-row {
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .prov-cal-title {
+    font-size: 1.55rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .prov-cal-subtitle {
+    font-size: 12px !important;
+  }
+
+  /* Controls: full width, space between */
+  .prov-cal-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* View tabs: equal width, compact */
+  .prov-cal-view-tabs {
+    flex: 1;
+  }
+
+  .prov-cal-view-tab {
+    flex: 1;
+    padding: 7px 10px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* ── Filter panel: stacked ── */
+  .prov-cal-filter-panel {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+  }
+
+  .prov-cal-filter-panel .prov-custom-select {
+    flex: none !important;
+    width: 100%;
+  }
+
+  .prov-cal-filter-clear {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Nav row: stack month+nav above legend ── */
+  .prov-cal-nav-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+
+  .prov-cal-nav-left {
+    justify-content: space-between;
+  }
+
+  .prov-cal-month-label {
+    font-size: 14px;
+  }
+
+  .prov-cal-nav-arrow {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Legend: centered row, wrap */
+  .prov-cal-legend {
+    justify-content: center;
+    gap: 14px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+  }
+
+  /* ── Main split: single column ── */
+  .prov-cal-main-split {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* ── Calendar card ── */
+  .prov-cal-card {
+    padding: 12px !important;
+  }
+
+  /* ── Month grid cells: compact ── */
+  .prov-calendar-grid {
+    gap: 1px !important;
+  }
+
+  .prov-cal-day-header {
+    font-size: 9px !important;
+    padding-bottom: 8px !important;
+    text-align: center;
+  }
+
+  .prov-cal-day {
+    min-height: 68px !important;
+    padding: 4px !important;
+  }
+
+  .prov-cal-day-num {
+    font-size: 10px !important;
+    margin-bottom: 3px !important;
+  }
+
+  /* Events: just coloured pill with truncated name */
+  .prov-cal-event {
+    padding: 3px 5px !important;
+    font-size: 8.5px !important;
+    border-radius: 4px !important;
+  }
+
+  /* ── Week view: horizontal scroll ── */
+  .prov-cal-card [style*="repeat(7, 1fr)"],
+  .prov-cal-card > div > div[style*="7"] {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    scrollbar-width: none !important;
+    padding-bottom: 4px;
+  }
+
+  .prov-cal-card [style*="repeat(7, 1fr)"] > div {
+    min-width: 100px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── Day view: compact ── */
+  .prov-cal-card [style*="borderRadius: '8px'"][style*="padding: '20px'"] {
+    padding: 14px !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── Session banner: stack on mobile ── */
+  .prov-cal-session-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
+  .prov-cal-banner-jump {
+    font-size: 12px;
+    align-self: flex-end;
+  }
+
+  /* ── Sidebar: side by side on mobile ── */
+  .prov-cal-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Deploy card + util card: 50% each if fits, else full width */
+  .prov-cal-deploy-card,
+  .prov-cal-util-card {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 200px;
+    padding: 16px 14px !important;
+  }
+
+  .prov-cal-deploy-title {
+    font-size: 13px;
+  }
+
+  .prov-cal-deploy-desc {
+    font-size: 11px;
+  }
+
+  .prov-cal-deploy-btn {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  .prov-cal-util-title {
+    font-size: 11.5px;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 440px) {
+  /* Very narrow: sidebar cards go full width */
+  .prov-cal-deploy-card,
+  .prov-cal-util-card {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Month grid cells: even more compact */
+  .prov-cal-day {
+    min-height: 54px !important;
+    padding: 3px !important;
+  }
+
+  .prov-cal-day-num {
+    font-size: 9px !important;
+  }
+
+  .prov-cal-view-tab {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR — Month View: Desktop grid + Mobile agenda
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Desktop grid wrapper ── */
+.prov-cal-month-grid-wrap {
+  overflow-x: auto;
+}
+
+.prov-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Day header cells */
+.prov-cal-day-header {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.5);
+  padding: 10px 4px;
+  background: rgba(7, 11, 26, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Empty cells */
+.prov-cal-day-empty {
+  min-height: 110px;
+  background: rgba(7, 11, 26, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.025);
+}
+
+/* Day cells */
+.prov-cal-day {
+  min-height: 110px;
+  padding: 8px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(10, 14, 28, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: default;
+  transition: background 130ms;
+}
+
+.prov-cal-day:hover {
+  background: rgba(10, 14, 28, 0.65);
+}
+
+.prov-cal-day--today {
+  background: rgba(58, 130, 255, 0.06);
+  border-color: rgba(58, 130, 255, 0.3);
+}
+
+.prov-cal-day-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.6);
+  margin-bottom: 2px;
+  line-height: 1;
+}
+
+.prov-cal-day--today .prov-cal-day-num {
+  color: #3b82f6;
+}
+
+.prov-cal-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Event chips inside day cells */
+.prov-cal-event {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  transition: filter 130ms;
+}
+
+.prov-cal-event:hover {
+  filter: brightness(1.15);
+}
+
+.prov-cal-event-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.prov-cal-event-meta {
+  font-size: 8px;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Mobile month view (hidden on desktop) ── */
+.prov-cal-mobile-month {
+  display: none;
+}
+
+/* ── Dot grid ── */
+.prov-cal-dot-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.prov-cal-dot-header {
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.45);
+  padding: 6px 0;
+}
+
+.prov-cal-dot-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 120ms;
+  min-height: 46px;
+}
+
+.prov-cal-dot-day:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.prov-cal-dot-day--today .prov-cal-dot-num {
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.prov-cal-dot-day--has-events {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.prov-cal-dot-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(203, 213, 225, 0.85);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prov-cal-dot-indicators {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+}
+
+.prov-cal-dot-pip {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* ── Agenda list ── */
+.prov-cal-agenda-empty {
+  text-align: center;
+  padding: 28px 16px;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.45);
+}
+
+.prov-cal-agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prov-cal-agenda-title {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.45);
+}
+
+.prov-cal-agenda-day {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.prov-cal-agenda-day:first-of-type {
+  border-top: none;
+}
+
+.prov-cal-agenda-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  padding-top: 2px;
+}
+
+.prov-cal-agenda-daynum {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+
+.prov-cal-agenda-weekday {
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(148, 163, 184, 0.5);
+  margin-top: 2px;
+}
+
+.prov-cal-agenda-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.prov-cal-agenda-event {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  width: 100%;
+  transition: filter 130ms;
+}
+
+.prov-cal-agenda-event:hover {
+  filter: brightness(1.12);
+}
+
+.prov-cal-agenda-course {
+  font-size: 13px;
+  font-weight: 800;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-cal-agenda-info {
+  font-size: 11px;
+  opacity: 0.75;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR — Show/hide grid vs mobile agenda
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Desktop: show grid, hide mobile view */
+@media (min-width: 641px) {
+  .prov-cal-month-grid-wrap {
+    display: block;
+  }
+  .prov-cal-mobile-month {
+    display: none;
+  }
+}
+
+/* Mobile: hide grid, show dot + agenda */
+@media (max-width: 640px) {
+  .prov-cal-month-grid-wrap {
+    display: none;
+  }
+  .prov-cal-mobile-month {
+    display: block;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR — Week View
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-cal-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 380px;
+}
+
+.prov-cal-week-col {
+  background: rgba(10, 14, 28, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prov-cal-week-col--today {
+  border-color: rgba(58, 130, 255, 0.35);
+  background: rgba(58, 130, 255, 0.05);
+}
+
+.prov-cal-week-col-header {
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prov-cal-week-col-name {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(148, 163, 184, 0.5);
+  margin-bottom: 4px;
+}
+
+.prov-cal-week-col-num {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.prov-cal-week-col-num--today {
+  color: #3b82f6;
+}
+
+.prov-cal-week-col-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.prov-cal-week-col-empty {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.2);
+  margin-top: 8px;
+}
+
+.prov-cal-week-event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 10.5px;
+  line-height: 1.3;
+  transition: filter 130ms;
+}
+
+.prov-cal-week-event:hover {
+  filter: brightness(1.12);
+}
+
+.prov-cal-week-event-name {
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.prov-cal-week-event-meta {
+  font-size: 8.5px;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR — Day View
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-cal-day-view {
+  background: rgba(10, 14, 28, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prov-cal-day-view-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(7, 11, 26, 0.5);
+}
+
+.prov-cal-day-view-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.prov-cal-day-view-empty {
+  padding: 48px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.45);
+}
+
+.prov-cal-day-view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.prov-cal-day-event {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: filter 130ms;
+}
+
+.prov-cal-day-event:hover {
+  filter: brightness(1.1);
+}
+
+.prov-cal-day-event-main {
+  min-width: 0;
+}
+
+.prov-cal-day-event-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-cal-day-event-meta {
+  margin: 0;
+  font-size: 11.5px;
+  opacity: 0.8;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prov-cal-day-event-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR — Week & Day Mobile (≤640px)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Week view: horizontal scroll strip ── */
+  .prov-cal-week-grid {
+    display: flex !important;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 6px;
+    min-height: unset;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .prov-cal-week-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .prov-cal-week-col {
+    min-width: 110px;
+    flex-shrink: 0;
+    border-radius: 12px;
+  }
+
+  .prov-cal-week-col-num {
+    font-size: 22px;
+  }
+
+  .prov-cal-week-event {
+    font-size: 11px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .prov-cal-week-event-meta {
+    font-size: 9.5px;
+  }
+
+  /* ── Day view: full card, tighter ── */
+  .prov-cal-day-view-header {
+    padding: 12px 14px;
+  }
+
+  .prov-cal-day-view-title {
+    font-size: 13px;
+  }
+
+  .prov-cal-day-view-list {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  /* Day events: stack meta below title, time at bottom */
+  .prov-cal-day-event {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .prov-cal-day-event-title {
+    font-size: 14px;
+  }
+
+  .prov-cal-day-event-meta {
+    font-size: 12px;
+    white-space: normal;
+    line-height: 1.5;
+  }
+
+  .prov-cal-day-event-time {
+    font-size: 12px;
+    justify-content: flex-start;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCHEDULE SESSION PAGE — Mobile (≤640px)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Outer wrapper: kill inline padding ── */
+  .schedule-session-page {
+    padding: 16px 12px 32px !important;
+  }
+
+  /* ── Page header: stack title + buttons ── */
+  .schedule-session-page > div:first-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    margin-bottom: 18px !important;
+  }
+
+  /* Title sizing */
+  .schedule-session-page h1 {
+    font-size: 1.5rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Header action buttons: side by side, full row */
+  .schedule-session-page > div:first-child > div:last-child {
+    display: flex !important;
+    gap: 10px !important;
+  }
+
+  .schedule-btn-cancel,
+  .schedule-btn-submit {
+    flex: 1 !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 11px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* ── Main grid: single column ── */
+  .schedule-session-page > div[style*="gridTemplateColumns"],
+  .schedule-session-page > div[style*="340px"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* ── Left form area: tighter gaps ── */
+  .schedule-session-page .prov-section-card {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Section cards with inline padding */
+  .schedule-session-page .prov-section-card[style*="padding"] {
+    padding: 16px 14px !important;
+  }
+
+  /* ── Trainer + Room cards: stack ── */
+  .schedule-session-page > div > div > div[style*="1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* ── Session timing: 3-col → 1-col ── */
+  .schedule-session-page div[style*="1fr 1fr 1fr"],
+  .schedule-session-page div[style*="gridTemplateColumns: '1fr 1fr 1fr'"] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* ── Resources: wrap onto 2 per row ── */
+  .schedule-session-page div[style*="display: 'flex'"][style*="alignItems: 'center'"] {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  /* ── Preview card banner: shorter ── */
+  .schedule-session-page div[style*="height: '140px'"] {
+    height: 100px !important;
+  }
+
+  .schedule-session-page div[style*="fontSize: '2.5rem'"] {
+    font-size: 1.4rem !important;
+  }
+
+  /* ── Confirm button: already full-width via CSS in card ── */
+  .schedule-btn-confirm-primary {
+    padding: 13px !important;
+    font-size: 13px !important;
+  }
+
+  /* ── Safety compliance banner: tighter ── */
+  .schedule-session-page > div > div:last-child > div:last-child {
+    padding: 12px 14px !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── Select & input fields: comfortable touch targets ── */
+  .schedule-session-page select,
+  .schedule-session-page input[type="date"],
+  .schedule-session-page input[type="number"] {
+    height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  /* ── Availability check banner: tighter ── */
+  .schedule-session-page div[style*="borderLeft: '3px solid #10b981'"] {
+    padding: 10px 12px !important;
+  }
+
+  /* Section card h3 titles */
+  .schedule-session-page .prov-section-card h3,
+  .schedule-session-page h3[style] {
+    font-size: 13px !important;
+    margin-bottom: 14px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCHEDULE SESSION PAGE — Base styles
+   ══════════════════════════════════════════════════════════════════ */
+
+.schedule-session-page {
+  padding: 28px;
+  color: #fff;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Header */
+.sched-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.sched-breadcrumb {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(148, 163, 184, 0.5);
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.sched-breadcrumb span { color: #fff; }
+
+.sched-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 6px;
+}
+
+.sched-desc {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.sched-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.schedule-btn-cancel {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms;
+}
+
+.schedule-btn-cancel:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.schedule-btn-submit {
+  padding: 10px 20px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+  transition: background 150ms;
+}
+
+.schedule-btn-submit:hover { background: #2563eb; }
+
+/* Main grid */
+.sched-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 28px;
+  align-items: start;
+}
+
+.sched-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Form cards */
+.sched-card {
+  padding: 24px;
+}
+
+.sched-card-heading {
+  font-size: 14px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+.sched-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sched-card-icon--blue  { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.sched-card-icon--green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.sched-card-icon--red   { background: rgba(239, 68, 68, 0.15);  color: #ef4444; }
+
+.sched-field {
+  margin-bottom: 14px;
+}
+
+.sched-field:last-child { margin-bottom: 0; }
+
+.sched-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(148, 163, 184, 0.65);
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+
+.sched-select,
+.sched-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #070a13;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.sched-select:focus,
+.sched-input:focus {
+  border-color: rgba(58, 130, 255, 0.4);
+}
+
+.sched-input--number {
+  color: #3b82f6;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* Two / three column sub-grids */
+.sched-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.sched-three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+/* Availability banner */
+.sched-availability {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(16, 185, 129, 0.06);
+  border-left: 3px solid #10b981;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.sched-availability-badge {
+  font-size: 9px;
+  font-weight: 800;
+  color: #4deba0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sched-availability-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
+}
+
+/* Resources */
+.sched-resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.sched-resource-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: rgba(203, 213, 225, 0.9);
+  user-select: none;
+}
+
+.sched-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+/* Sidebar */
+.sched-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Preview card */
+.sched-preview-card {
+  background: rgba(10, 14, 28, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sched-preview-banner {
+  height: 140px;
+  position: relative;
+  background: linear-gradient(135deg, #090e1c 0%, #172554 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sched-preview-dots-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.1;
+  background-image: radial-gradient(circle, #3b82f6 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.sched-preview-watermark {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: rgba(59, 130, 246, 0.15);
+  user-select: none;
+  letter-spacing: 0.1em;
+  position: relative;
+}
+
+.sched-preview-draft-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+}
+
+.sched-preview-body {
+  padding: 20px;
+}
+
+.sched-preview-course {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.sched-preview-meta {
+  margin: 0 0 16px;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.sched-preview-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.sched-preview-detail-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  color: #cbd5e1;
+}
+
+.sched-preview-icon {
+  color: #3b82f6;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.sched-preview-val {
+  display: block;
+  font-weight: 700;
+}
+
+.sched-preview-sub {
+  display: block;
+  font-size: 10.5px;
+  color: rgba(148, 163, 184, 0.6);
+  margin-top: 1px;
+}
+
+.sched-preview-sub--green {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.sched-preview-resources {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 16px;
+}
+
+.sched-preview-resources-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.sched-preview-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sched-resource-badge {
+  font-size: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #4deba0;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.sched-no-resources {
+  font-size: 10px;
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.schedule-btn-confirm-primary {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+  transition: background 150ms;
+}
+
+.schedule-btn-confirm-primary:hover { background: #2563eb; }
+
+/* Compliance banner */
+.sched-compliance-banner {
+  background: rgba(239, 68, 68, 0.05);
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.sched-compliance-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sched-compliance-title {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  color: #ef4444;
+  font-weight: 800;
+}
+
+.sched-compliance-text {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.45;
+}
+
+/* ── Tablet ── */
+@media (max-width: 960px) {
+  .sched-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .sched-header {
+    flex-wrap: wrap;
+  }
+
+  .sched-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sched-preview-card {
+    flex: 1 1 calc(60% - 8px);
+    min-width: 260px;
+  }
+
+  .sched-compliance-banner {
+    flex: 1 1 calc(40% - 8px);
+    min-width: 220px;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .schedule-session-page {
+    padding: 14px 12px 32px;
+  }
+
+  .sched-header {
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .sched-title {
+    font-size: 1.5rem;
+  }
+
+  .sched-header-actions {
+    width: 100%;
+  }
+
+  .schedule-btn-cancel,
+  .schedule-btn-submit {
+    flex: 1;
+    text-align: center;
+    padding: 12px 14px;
+  }
+
+  .sched-two-col {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .sched-three-col {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .sched-card {
+    padding: 16px 14px;
+  }
+
+  .sched-resources {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .sched-resource-item {
+    font-size: 13.5px;
+  }
+
+  .sched-select,
+  .sched-input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .sched-input--number {
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .sched-sidebar {
+    flex-direction: column;
+  }
+
+  .sched-preview-banner {
+    height: 100px;
+  }
+
+  .sched-preview-watermark {
+    font-size: 1.6rem;
+  }
+
+  .sched-preview-body {
+    padding: 16px 14px;
+  }
+
+  .sched-compliance-banner {
+    padding: 12px 14px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALENDAR EVENT DETAIL MODAL — Base + Mobile bottom-sheet
+   ══════════════════════════════════════════════════════════════════ */
+
+.cal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: prov-fade-in 180ms ease both;
+}
+
+.cal-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #0b0f1f;
+  border: 1px solid rgba(58, 130, 255, 0.14);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: dropdown-fade-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Hidden on desktop, shown on mobile */
+.cal-modal-handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 auto 16px;
+}
+
+.cal-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cal-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-modal-priority-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-modal-header-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.cal-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(148, 163, 184, 0.7);
+  cursor: pointer;
+  transition: background 130ms, color 130ms;
+}
+
+.cal-modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.cal-modal-title-block {
+  margin-bottom: 18px;
+}
+
+.cal-modal-course {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+}
+
+.cal-modal-company {
+  margin: 0;
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Detail rows */
+.cal-modal-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cal-modal-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.cal-modal-detail-icon {
+  color: rgba(148, 163, 184, 0.5);
+  flex-shrink: 0;
+}
+
+/* Edit form */
+.cal-modal-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cal-modal-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cal-modal-edit-label {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.6);
+  font-weight: 600;
+}
+
+.cal-modal-edit-input,
+.cal-modal-edit-select {
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.cal-modal-edit-input:focus,
+.cal-modal-edit-select:focus {
+  border-color: rgba(58, 130, 255, 0.4);
+}
+
+/* Footer */
+.cal-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 16px;
+}
+
+.cal-modal-footer-right {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cal-modal-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 130ms, filter 130ms;
+  white-space: nowrap;
+}
+
+.cal-modal-btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #cbd5e1;
+}
+
+.cal-modal-btn--ghost:hover { background: rgba(255,255,255,0.1); }
+
+.cal-modal-btn--save {
+  background: #10b981;
+  color: #fff;
+}
+
+.cal-modal-btn--save:hover { filter: brightness(1.1); }
+
+.cal-modal-btn--complete {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #4deba0;
+}
+
+.cal-modal-btn--complete:hover { background: rgba(16,185,129,0.22); }
+
+.cal-modal-btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.cal-modal-btn--danger:hover { background: rgba(239,68,68,0.22); }
+
+/* ── Mobile: bottom-sheet ── */
+@media (max-width: 640px) {
+  .cal-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .cal-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    padding: 20px 18px 32px;
+    animation: cert-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .cal-modal-handle {
+    display: block;
+  }
+
+  .cal-modal-course {
+    font-size: 16px;
+  }
+
+  .cal-modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cal-modal-footer-right {
+    width: 100%;
+  }
+
+  .cal-modal-btn {
+    flex: 1;
+    text-align: center;
+    padding: 11px 12px;
+    font-size: 12.5px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BASE — New utility classes
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-req-row-card--overview {
+  grid-template-columns: 1.5fr 1.5fr 70px 1.5fr 120px;
+}
+
+.prov-actions-cell--right {
+  justify-content: flex-end;
+}
+
+.prov-overview-requests-list {
+  padding: 16px 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   OVERVIEW PAGE + REQUESTS PAGE — Mobile (≤640px) — definitive
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ─────────────────────────────────────────────
+     OVERVIEW: Provider dashboard
+  ───────────────────────────────────────────── */
+
+  .provider-dash {
+    padding: 14px 12px 36px !important;
+  }
+
+  .provider-dash-title {
+    font-size: 1.35rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .provider-dash-sub {
+    font-size: 12px !important;
+  }
+
+  .provider-dash-header {
+    margin-bottom: 16px !important;
+  }
+
+  /* Stats: 2×2 grid */
+  .provider-stats-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .prov-stat-card {
+    padding: 14px 13px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .prov-stat-value {
+    font-size: 1.8rem !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .prov-stat-label {
+    font-size: 9.5px !important;
+  }
+
+  .prov-stat-meta {
+    font-size: 10.5px !important;
+    margin-top: 3px !important;
+  }
+
+  /* Main grid: single column */
+  .provider-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Active requests section */
+  .prov-overview-requests-list {
+    padding: 12px !important;
+  }
+
+  /* Upcoming courses: horizontal scroll */
+  .prov-course-list {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .prov-course-list::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .prov-course-item {
+    min-width: 180px !important;
+    flex-shrink: 0 !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+  }
+
+  .prov-upcoming-head {
+    padding: 12px 14px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .prov-open-cal-row,
+  .prov-view-all-row {
+    padding: 10px 12px !important;
+  }
+
+  .prov-open-cal-btn,
+  .prov-view-all-btn {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    padding: 10px !important;
+  }
+
+  /* Section card: tighter */
+  .prov-section-card {
+    border-radius: 12px !important;
+  }
+
+  .prov-section-head {
+    padding: 12px 14px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .prov-section-head h2 {
+    font-size: 13px !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     COMPETENCY SECTION
+  ───────────────────────────────────────────── */
+
+  .prov-competency-section {
+    margin-top: 14px !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .prov-competency-head {
+    padding: 12px 14px 10px !important;
+  }
+
+  .prov-competency-head h2 {
+    font-size: 13px !important;
+  }
+
+  .prov-competency-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .prov-competency-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 6px !important;
+    padding: 12px 8px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.025) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    min-width: 0 !important;
+    width: auto !important;
+    flex: none !important;
+  }
+
+  .prov-comp-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .prov-comp-name {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  .prov-comp-role-text {
+    font-size: 10.5px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     REQUESTS PAGE: Controls + Tabs
+  ───────────────────────────────────────────── */
+
+  .prov-subpage-header {
+    margin-bottom: 14px !important;
+  }
+
+  .prov-subpage-title {
+    font-size: 1.5rem !important;
+  }
+
+  .prov-controls-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Filter tabs: full-width horizontal scroll */
+  .prov-filter-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding-bottom: 2px !important;
+    flex-wrap: nowrap !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .prov-filter-tabs::-webkit-scrollbar { display: none !important; }
+
+  .prov-filter-tab {
+    flex-shrink: 0 !important;
+    font-size: 12px !important;
+    padding: 7px 14px !important;
+    white-space: nowrap !important;
+    border-radius: 8px !important;
+  }
+
+  /* Right controls: flex row */
+  .prov-section-head-right {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+  }
+
+  .prov-search-input {
+    flex: 1 !important;
+    min-width: 140px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+  }
+
+  /* Bulk bar */
+  .prov-bulk-bar {
+    flex-direction: column !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+    padding: 12px 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .prov-bulk-info {
+    font-size: 13px !important;
+  }
+
+  .prov-bulk-actions {
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .prov-btn-bulk-approve,
+  .prov-btn-bulk-reject {
+    flex: 1 !important;
+    text-align: center !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     REQUEST ROW CARDS — Professional mobile card
+  ───────────────────────────────────────────── */
+
+  .prov-req-headers {
+    display: none !important;
+  }
+
+  .prov-req-row-card,
+  .prov-req-row-card--overview {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    margin-bottom: 10px !important;
+    grid-template-columns: unset !important;
+  }
+
+  /* Top section: company + actions in one row */
+  .prov-req-row-card .prov-company-cell,
+  .prov-req-row-card--overview .prov-company-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px 12px 10px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    grid-column: unset !important;
+  }
+
+  .prov-req-row-card .prov-company-name,
+  .prov-req-row-card--overview .prov-company-name {
+    font-size: 13.5px !important;
+    font-weight: 800 !important;
+  }
+
+  .prov-req-row-card .prov-company-req-id,
+  .prov-req-row-card--overview .prov-company-req-id {
+    font-size: 10px !important;
+  }
+
+  /* Course: highlighted row */
+  .prov-req-row-card .prov-course-cell,
+  .prov-req-row-card--overview .prov-course-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    grid-column: unset !important;
+  }
+
+  /* Workers: compact inline */
+  .prov-req-row-card .prov-workers-cell,
+  .prov-req-row-card--overview .prov-workers-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 6px 12px 2px !important;
+    font-size: 11px !important;
+    color: rgba(148, 163, 184, 0.75) !important;
+    font-weight: 700 !important;
+    grid-column: unset !important;
+  }
+
+  .prov-req-row-card .prov-workers-cell::before,
+  .prov-req-row-card--overview .prov-workers-cell::before {
+    content: 'Workers: ' !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: rgba(148, 163, 184, 0.45) !important;
+  }
+
+  /* Dates */
+  .prov-req-row-card .prov-dates-cell,
+  .prov-req-row-card--overview .prov-dates-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 6px 12px 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    gap: 6px !important;
+    grid-column: unset !important;
+  }
+
+  .prov-req-row-card .prov-dates-primary,
+  .prov-req-row-card--overview .prov-dates-primary {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .prov-req-row-card .prov-dates-sub,
+  .prov-req-row-card--overview .prov-dates-sub {
+    font-size: 11px !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+  }
+
+  /* Status */
+  .prov-req-row-card .prov-status-cell,
+  .prov-req-row-card--overview .prov-status-cell {
+    padding: 8px 12px 0 !important;
+    display: flex !important;
+    grid-column: unset !important;
+  }
+
+  /* Actions: footer strip */
+  .prov-req-row-card .prov-actions-cell,
+  .prov-req-row-card .prov-actions-cell--right,
+  .prov-req-row-card--overview .prov-actions-cell,
+  .prov-req-row-card--overview .prov-actions-cell--right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    padding: 8px 12px 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+    margin-top: 4px !important;
+    grid-column: unset !important;
+  }
+
+  /* Checkbox: hide */
+  .prov-req-row-card .prov-checkbox-cell {
+    display: none !important;
+  }
+
+  /* Action buttons: larger touch targets */
+  .prov-action-btn-circle {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     PAGINATION
+  ───────────────────────────────────────────── */
+
+  .prov-pagination-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: center !important;
+    padding: 12px 14px !important;
+  }
+
+  .prov-pagination-info {
+    font-size: 12px !important;
+    text-align: center !important;
+  }
+
+  .prov-pagination-controls {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .prov-page-btn {
+    min-width: 34px !important;
+    height: 34px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     ISSUED CERTIFICATES MODAL — bottom-sheet
+  ───────────────────────────────────────────── */
+
+  .prov-modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .prov-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    padding: 20px 16px 32px !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    animation: cert-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  }
+
+  /* Modal drag handle */
+  .prov-modal::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 auto 16px;
+  }
+
+  .prov-modal-title {
+    font-size: 15px !important;
+  }
+
+  .prov-modal-actions {
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .prov-modal-btn-confirm {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 12px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .provider-stats-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .prov-stat-value {
+    font-size: 1.6rem !important;
+  }
+
+  .prov-competency-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .prov-course-item {
+    min-width: 150px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRAINING REQUESTS — Remaining mobile polish (≤640px)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Status pills: readable in card context ── */
+  .prov-status-pill {
+    font-size: 10px !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  /* ── Company badges: slightly larger ── */
+  .prov-company-badge {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 12px !important;
+    border-radius: 9px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── Filter panel (Requests page) ── */
+  .prov-filters-panel-wrapper {
+    position: static !important;
+  }
+
+  .prov-filters-panel {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    padding: 20px 16px 32px !important;
+    margin-top: 0 !important;
+    z-index: 1000 !important;
+    animation: cert-sheet-up 250ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  }
+
+  .prov-filter-select,
+  .prov-filter-input {
+    height: 42px !important;
+    font-size: 14px !important;
+  }
+
+  /* ── Confirmation modal: full bottom-sheet on mobile ── */
+  .prov-modal-actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-top: 16px !important;
+  }
+
+  .prov-modal-btn-cancel,
+  .prov-modal-btn-confirm {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    font-size: 13.5px !important;
+    border-radius: 10px !important;
+  }
+
+  .prov-modal-meta-row {
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding: 8px 0 !important;
+  }
+
+  .prov-modal-meta-label {
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .prov-modal-meta-value {
+    font-size: 13px !important;
+  }
+
+  /* ── OCR upload panel ── */
+  .prov-ocr-panel {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .prov-ocr-header {
+    flex-direction: column !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .prov-ocr-split {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .prov-ocr-drop-area {
+    padding: 22px 16px !important;
+    min-height: 130px !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── Subpage header: "Operation Control" label + title ── */
+  .prov-subpage-header p {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* ── Section head right: wrap ── */
+  .prov-section-head-right {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  /* ── Empty state ── */
+  .prov-empty-state {
+    padding: 32px 16px !important;
+  }
+
+  .prov-empty-icon {
+    font-size: 2rem !important;
+    margin-bottom: 10px !important;
+  }
+
+  .prov-empty-title {
+    font-size: 14px !important;
+  }
+
+  .prov-empty-sub {
+    font-size: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRAINING REQUESTS — Tablet (960px) improvements
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 960px) {
+
+  /* Controls row: allow wrapping */
+  .prov-controls-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Req row headers: hide on tablet, use card rows */
+  .prov-req-headers {
+    display: none;
+  }
+
+  /* Request rows on tablet: more compact 4-column grid */
+  .prov-req-row-card {
+    grid-template-columns: 36px 1.5fr 1.5fr 100px !important;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  /* Status + workers + dates cells: hide on tablet to save space */
+  .prov-req-row-card .prov-workers-cell {
+    display: none;
+  }
+
+  /* Overview row: 4-column tablet */
+  .prov-req-row-card--overview {
+    grid-template-columns: 1.5fr 1.5fr 1fr !important;
+  }
+
+  /* Overview rows wrapper */
+  .prov-overview-requests-list {
+    padding: 14px 16px;
+  }
+
+  /* Provider main grid: single column at tablet */
+  .provider-main-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Stats row: 2x2 at tablet */
+  .provider-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REQUESTS PAGE — Mobile fixes (definitive overrides)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Controls row: stack cleanly, full width ── */
+  .prov-controls-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-bottom: 14px !important;
+  }
+
+  /* ── Filter tabs: full-width scrollable strip ── */
+  .prov-filter-tabs {
+    display: flex !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    background: rgba(10, 14, 28, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 10px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+    box-sizing: border-box !important;
+  }
+
+  .prov-filter-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .prov-filter-tab {
+    flex: 0 0 auto !important;
+    font-size: 12px !important;
+    padding: 7px 13px !important;
+    white-space: nowrap !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── Right-side controls (search + filters btn) ── */
+  .prov-controls-row .prov-section-head-right {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* ── REQUEST CARDS — clean professional layout ── */
+
+  /* Card shell */
+  .prov-req-row-card,
+  .prov-req-row-card--overview {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    margin-bottom: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    background: rgba(10, 14, 28, 0.6) !important;
+    grid-template-columns: unset !important;
+  }
+
+  /* ── Row 1: Company + Badge ── */
+  .prov-req-row-card .prov-company-cell,
+  .prov-req-row-card--overview .prov-company-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    grid-column: unset !important;
+    order: 1 !important;
+  }
+
+  .prov-req-row-card .prov-company-badge,
+  .prov-req-row-card--overview .prov-company-badge {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .prov-req-row-card .prov-company-name,
+  .prov-req-row-card--overview .prov-company-name {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    display: block !important;
+  }
+
+  .prov-req-row-card .prov-company-req-id,
+  .prov-req-row-card--overview .prov-company-req-id {
+    font-size: 10.5px !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+    display: block !important;
+  }
+
+  /* ── Row 2: Course ── */
+  .prov-req-row-card .prov-course-cell,
+  .prov-req-row-card--overview .prov-course-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: rgba(235, 242, 255, 0.95) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    grid-column: unset !important;
+    order: 2 !important;
+  }
+
+  /* ── Row 3: Workers inline label ── */
+  .prov-req-row-card .prov-workers-cell,
+  .prov-req-row-card--overview .prov-workers-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 7px 14px 4px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: rgba(148, 163, 184, 0.8) !important;
+    grid-column: unset !important;
+    order: 3 !important;
+  }
+
+  .prov-req-row-card .prov-workers-cell::before,
+  .prov-req-row-card--overview .prov-workers-cell::before {
+    content: 'Workers:' !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: rgba(148, 163, 184, 0.4) !important;
+    margin-right: 2px !important;
+  }
+
+  /* ── Row 4: Dates ── */
+  .prov-req-row-card .prov-dates-cell,
+  .prov-req-row-card--overview .prov-dates-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 4px 14px 10px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    grid-column: unset !important;
+    order: 4 !important;
+  }
+
+  .prov-req-row-card .prov-dates-primary,
+  .prov-req-row-card--overview .prov-dates-primary {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: rgba(235, 242, 255, 0.9) !important;
+  }
+
+  .prov-req-row-card .prov-dates-sub,
+  .prov-req-row-card--overview .prov-dates-sub {
+    font-size: 11px !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+  }
+
+  /* ── Row 5: Status pill + Actions in ONE footer row ── */
+
+  /* Status cell: inline, no full row */
+  .prov-req-row-card .prov-status-cell,
+  .prov-req-row-card--overview .prov-status-cell {
+    display: none !important; /* hide separate status row — shown in footer */
+    order: 5 !important;
+  }
+
+  /* Actions: footer with status pill + action buttons */
+  .prov-req-row-card .prov-actions-cell,
+  .prov-req-row-card .prov-actions-cell--right,
+  .prov-req-row-card--overview .prov-actions-cell,
+  .prov-req-row-card--overview .prov-actions-cell--right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    background: rgba(255, 255, 255, 0.015) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    gap: 8px !important;
+    grid-column: unset !important;
+    order: 6 !important;
+  }
+
+  /* Approved/Rejected text labels in actions: styled as badge */
+  .prov-req-row-card .prov-actions-cell span,
+  .prov-req-row-card .prov-actions-cell--right span,
+  .prov-req-row-card--overview .prov-actions-cell span,
+  .prov-req-row-card--overview .prov-actions-cell--right span {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Checkbox: always hide on mobile */
+  .prov-req-row-card .prov-checkbox-cell {
+    display: none !important;
+  }
+
+  /* Action circle buttons: good touch target */
+  .prov-action-btn-circle {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REQUEST CARD — Status + Actions footer structure
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Actions inner layout */
+.prov-card-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Status text labels (replace inline styles) */
+.prov-status-text {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.prov-status-text--approved { color: #4deba0; }
+.prov-status-text--rejected { color: #f87171; }
+
+/* Mobile status pill inside actions footer — hidden on desktop */
+.prov-card-status-mobile {
+  display: none;
+}
+
+/* ── Desktop: keep original layout ── */
+@media (min-width: 641px) {
+  .prov-card-status-mobile {
+    display: none !important;
+  }
+}
+
+/* ── Mobile: show pill in footer, hide separate status row ── */
+@media (max-width: 640px) {
+  /* Show the pill inside the actions footer */
+  .prov-card-status-mobile {
+    display: inline-flex !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Hide the separate status cell row */
+  .prov-req-row-card .prov-status-cell,
+  .prov-req-row-card--overview .prov-status-cell {
+    display: none !important;
+  }
+
+  /* Actions cell: pill left, buttons right */
+  .prov-req-row-card .prov-actions-cell,
+  .prov-req-row-card .prov-actions-cell--right,
+  .prov-req-row-card--overview .prov-actions-cell,
+  .prov-req-row-card--overview .prov-actions-cell--right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.015) !important;
+    gap: 8px !important;
+  }
+
+  /* Inner right side (buttons/text) */
+  .prov-card-actions-right {
+    gap: 8px !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REQUESTS — FINAL AUTHORITATIVE MOBILE OVERRIDE
+   All previous conflicting rules are superseded by this block.
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── 1. Filter tabs: truly full-width, never clip ── */
+  .prov-controls-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .prov-filter-tabs {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+    background: rgba(10, 14, 28, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 10px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+  }
+
+  .prov-filter-tabs::-webkit-scrollbar { display: none !important; }
+
+  .prov-filter-tab {
+    flex: 0 0 auto !important;
+    padding: 7px 14px !important;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+    border-radius: 7px !important;
+    text-align: center !important;
+  }
+
+  /* ── 2. Request card shell ── */
+  .prov-req-row-card,
+  .prov-req-row-card--overview {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;      /* ← kills any centered alignment */
+    text-align: left !important;           /* ← reset inherited center */
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    margin-bottom: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(10, 14, 28, 0.65) !important;
+    grid-template-columns: unset !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── 3. Company row ── */
+  .prov-req-row-card .prov-company-cell,
+  .prov-req-row-card--overview .prov-company-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+    text-align: left !important;
+    background: rgba(255, 255, 255, 0.025) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    grid-column: unset !important;
+  }
+
+  .prov-req-row-card .prov-company-info,
+  .prov-req-row-card--overview .prov-company-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+    text-align: left !important;
+    min-width: 0 !important;
+  }
+
+  .prov-req-row-card .prov-company-name,
+  .prov-req-row-card--overview .prov-company-name {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    color: #fff !important;
+  }
+
+  .prov-req-row-card .prov-company-req-id,
+  .prov-req-row-card--overview .prov-company-req-id {
+    font-size: 10.5px !important;
+    text-align: left !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+  }
+
+  /* ── 4. Course row ── */
+  .prov-req-row-card .prov-course-cell,
+  .prov-req-row-card--overview .prov-course-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: rgba(235, 242, 255, 0.95) !important;
+    text-align: left !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    grid-column: unset !important;
+  }
+
+  /* ── 5. Workers row ── */
+  .prov-req-row-card .prov-workers-cell,
+  .prov-req-row-card--overview .prov-workers-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 7px 14px 3px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: rgba(148, 163, 184, 0.8) !important;
+    text-align: left !important;
+    grid-column: unset !important;
+  }
+
+  .prov-req-row-card .prov-workers-cell::before,
+  .prov-req-row-card--overview .prov-workers-cell::before {
+    content: 'Workers: ' !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: rgba(148, 163, 184, 0.4) !important;
+  }
+
+  /* ── 6. Dates row ── */
+  .prov-req-row-card .prov-dates-cell,
+  .prov-req-row-card--overview .prov-dates-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 5px 14px 9px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    text-align: left !important;
+    grid-column: unset !important;
+  }
+
+  .prov-req-row-card .prov-dates-primary,
+  .prov-req-row-card--overview .prov-dates-primary {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: rgba(235, 242, 255, 0.92) !important;
+    text-align: left !important;
+  }
+
+  .prov-req-row-card .prov-dates-sub,
+  .prov-req-row-card--overview .prov-dates-sub {
+    font-size: 11px !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+    text-align: right !important;
+  }
+
+  /* ── 7. Hide separate status row — shown in footer ── */
+  .prov-req-row-card .prov-status-cell,
+  .prov-req-row-card--overview .prov-status-cell {
+    display: none !important;
+  }
+
+  /* ── 8. Footer: status pill left + actions right ── */
+  .prov-req-row-card .prov-actions-cell,
+  .prov-req-row-card .prov-actions-cell--right,
+  .prov-req-row-card--overview .prov-actions-cell,
+  .prov-req-row-card--overview .prov-actions-cell--right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    text-align: left !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    gap: 8px !important;
+    grid-column: unset !important;
+  }
+
+  /* ── 9. Checkbox: always hidden ── */
+  .prov-req-row-card .prov-checkbox-cell {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOPBAR SEARCH — Mobile placeholder & width fix
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Give the search wrap enough room to show placeholder */
+  .client-topbar .topbar-search-wrap {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;   /* remove 150px cap */
+    width: 0 !important;          /* flex will expand it */
+  }
+
+  .client-topbar .search-box {
+    width: 100% !important;
+  }
+
+  /* Placeholder: shorter, visible size */
+  .client-topbar .search-box input::placeholder {
+    font-size: 12px !important;
+    color: rgba(148, 163, 184, 0.6) !important;
+  }
+
+  /* Keep icons row from crushing the search */
+  .client-topbar-icons {
+    flex-shrink: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Very small: hide placeholder text entirely, icon is enough */
+  .client-topbar .search-box input::placeholder {
+    font-size: 0 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REQUESTS PAGE — Controls row + Filters button final fix
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Controls row: column, full stretch */
+  .prov-controls-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-bottom: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Row 1: filter tabs — full width scroll */
+  .prov-controls-row .prov-filter-tabs {
+    width: 100% !important;
+    flex: none !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+    background: rgba(10, 14, 28, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 10px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+    display: flex !important;
+  }
+
+  .prov-controls-row .prov-filter-tabs::-webkit-scrollbar { display: none !important; }
+
+  .prov-controls-row .prov-filter-tab {
+    flex: 0 0 auto !important;
+    padding: 7px 14px !important;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+    border-radius: 7px !important;
+  }
+
+  /* Row 2: right-side controls — full width row */
+  .prov-controls-row .prov-section-head-right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  /* Search input inside controls: expand to fill */
+  .prov-controls-row .prov-search-input {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Filters button: no overflow clipping */
+  .prov-controls-row .prov-filters-panel-wrapper {
+    flex-shrink: 0 !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  .prov-controls-row .prov-btn-filters {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+
+  /* Icon btn (search toggle) */
+  .prov-controls-row .prov-icon-btn {
+    flex-shrink: 0 !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOPBAR SEARCH — FINAL FIX (overrides all earlier conflicting rules)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Remove all constraints that were crushing the search box */
+  .client-topbar .topbar-search-wrap,
+  .client-topbar-search {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  /* Ensure input text and placeholder are visible */
+  .client-topbar .search-box input {
+    color: rgba(235, 242, 255, 0.92) !important;
+    font-size: 13px !important;
+    -webkit-text-fill-color: rgba(235, 242, 255, 0.92) !important;
+  }
+
+  .client-topbar .search-box input::placeholder {
+    font-size: 12px !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+    -webkit-text-fill-color: rgba(148, 163, 184, 0.55) !important;
+    opacity: 1 !important;
+  }
+
+  .client-topbar .search-box {
+    height: 38px !important;
+    padding: 0 10px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  }
+}
+
+/* Very small: keep icon, hide overflow text */
+@media (max-width: 380px) {
+  .client-topbar .search-box input::placeholder {
+    font-size: 0 !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER PANEL — Full-width bottom sheet on mobile (FINAL)
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Wrapper: let it flow normally in the document so the panel
+     can use fixed positioning relative to the viewport */
+  .prov-filters-panel-wrapper {
+    position: relative !important;
+    display: inline-block !important;
+  }
+
+  /* Panel: full-width bottom sheet */
+  .prov-filters-panel {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    padding: 20px 16px 36px !important;
+    margin: 0 !important;
+    z-index: 2000 !important;
+    animation: cert-sheet-up 260ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    box-sizing: border-box !important;
+    /* Drag handle via ::before */
+  }
+
+  /* Drag handle */
+  .prov-filters-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 auto 16px;
+  }
+
+  /* Backdrop when panel is open */
+  .prov-filters-panel-wrapper:has(.prov-filters-panel)::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+  }
+
+  /* Filter selects and inputs: full width, comfortable height */
+  .prov-filters-panel .prov-filter-select,
+  .prov-filters-panel .prov-filter-input {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    padding: 0 36px 0 12px !important;
+    box-sizing: border-box !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: rgba(235, 242, 255, 0.9) !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    /* Custom chevron */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 14px !important;
+  }
+
+  /* Filter labels */
+  .prov-filters-panel .prov-filter-label {
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    color: rgba(148, 163, 184, 0.55) !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Filter groups: full column */
+  .prov-filters-panel .prov-filter-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    text-align: left !important;
+  }
+
+  /* Clear filters button */
+  .prov-filters-panel .prov-filter-reset-btn {
+    align-self: flex-start !important;
+    font-size: 12px !important;
+    padding: 8px 0 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER BOTTOM SHEET (Portal) — RequestsPage mobile
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Desktop: show inline dropdown, hide portal sheet ── */
+@media (min-width: 641px) {
+  .req-filter-desktop-panel {
+    display: flex; /* shown as normal dropdown */
+  }
+
+  /* The FilterSheet portal is always in DOM but hidden on desktop */
+  .req-filter-sheet-backdrop {
+    display: none !important;
+  }
+}
+
+/* ── Mobile: hide inline dropdown, show portal sheet ── */
+@media (max-width: 640px) {
+  .req-filter-desktop-panel {
+    display: none !important;
+  }
+
+  /* ── Backdrop ── */
+  .req-filter-sheet-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9998 !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    animation: prov-fade-in 200ms ease both !important;
+  }
+
+  /* ── Sheet panel ── */
+  .req-filter-sheet {
+    width: 100% !important;
+    background: #0b0f1f !important;
+    border: 1px solid rgba(58, 130, 255, 0.14) !important;
+    border-bottom: none !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 0 !important;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.7) !important;
+    animation: cert-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ── Drag handle ── */
+  .req-filter-sheet-handle {
+    width: 36px !important;
+    height: 4px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    margin: 12px auto 0 !important;
+  }
+
+  /* ── Sheet header ── */
+  .req-filter-sheet-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 18px 10px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .req-filter-sheet-title {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    color: #fff !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  .req-filter-sheet-close {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: rgba(148, 163, 184, 0.7) !important;
+    cursor: pointer !important;
+  }
+
+  /* ── Body ── */
+  .req-filter-sheet-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 18px 18px 10px !important;
+  }
+
+  /* ── Select and input ── */
+  .req-filter-sheet-select,
+  .req-filter-sheet-input {
+    width: 100% !important;
+    height: 46px !important;
+    padding: 0 40px 0 14px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 10px !important;
+    color: rgba(235, 242, 255, 0.92) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    /* Custom arrow */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
+    background-size: 14px !important;
+  }
+
+  .req-filter-sheet-input {
+    background-image: none !important;
+    padding: 0 14px !important;
+  }
+
+  .req-filter-sheet-select:focus,
+  .req-filter-sheet-input:focus {
+    border-color: rgba(58, 130, 255, 0.45) !important;
+    background-color: rgba(58, 130, 255, 0.05) !important;
+  }
+
+  .req-filter-sheet-select option {
+    background: #0b0f1f !important;
+    color: #fff !important;
+  }
+
+  /* ── Filter label ── */
+  .req-filter-sheet-body .prov-filter-label {
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+    color: rgba(148, 163, 184, 0.5) !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+  }
+
+  .req-filter-sheet-body .prov-filter-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  /* ── Actions row ── */
+  .req-filter-sheet-actions {
+    display: flex !important;
+    gap: 10px !important;
+    padding: 12px 18px 28px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .req-filter-sheet-clear {
+    flex: 1 !important;
+    padding: 12px !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    border-radius: 10px !important;
+    color: #f87171 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+  }
+
+  .req-filter-sheet-apply {
+    flex: 1 !important;
+    padding: 12px !important;
+    background: #1d4ed8 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3) !important;
+  }
+}

@@ -1,6 +1,31 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { SlidersHorizontal, Search, Check, X, Eye } from 'lucide-react'
 import { CourseIcon } from '../components/CourseIcon.jsx'
+
+/* ── Mobile filter bottom sheet rendered via portal ──────────────── */
+function FilterSheet({ open, onClose, children }) {
+  // Close on backdrop click
+  if (!open) return null
+  return createPortal(
+    <div className="req-filter-sheet-backdrop" onClick={onClose}>
+      <div
+        className="req-filter-sheet"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="req-filter-sheet-handle" />
+        <div className="req-filter-sheet-header">
+          <span className="req-filter-sheet-title">Filters</span>
+          <button type="button" className="req-filter-sheet-close" onClick={onClose} aria-label="Close filters">
+            <X size={16} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body
+  )
+}
 
 function initials(name) {
   return (name || '')
@@ -112,7 +137,7 @@ export function RequestsPage({
             <Search size={14} />
           </button>
           
-          {/* Filters Button & Slide-down Dropdown panel */}
+          {/* Filters Button + portal bottom sheet */}
           <div className="prov-filters-panel-wrapper">
             <button
               type="button"
@@ -122,9 +147,10 @@ export function RequestsPage({
               <SlidersHorizontal size={13} />
               Filters
             </button>
-            
+
+            {/* Desktop: inline dropdown */}
             {showFilterPanel && (
-              <div className="prov-filters-panel">
+              <div className="prov-filters-panel req-filter-desktop-panel">
                 <div className="prov-filter-group">
                   <label className="prov-filter-label">Competency Course</label>
                   <select
@@ -156,6 +182,53 @@ export function RequestsPage({
               </div>
             )}
           </div>
+
+          {/* Mobile: portal bottom sheet */}
+          <FilterSheet open={showFilterPanel} onClose={() => setShowFilterPanel(false)}>
+            <div className="req-filter-sheet-body">
+              <div className="prov-filter-group">
+                <label className="prov-filter-label">Competency Course</label>
+                <select
+                  className="req-filter-sheet-select"
+                  value={selectedCourseFilter}
+                  onChange={(e) => setSelectedCourseFilter(e.target.value)}
+                >
+                  <option value="All">All Courses</option>
+                  {availableCourses.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="prov-filter-group">
+                <label className="prov-filter-label">Min Worker Count</label>
+                <input
+                  type="number"
+                  className="req-filter-sheet-input"
+                  placeholder="e.g. 10"
+                  value={minWorkers}
+                  onChange={(e) => setMinWorkers(e.target.value)}
+                />
+              </div>
+              <div className="req-filter-sheet-actions">
+                {(minWorkers || selectedCourseFilter !== 'All') && (
+                  <button
+                    type="button"
+                    className="req-filter-sheet-clear"
+                    onClick={() => { handleResetFilters(); setShowFilterPanel(false) }}
+                  >
+                    Clear Filters
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="req-filter-sheet-apply"
+                  onClick={() => setShowFilterPanel(false)}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </FilterSheet>
         </div>
       </div>
 
@@ -257,54 +330,61 @@ export function RequestsPage({
                     <span className="prov-dates-sub">{req.timeDetail || 'TBD'}</span>
                   </div>
 
-                  {/* Status */}
+                  {/* Status — desktop only; on mobile shown in footer row */}
                   <div className="prov-status-cell">
                     <span className={`prov-status-pill prov-status-pill--${req.status}`}>
                       {req.status}
                     </span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="prov-actions-cell" style={{ justifyContent: 'flex-end' }}>
-                    {req.status === 'pending' && (
-                      <>
+                  {/* Actions footer — also shows status on mobile */}
+                  <div className="prov-actions-cell prov-actions-cell--right">
+                    {/* Status pill shown only on mobile (desktop uses prov-status-cell) */}
+                    <span className={`prov-status-pill prov-status-pill--${req.status} prov-card-status-mobile`}>
+                      {req.status}
+                    </span>
+
+                    <div className="prov-card-actions-right">
+                      {req.status === 'pending' && (
+                        <>
+                          <button
+                            type="button"
+                            className="prov-action-btn-circle prov-action-btn-circle--approve"
+                            onClick={() => onAccept(req.id)}
+                            title="Approve"
+                            aria-label="Approve"
+                          >
+                            <Check size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="prov-action-btn-circle prov-action-btn-circle--reject"
+                            onClick={() => onReject(req.id)}
+                            title="Reject"
+                            aria-label="Reject"
+                          >
+                            <X size={14} />
+                          </button>
+                        </>
+                      )}
+                      {(req.status === 'approved' || req.status === 'accepted') && (
+                        <span className="prov-status-text prov-status-text--approved">✓ Approved</span>
+                      )}
+                      {req.status === 'completed' && (
                         <button
                           type="button"
-                          className="prov-action-btn-circle prov-action-btn-circle--approve"
-                          onClick={() => onAccept(req.id)}
-                          title="Approve"
-                          aria-label="Approve"
+                          className="prov-action-btn-circle prov-action-btn-circle--view"
+                          onClick={() => setViewingCertRequest(req)}
+                          title="View Certificate Details"
+                          aria-label="View details"
                         >
-                          <Check size={14} />
+                          <Eye size={13} />
                         </button>
-                        <button
-                          type="button"
-                          className="prov-action-btn-circle prov-action-btn-circle--reject"
-                          onClick={() => onReject(req.id)}
-                          title="Reject"
-                          aria-label="Reject"
-                        >
-                          <X size={14} />
-                        </button>
-                      </>
-                    )}
-                    {(req.status === 'approved' || req.status === 'accepted') && (
-                      <span style={{ fontSize: '11px', color: '#4deba0', fontWeight: '700' }}>✓ APPROVED</span>
-                    )}
-                    {req.status === 'completed' && (
-                      <button
-                        type="button"
-                        className="prov-action-btn-circle prov-action-btn-circle--view"
-                        onClick={() => setViewingCertRequest(req)}
-                        title="View Certificate Details"
-                        aria-label="View details"
-                      >
-                        <Eye size={13} />
-                      </button>
-                    )}
-                    {req.status === 'rejected' && (
-                      <span style={{ fontSize: '11px', color: '#f87171', fontWeight: '700' }}>✕ REJECTED</span>
-                    )}
+                      )}
+                      {req.status === 'rejected' && (
+                        <span className="prov-status-text prov-status-text--rejected">✕ Rejected</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )

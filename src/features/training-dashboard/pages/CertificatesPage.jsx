@@ -7,9 +7,57 @@ import {
   ArrowUpDown,
   MoreVertical,
   Calendar,
+  Check,
+  ChevronDown,
+  X,
 } from 'lucide-react'
 import { IssueCertificatePage } from './IssueCertificatePage.jsx'
 import { useToast } from '../../../shared/toast/toastContext.js'
+
+// ── Custom animated dropdown ─────────────────────────────────────────────────
+function CustomSelect({ label, value, onChange, options }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const selected = options.find((o) => o.value === value)
+
+  return (
+    <div className="prov-custom-select" ref={ref}>
+      <button
+        type="button"
+        className={`prov-custom-select-trigger ${open ? 'prov-custom-select-trigger--open' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="prov-custom-select-label">{label}</span>
+        <span className="prov-custom-select-value">{selected?.label ?? value}</span>
+        <ChevronDown size={12} className={`prov-custom-select-chevron ${open ? 'prov-custom-select-chevron--open' : ''}`} />
+      </button>
+      {open && (
+        <div className="prov-custom-select-menu">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`prov-custom-select-option ${opt.value === value ? 'prov-custom-select-option--active' : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+            >
+              {opt.label}
+              {opt.value === value && <Check size={12} className="prov-custom-select-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const PAGE_SIZE = 5
 
@@ -288,29 +336,29 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                 <div className="prov-filters-panel prov-cert-filters-panel">
                   <div className="prov-filter-group">
                     <label className="prov-filter-label">Status</label>
-                    <select
-                      className="prov-filter-select"
+                    <CustomSelect
+                      label="Status"
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option value="All">All Statuses</option>
-                      <option value="COMPLIANT">Compliant</option>
-                      <option value="EXPIRING SOON">Expiring Soon</option>
-                      <option value="EXPIRED">Expired</option>
-                    </select>
+                      onChange={setStatusFilter}
+                      options={[
+                        { value: 'All', label: 'All Statuses' },
+                        { value: 'COMPLIANT', label: 'Compliant' },
+                        { value: 'EXPIRING SOON', label: 'Expiring Soon' },
+                        { value: 'EXPIRED', label: 'Expired' },
+                      ]}
+                    />
                   </div>
                   <div className="prov-filter-group">
                     <label className="prov-filter-label">Certificate</label>
-                    <select
-                      className="prov-filter-select"
+                    <CustomSelect
+                      label="Certificate"
                       value={courseFilter}
-                      onChange={(e) => setCourseFilter(e.target.value)}
-                    >
-                      <option value="All">All Certificates</option>
-                      {availableCourses.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      onChange={setCourseFilter}
+                      options={[
+                        { value: 'All', label: 'All Certificates' },
+                        ...availableCourses.map((c) => ({ value: c, label: c })),
+                      ]}
+                    />
                   </div>
                   {(statusFilter !== 'All' || courseFilter !== 'All') && (
                     <button
@@ -336,9 +384,11 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
               >
                 <ArrowUpDown size={13} />
                 Sort By
+                <ChevronDown size={11} className={`prov-custom-select-chevron ${showSortMenu ? 'prov-custom-select-chevron--open' : ''}`} style={{ marginLeft: '2px' }} />
               </button>
               {showSortMenu && (
                 <div className="prov-cert-sort-menu">
+                  <p className="prov-cert-sort-menu-label">Sort by</p>
                   {Object.entries(sortLabels).map(([key, label]) => (
                     <button
                       key={key}
@@ -350,6 +400,7 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                       }}
                     >
                       {label}
+                      {sortBy === key && <Check size={12} style={{ marginLeft: 'auto', flexShrink: 0 }} />}
                     </button>
                   ))}
                 </div>
@@ -497,45 +548,72 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
       {selectedCert && (
         <div className="prov-cert-detail-overlay" onClick={() => setSelectedCert(null)}>
           <div className="prov-cert-detail-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{selectedCert.course}</h3>
-            <p className="prov-cert-detail-sub">{selectedCert.name}</p>
-            <dl className="prov-cert-detail-list">
-              <div>
-                <dt>Issuing Body</dt>
-                <dd>{selectedCert.issuingBody}</dd>
+            {/* Drag handle (mobile) */}
+            <div className="prov-cert-detail-handle" />
+
+            {/* Header */}
+            <div className="prov-cert-detail-header">
+              <div className="prov-cert-detail-header-left">
+                <div className={`prov-company-badge prov-company-badge--${getAvatarColor(selectedCert.name)} prov-cert-detail-avatar`}>
+                  {initials(selectedCert.name)}
+                </div>
+                <div>
+                  <h3 className="prov-cert-detail-title">{selectedCert.course}</h3>
+                  <p className="prov-cert-detail-sub">{selectedCert.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="prov-cert-detail-dismiss"
+                onClick={() => setSelectedCert(null)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Status badge */}
+            <div className="prov-cert-detail-status-row">
+              <span className={`prov-cert-status-pill ${getStatusPillClass(selectedCert.status)}`}>
+                <span className="prov-cert-status-dot" />
+                {selectedCert.status}
+              </span>
+            </div>
+
+            {/* Detail rows */}
+            <div className="prov-cert-detail-list">
+              <div className="prov-cert-detail-row">
+                <span className="prov-cert-detail-dt">Issuing Body</span>
+                <span className="prov-cert-detail-dd">{selectedCert.issuingBody}</span>
               </div>
               {selectedCert.issueDate && (
-                <div>
-                  <dt>Issue Date</dt>
-                  <dd>{selectedCert.issueDate}</dd>
+                <div className="prov-cert-detail-row">
+                  <span className="prov-cert-detail-dt">Issue Date</span>
+                  <span className="prov-cert-detail-dd">{selectedCert.issueDate}</span>
                 </div>
               )}
-              <div>
-                <dt>Expiry Date</dt>
-                <dd className={getExpiryClass(selectedCert.status)}>{selectedCert.expiryFormatted}</dd>
+              <div className="prov-cert-detail-row">
+                <span className="prov-cert-detail-dt">Expiry Date</span>
+                <span className={`prov-cert-detail-dd ${getExpiryClass(selectedCert.status)}`}>{selectedCert.expiryFormatted}</span>
               </div>
-              <div>
-                <dt>Status</dt>
-                <dd>
-                  <span className={`prov-cert-status-pill ${getStatusPillClass(selectedCert.status)}`}>
-                    <span className="prov-cert-status-dot" />
-                    {selectedCert.status}
-                  </span>
-                </dd>
-              </div>
-            </dl>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+            </div>
+
+            {/* Actions */}
+            <div className="prov-cert-detail-actions">
               {selectedCert.storageUrl && (
                 <button
                   type="button"
-                  className="prov-cert-detail-close"
-                  style={{ background: '#3b82f6', color: '#fff', border: 'none', flex: 1 }}
+                  className="prov-cert-detail-btn prov-cert-detail-btn--primary"
                   onClick={() => window.open(selectedCert.storageUrl, '_blank')}
                 >
                   Download Original
                 </button>
               )}
-              <button type="button" className="prov-cert-detail-close" style={{ flex: 1 }} onClick={() => setSelectedCert(null)}>
+              <button
+                type="button"
+                className="prov-cert-detail-btn prov-cert-detail-btn--ghost"
+                onClick={() => setSelectedCert(null)}
+              >
                 Close
               </button>
             </div>
