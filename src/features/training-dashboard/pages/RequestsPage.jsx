@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { SlidersHorizontal, Search, Check, X, Eye } from 'lucide-react'
 import { CourseIcon } from '../components/CourseIcon.jsx'
 
@@ -42,13 +42,27 @@ export function RequestsPage({
   showFilterPanel,
   setShowFilterPanel,
   availableCourses = [],
+  competencies = [],
+  organizations = [],
 }) {
+  const [currentPage, setCurrentPage] = useState(1)
+  const [viewingCertRequest, setViewingCertRequest] = useState(null)
+  const PAGE_SIZE = 8
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filterTab, minWorkers, selectedCourseFilter])
+
   const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every((id) => selectedRequests.includes(id))
 
   const handleResetFilters = () => {
     setMinWorkers('')
     setSelectedCourseFilter('All')
   }
+
+  const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedRequests = requests.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   return (
     <section className="prov-subpage">
@@ -198,7 +212,7 @@ export function RequestsPage({
             </div>
 
             {/* Data rows */}
-            {requests.map((req) => {
+            {paginatedRequests.map((req) => {
               const badgeColor = getBadgeColorClass(req.company)
               const isChecked = selectedRequests.includes(req.id)
 
@@ -281,6 +295,7 @@ export function RequestsPage({
                       <button
                         type="button"
                         className="prov-action-btn-circle prov-action-btn-circle--view"
+                        onClick={() => setViewingCertRequest(req)}
                         title="View Certificate Details"
                         aria-label="View details"
                       >
@@ -298,19 +313,140 @@ export function RequestsPage({
             {/* Bottom pagination */}
             <div className="prov-pagination-row">
               <span className="prov-pagination-info">
-                Showing {requests.length} of {requests.length} global requests
+                Showing {requests.length > 0 ? (safePage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(safePage * PAGE_SIZE, requests.length)} of {requests.length} global requests
               </span>
               <div className="prov-pagination-controls">
-                <button type="button" className="prov-page-btn" disabled>&lt;</button>
-                <button type="button" className="prov-page-btn prov-page-btn--active">1</button>
-                <button type="button" className="prov-page-btn" disabled>2</button>
-                <button type="button" className="prov-page-btn" disabled>3</button>
-                <button type="button" className="prov-page-btn" disabled>&gt;</button>
+                <button
+                  type="button"
+                  className="prov-page-btn"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                >
+                  &lt;
+                </button>
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const pageNum = idx + 1
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      className={`prov-page-btn ${safePage === pageNum ? 'prov-page-btn--active' : ''}`}
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                })}
+                <button
+                  type="button"
+                  className="prov-page-btn"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  &gt;
+                </button>
               </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Completed Request Certificates Modal */}
+      {viewingCertRequest && (
+        <div className="prov-modal-overlay" onClick={() => setViewingCertRequest(null)}>
+          <div className="prov-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '12px' }}>
+              <h3 className="prov-modal-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Eye size={18} style={{ color: '#3b82f6' }} />
+                Issued Certificates
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewingCertRequest(null)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ margin: '0 0 4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(148, 163, 184, 0.65)', fontWeight: 800 }}>Course</p>
+              <h4 style={{ margin: '0 0 12px', fontSize: '16px', fontWeight: 800, color: '#fff' }}>{viewingCertRequest.course}</h4>
+              
+              <p style={{ margin: '0 0 4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(148, 163, 184, 0.65)', fontWeight: 800 }}>Client Organization</p>
+              <h4 style={{ margin: '0', fontSize: '14px', fontWeight: 700, color: '#3b82f6' }}>{viewingCertRequest.company}</h4>
+            </div>
+
+            <div className="prov-modal-desc" style={{ marginBottom: '16px', fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              Below is the list of safety competency certificates issued for this completed session.
+            </div>
+
+            <div style={{ maxHeight: '250px', overflowY: 'auto', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              {(() => {
+                const org = organizations.find(o => 
+                  (o.name || o.companyName || o.organizationName || '').toLowerCase().trim() === viewingCertRequest.company.toLowerCase().trim()
+                )
+                
+                const matchedCerts = competencies.filter(cert => {
+                  const courseMatches = cert.course.toLowerCase().trim() === viewingCertRequest.course.toLowerCase().trim()
+                  const orgMatches = org && cert.organizationId === org.id
+                  
+                  const cleanRequestOrgId = viewingCertRequest.clientId.replace(/Client ID:\s*#?/i, '').trim()
+                  const cleanCertOrgId = cert.organizationId.trim()
+                  const orgIdMatches = cleanRequestOrgId && cleanCertOrgId && cleanCertOrgId.toLowerCase().startsWith(cleanRequestOrgId.toLowerCase())
+                  
+                  return courseMatches && (orgMatches || orgIdMatches)
+                })
+
+                if (matchedCerts.length === 0) {
+                  return (
+                    <div style={{ padding: '24px 16px', textAlign: 'center', color: 'rgba(148, 163, 184, 0.6)' }}>
+                      No certificates registered in Firestore for this course/client yet.
+                    </div>
+                  )
+                }
+
+                return matchedCerts.map((cert) => (
+                  <div
+                    key={cert.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: '13px' }}>{cert.name}</div>
+                      <div style={{ fontSize: '11px', color: 'rgba(148, 163, 184, 0.6)', marginTop: '2px' }}>
+                        Registered: {new Date(cert.registeredAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="prov-cert-status-pill prov-cert-status-pill--compliant" style={{ padding: '3px 8px', fontSize: '10px' }}>
+                        {cert.expiry ? `Expires: ${cert.expiry}` : 'No Expiry'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
+
+            <div className="prov-modal-actions" style={{ marginTop: '20px' }}>
+              <button
+                type="button"
+                className="prov-modal-btn-confirm"
+                onClick={() => setViewingCertRequest(null)}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

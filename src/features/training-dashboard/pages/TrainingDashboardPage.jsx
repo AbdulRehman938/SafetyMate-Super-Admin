@@ -108,6 +108,8 @@ export function TrainingDashboardPage({ view = 'overview' }) {
     return (
       <RequestsPage
         requests={filteredRequests}
+        competencies={competencies}
+        organizations={organizations}
         onAccept={handleAccept}
         onReject={handleReject}
         onBulkApprove={handleBulkApproveAction}

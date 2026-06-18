@@ -5586,12 +5586,59 @@ h2 {
   color: rgba(203, 214, 255, 0.2);
 }
 
+@media (max-width: 768px) {
+  .login-shell {
+    padding: 0 16px 24px;
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+  .login-topbar {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    height: auto;
+    padding: 16px 16px;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .login-content-wrap {
+    margin-top: 32px;
+    max-width: 100%;
+  }
+  .login-card {
+    padding: 36px 28px;
+  }
+  .bottom-copyright {
+    position: relative;
+    bottom: auto;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .encrypt-tooltip {
+    position: fixed;
+    top: 70px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+    z-index: 1000;
+  }
+  .encrypt-tooltip::before {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
   .login-card {
     padding: 28px 20px;
   }
   .login-topbar {
-    padding: 0 16px;
     font-size: 10px;
   }
 }

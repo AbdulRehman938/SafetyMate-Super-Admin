@@ -496,16 +496,24 @@ export function CalendarPage({
   }
 
   // Pre-calculate boundary check for previous page button disabled state
-  let prevDate
+  let prevDate = new Date(currentDate)
   if (viewType === 'Month') {
     prevDate = new Date(activeYear, activeMonth - 1, 1)
   } else if (viewType === 'Week') {
-    prevDate = new Date(currentDate)
-    prevDate.setDate(prevDate.getDate() - 7)
+    prevDate.setDate(currentDate.getDate() - 7)
   } else {
-    prevDate = new Date(currentDate)
-    prevDate.setDate(prevDate.getDate() - 1)
+    prevDate.setDate(currentDate.getDate() - 1)
   }
+
+  const monthEvents = filteredEvents.filter((e) => e.dates && e.dates.length > 0)
+  const alphaCount = monthEvents.filter((e) => e.classroom?.includes('Lab A') || e.classroom?.includes('402')).length
+  const vrCount = monthEvents.filter((e) => e.classroom?.includes('Sim')).length
+  const theaterCount = monthEvents.filter((e) => e.classroom?.includes('Auditorium') || e.classroom?.includes('Digital')).length
+
+  const alphaUtil = Math.min(100, 35 + alphaCount * 15)
+  const vrUtil = Math.min(100, 20 + vrCount * 20)
+  const theaterUtil = Math.min(100, 45 + theaterCount * 12)
+
   const isPrevDisabled = isDateBeforeLimit(prevDate)
 
   return (
@@ -823,10 +831,10 @@ export function CalendarPage({
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.75)', marginBottom: '6px' }}>
                   <span>TRAINING HALL ALPHA</span>
-                  <span style={{ color: '#fff' }}>85%</span>
+                  <span style={{ color: '#fff' }}>{alphaUtil}%</span>
                 </div>
                 <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: '85%', height: '100%', background: '#3b82f6', borderRadius: '3px' }} />
+                  <div style={{ width: `${alphaUtil}%`, height: '100%', background: '#3b82f6', borderRadius: '3px' }} />
                 </div>
               </div>
 
@@ -834,10 +842,10 @@ export function CalendarPage({
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.75)', marginBottom: '6px' }}>
                   <span>VR SIMULATION SUITE</span>
-                  <span style={{ color: '#fff' }}>42%</span>
+                  <span style={{ color: '#fff' }}>{vrUtil}%</span>
                 </div>
                 <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: '42%', height: '100%', background: '#eab308', borderRadius: '3px' }} />
+                  <div style={{ width: `${vrUtil}%`, height: '100%', background: '#eab308', borderRadius: '3px' }} />
                 </div>
               </div>
 
@@ -845,10 +853,10 @@ export function CalendarPage({
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.75)', marginBottom: '6px' }}>
                   <span>LECTURE THEATER 2</span>
-                  <span style={{ color: '#fff' }}>92%</span>
+                  <span style={{ color: '#fff' }}>{theaterUtil}%</span>
                 </div>
                 <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: '92%', height: '100%', background: '#ef4444', borderRadius: '3px' }} />
+                  <div style={{ width: `${theaterUtil}%`, height: '100%', background: '#ef4444', borderRadius: '3px' }} />
                 </div>
               </div>
             </div>

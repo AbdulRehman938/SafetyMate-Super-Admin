@@ -9,6 +9,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import { IssueCertificatePage } from './IssueCertificatePage.jsx'
+import { useToast } from '../../../shared/toast/toastContext.js'
 
 const PAGE_SIZE = 5
 
@@ -98,6 +99,7 @@ function getExpiryClass(status) {
 }
 
 export function CertificatesPage({ competencies = [], employees = [], organizations = [], onIssue }) {
+  const toast = useToast()
   const [isIssuingNew, setIsIssuingNew] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showSortMenu, setShowSortMenu] = useState(false)
@@ -422,6 +424,15 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                         type="button"
                         onClick={() => {
                           setOpenActionId(null)
+                          if (cert.storageUrl) {
+                            window.open(cert.storageUrl, '_blank')
+                          } else {
+                            toast.push({
+                              type: 'info',
+                              title: 'Download Unavailable',
+                              message: 'This certificate was manually issued and has no attached document.',
+                            })
+                          }
                         }}
                       >
                         Download PDF
@@ -493,6 +504,12 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                 <dt>Issuing Body</dt>
                 <dd>{selectedCert.issuingBody}</dd>
               </div>
+              {selectedCert.issueDate && (
+                <div>
+                  <dt>Issue Date</dt>
+                  <dd>{selectedCert.issueDate}</dd>
+                </div>
+              )}
               <div>
                 <dt>Expiry Date</dt>
                 <dd className={getExpiryClass(selectedCert.status)}>{selectedCert.expiryFormatted}</dd>
@@ -507,9 +524,21 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                 </dd>
               </div>
             </dl>
-            <button type="button" className="prov-cert-detail-close" onClick={() => setSelectedCert(null)}>
-              Close
-            </button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              {selectedCert.storageUrl && (
+                <button
+                  type="button"
+                  className="prov-cert-detail-close"
+                  style={{ background: '#3b82f6', color: '#fff', border: 'none', flex: 1 }}
+                  onClick={() => window.open(selectedCert.storageUrl, '_blank')}
+                >
+                  Download Original
+                </button>
+              )}
+              <button type="button" className="prov-cert-detail-close" style={{ flex: 1 }} onClick={() => setSelectedCert(null)}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

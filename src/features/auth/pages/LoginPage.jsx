@@ -145,12 +145,7 @@ export function LoginPage({ initialError = '' }) {
             </div>
 
             <div className="form-group">
-              <div className="label-row">
-                <label htmlFor="login-password">Password</label>
-                <a href="#forgot" className="forgot-link" onClick={(e) => e.preventDefault()}>
-                  Forgot Password?
-                </a>
-              </div>
+              <label htmlFor="login-password">Password</label>
               <div className="input-with-icon">
                 <Lock size={16} className="input-icon" />
                 <input

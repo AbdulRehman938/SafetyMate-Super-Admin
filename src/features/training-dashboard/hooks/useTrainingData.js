@@ -104,6 +104,11 @@ export function useTrainingData() {
                 ? data.createdAt.toDate()
                 : new Date(data.createdAt)
               : new Date(),
+            organizationId: data.organizationId || '',
+            workerId: data.workerId || '',
+            storageUrl: data.storageUrl || '',
+            issueDate: data.issueDate || '',
+            issuingBody: data.issuingBody || '',
           }
         })
         list.sort((a, b) => b.registeredAt - a.registeredAt)
