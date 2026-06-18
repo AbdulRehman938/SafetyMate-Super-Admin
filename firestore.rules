@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/user_profiles/$(request.auth.uid)).data.role;
+    }
+
+    function isSuperAdmin() {
+      return isAuth() && myRole() == 'SUPER_ADMIN';
+    }
+
+    function isTrainingProvider() {
+      return isAuth() && myRole() == 'TRAINING_PROVIDER';
+    }
+
+    // ── user_profiles ─────────────────────────────────────────
+    match /user_profiles/{uid} {
+      allow read: if isAuth() && request.auth.uid == uid;
+      allow read, write: if isSuperAdmin();
+      allow read: if isTrainingProvider();
+      allow create: if isAuth() && request.auth.uid == uid;
+    }
+
+    // ── organizations ─────────────────────────────────────────
+    match /organizations/{orgId} {
+      allow read: if isAuth();
+      allow write: if isSuperAdmin();
+    }
+
+    // ── training_requests ─────────────────────────────────────
+    match /training_requests/{reqId} {
+      allow read: if isSuperAdmin() || isTrainingProvider();
+      allow create: if isAuth();
+      allow update: if isSuperAdmin() || isTrainingProvider();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── certificates ──────────────────────────────────────────
+    match /certificates/{certId} {
+      allow read: if isAuth();
+      allow create, update: if isSuperAdmin() || isTrainingProvider();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── notifications (in-app) ────────────────────────────────
+    match /notifications/{notifId} {
+      allow read: if isAuth() && (
+        isSuperAdmin() ||
+        (isTrainingProvider() && resource.data.recipientRole == 'TRAINING_PROVIDER') ||
+        (request.auth.uid == resource.data.recipientUid)
+      );
+      allow create: if isSuperAdmin() || isTrainingProvider();
+      allow update: if isAuth() && (
+        isSuperAdmin() ||
+        (
+          isTrainingProvider() &&
+          resource.data.recipientRole == 'TRAINING_PROVIDER' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
+        ) ||
+        (
+          request.auth.uid == resource.data.recipientUid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
+        )
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── Everything else: Super Admin only ─────────────────────
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

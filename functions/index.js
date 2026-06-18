@@ -301,6 +301,46 @@ exports.deleteWorkforceMember = onCall(async (request) => {
   }
 })
 
+exports.notifyTrainingProviderOnRequest = onDocumentCreated('training_requests/{reqId}', async (event) => {
+  const snap = event.data
+  if (!snap) return
+
+  const reqId = event.params.reqId
+  const data = snap.data() || {}
+  const status = String(data.status || 'pending').toLowerCase()
+
+  if (status !== 'pending') return
+
+  const company = data.company || data.clientName || 'A company'
+  const course = data.course || data.courseName || 'a course'
+  const workers = data.workers || data.workerCount || 0
+  const reqIdLabel = data.reqId || `#${String(reqId).slice(0, 8).toUpperCase()}`
+
+  const existing = await admin
+    .firestore()
+    .collection('notifications')
+    .where('sourceId', '==', reqId)
+    .where('type', '==', 'training_request')
+    .limit(1)
+    .get()
+    .catch(() => null)
+
+  if (existing && !existing.empty) return
+
+  await admin.firestore().collection('notifications').add({
+    type: 'training_request',
+    recipientRole: 'TRAINING_PROVIDER',
+    recipientUid: null,
+    sourceId: reqId,
+    title: 'New Training Request',
+    message: `${company} requested training for "${course}" (${workers} workers)`,
+    meta: reqIdLabel,
+    navigateTo: '/training/requests',
+    readBy: {},
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  })
+})
+
 exports.createClientAdmin = onCall(async (request) => {
   // Callable functions handle CORS automatically. If you see a CORS error in the browser,
   // it usually means this function crashed before sending headers.

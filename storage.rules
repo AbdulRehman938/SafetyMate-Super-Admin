@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return firestore.get(/databases/(default)/documents/user_profiles/$(request.auth.uid)).data.role;
+    }
+
+    function isSuperAdmin() {
+      return isAuth() && myRole() == 'SUPER_ADMIN';
+    }
+
+    function isTrainingProvider() {
+      return isAuth() && myRole() == 'TRAINING_PROVIDER';
+    }
+
+    match /certificates/{allPaths=**} {
+      allow read: if isAuth();
+      allow write: if isSuperAdmin() || isTrainingProvider();
+    }
+
+    match /organizations/logos/{allPaths=**} {
+      allow read: if isAuth();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

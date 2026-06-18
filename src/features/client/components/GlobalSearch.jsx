@@ -6,7 +6,10 @@ import { db } from '../../../config/firebase.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { isWorkforceRole } from '../workforceRoles.js'
 
-const GROUP_LABELS = {
+// ──────────────────────────────────────────────────────────────────
+// CLIENT / COMPANY roles — collection sources
+// ──────────────────────────────────────────────────────────────────
+const CLIENT_GROUP_LABELS = {
   incidents: 'Incidents',
   hira_assessments: 'Risk Assessments',
   certificates: 'Certificates',
@@ -16,7 +19,7 @@ const GROUP_LABELS = {
   user_profiles: 'Workforce',
 }
 
-function routeFor(item) {
+function clientRouteFor(item) {
   switch (item.source) {
     case 'incidents':
       return `/client/incidents?open=${encodeURIComponent(item.id)}`
@@ -37,7 +40,7 @@ function routeFor(item) {
   }
 }
 
-function normalizeRow(source, docSnap) {
+function normalizeClientRow(source, docSnap) {
   const data = docSnap.data() || {}
   const id = docSnap.id
 
@@ -139,7 +142,7 @@ function normalizeRow(source, docSnap) {
   }
 }
 
-async function fetchAllSources(orgId) {
+async function fetchClientSources(orgId) {
   const sources = [
     'incidents',
     'hira_assessments',
@@ -155,7 +158,7 @@ async function fetchAllSources(orgId) {
       try {
         const qy = query(collection(db, source), where('organizationId', '==', orgId), limit(200))
         const snap = await getDocs(qy)
-        return snap.docs.map((d) => normalizeRow(source, d)).filter(Boolean)
+        return snap.docs.map((d) => normalizeClientRow(source, d)).filter(Boolean)
       } catch (err) {
         console.warn(`[GlobalSearch] ${source} query failed`, err)
         return []
@@ -166,9 +169,109 @@ async function fetchAllSources(orgId) {
   return results.flat()
 }
 
+// ──────────────────────────────────────────────────────────────────
+// TRAINING PROVIDER role — collection sources
+// ──────────────────────────────────────────────────────────────────
+const TRAINING_GROUP_LABELS = {
+  training_requests: 'Training Requests',
+  certificates: 'Issued Certificates',
+  user_profiles: 'Students & Workers',
+}
+
+function trainingRouteFor(item) {
+  switch (item.source) {
+    case 'training_requests':
+      return `/training/requests`
+    case 'certificates':
+      return `/training/certificates`
+    case 'user_profiles':
+      return `/training/dashboard`
+    default:
+      return '/training/dashboard'
+  }
+}
+
+function normalizeTrainingRow(source, docSnap) {
+  const data = docSnap.data() || {}
+  const id = docSnap.id
+
+  switch (source) {
+    case 'training_requests':
+      return {
+        source,
+        id,
+        title: data.course || data.courseName || 'Training Request',
+        subtitle: `${data.company || data.clientName || '—'} • ${data.workers || 0} workers • ${data.status || 'pending'}`,
+        searchable: [
+          data.company,
+          data.clientName,
+          data.course,
+          data.courseName,
+          data.reqId,
+          data.status,
+          data.instructor,
+          data.classroom,
+          id,
+        ],
+      }
+    case 'certificates':
+      return {
+        source,
+        id,
+        title: data.certificateName || data.name || 'Certificate',
+        subtitle: `${data.workerName || '—'} • Issued: ${data.issueDate || '—'}`,
+        searchable: [
+          data.certificateName,
+          data.name,
+          data.workerName,
+          data.workerId,
+          data.issuingBody,
+          data.issueDate,
+          data.expiryDate,
+          id,
+        ],
+      }
+    case 'user_profiles':
+      return {
+        source,
+        id,
+        title: data.fullName || data.name || 'Person',
+        subtitle: `${data.role || '—'}${data.email ? ` • ${data.email}` : ''}`,
+        searchable: [data.fullName, data.name, data.role, data.email, data.phone, id],
+      }
+    default:
+      return null
+  }
+}
+
+async function fetchTrainingSources() {
+  const sources = ['training_requests', 'certificates', 'user_profiles']
+
+  const results = await Promise.all(
+    sources.map(async (source) => {
+      try {
+        const qy = query(collection(db, source), limit(300))
+        const snap = await getDocs(qy)
+        return snap.docs.map((d) => normalizeTrainingRow(source, d)).filter(Boolean)
+      } catch (err) {
+        console.warn(`[GlobalSearch] training ${source} query failed`, err)
+        return []
+      }
+    }),
+  )
+
+  return results.flat()
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────────────────────────
 export function GlobalSearch() {
   const { profile, organizationId } = useAuth()
+  const role = profile?.role || ''
+  const isTrainingProvider = role === 'TRAINING_PROVIDER'
   const orgId = profile?.organizationId ?? organizationId
+
   const navigate = useNavigate()
 
   const [q, setQ] = useState('')
@@ -179,11 +282,17 @@ export function GlobalSearch() {
   const containerRef = useRef(null)
   const inputRef = useRef(null)
 
+  const GROUP_LABELS = isTrainingProvider ? TRAINING_GROUP_LABELS : CLIENT_GROUP_LABELS
+  const routeFor = isTrainingProvider ? trainingRouteFor : clientRouteFor
+
   async function ensureIndex() {
-    if (indexReady || loading || !orgId) return
+    if (indexReady || loading) return
+    if (!isTrainingProvider && !orgId) return
     setLoading(true)
     try {
-      const all = await fetchAllSources(orgId)
+      const all = isTrainingProvider
+        ? await fetchTrainingSources()
+        : await fetchClientSources(orgId)
       setRows(all)
       setIndexReady(true)
     } finally {
@@ -212,7 +321,7 @@ export function GlobalSearch() {
       window.removeEventListener('keydown', onKey)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indexReady, loading, orgId])
+  }, [indexReady, loading, orgId, isTrainingProvider])
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase()
@@ -230,13 +339,20 @@ export function GlobalSearch() {
     for (const m of matches) {
       if (!groups.has(m.source)) groups.set(m.source, [])
       const arr = groups.get(m.source)
-      if (arr.length < 5) arr.push(m)
+      if (arr.length < 6) arr.push(m)
     }
     return Array.from(groups.entries()).map(([source, items]) => ({ source, items }))
   }, [q, rows])
 
   function choose(item) {
     if (!item) return
+    if (window.isIssueCertificateFormDirty) {
+      const confirmed = window.confirm(
+        'You have unsaved changes in the certificate form. Are you sure you want to leave?',
+      )
+      if (!confirmed) return
+      window.isIssueCertificateFormDirty = false
+    }
     setOpen(false)
     setQ('')
     navigate(routeFor(item))
@@ -248,6 +364,10 @@ export function GlobalSearch() {
     if (first) choose(first)
   }
 
+  const placeholder = isTrainingProvider
+    ? 'Search requests, certificates, workers… (⌘K)'
+    : 'Search incidents, certificates, workers, PPE… (⌘K)'
+
   return (
     <div className="client-topbar-search client-global-search" ref={containerRef}>
       <form className="search-box" onSubmit={onSubmit} role="search" aria-label="Global search">
@@ -256,7 +376,7 @@ export function GlobalSearch() {
         </span>
         <input
           ref={inputRef}
-          placeholder="Search incidents, certificates, workers, PPE…"
+          placeholder={placeholder}
           type="search"
           value={q}
           onChange={(e) => {
@@ -270,18 +390,31 @@ export function GlobalSearch() {
           }}
           aria-label="Search"
         />
-        <span className="client-search-kbd" aria-hidden>
-          ⌘K
-        </span>
+        {q && (
+          <button
+            type="button"
+            className="client-search-clear"
+            onClick={() => {
+              setQ('')
+              inputRef.current?.focus()
+            }}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
       </form>
 
       {open && q.trim() ? (
         <div className="client-search-dropdown" role="listbox">
           {loading && !indexReady ? (
-            <div className="client-search-empty">Indexing your organization’s data…</div>
+            <div className="client-search-empty">
+              <span className="client-search-spinner" />
+              Indexing data…
+            </div>
           ) : null}
           {indexReady && filtered.length === 0 ? (
-            <div className="client-search-empty">No results for “{q.trim()}”.</div>
+            <div className="client-search-empty">No results for &ldquo;{q.trim()}&rdquo;.</div>
           ) : null}
           {filtered.map((group) => (
             <div key={group.source} className="client-search-group">

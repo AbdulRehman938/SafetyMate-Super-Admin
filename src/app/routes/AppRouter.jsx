@@ -27,7 +27,7 @@ import { WorkforcePage } from '../../features/client/pages/WorkforcePage.jsx'
 import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
 import { CertificatesPage } from '../../features/client/pages/CertificatesPage.jsx'
 import { PPEPage } from '../../features/client/pages/PPEPage.jsx'
-import { TrainingDashboardPage } from '../../features/client/pages/TrainingDashboardPage.jsx'
+import { TrainingDashboardPage } from '../../features/training-dashboard/pages/TrainingDashboardPage.jsx'
 import { FleetDashboardPage } from '../../features/client/pages/FleetDashboardPage.jsx'
 import { FireExtinguisherDashboardPage } from '../../features/client/pages/FireExtinguisherDashboardPage.jsx'
 import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
@@ -48,8 +48,9 @@ export function AppRouter() {
   } = useAuth()
 
   const isSuperAdmin = role === 'SUPER_ADMIN'
+  const isProvider = ['TRAINING_PROVIDER', 'FLEET', 'FIRE_EXTINGUISHER', 'FIRE_DETECTION'].includes(role)
   const isClientUser =
-    Boolean(profile && organizationId && profileStatus === 'loaded' && !isSuperAdmin)
+    Boolean(profile && (organizationId || isProvider) && profileStatus === 'loaded' && !isSuperAdmin)
 
   useEffect(() => {
     if (!authReady) return
@@ -59,7 +60,7 @@ export function AppRouter() {
     if (isSuperAdmin) return
     if (isClientUser) return
     // Handled in-render: show “no organization” panel instead of signing out.
-    if (profileStatus === 'loaded' && profile && !organizationId) return
+    if (profileStatus === 'loaded' && profile && !organizationId && !isProvider) return
 
     if (profileStatus === 'missing' || profileStatus === 'error') {
       signOut()
@@ -74,6 +75,7 @@ export function AppRouter() {
     organizationId,
     isSuperAdmin,
     isClientUser,
+    isProvider,
     setError,
     signOut,
   ])
@@ -152,7 +154,7 @@ export function AppRouter() {
     )
   }
 
-  if (profileStatus === 'loaded' && profile && !organizationId && !isSuperAdmin) {
+  if (profileStatus === 'loaded' && profile && !organizationId && !isSuperAdmin && !isProvider) {
     return (
       <section className="login-shell">
         <div className="login-content-wrap">
@@ -183,7 +185,10 @@ export function AppRouter() {
       return (
         <Routes>
           <Route element={<ClientLayout />}>
-            <Route path="/training/dashboard" element={<TrainingDashboardPage />} />
+            <Route path="/training/dashboard" element={<TrainingDashboardPage view="overview" />} />
+            <Route path="/training/requests" element={<TrainingDashboardPage view="requests" />} />
+            <Route path="/training/calendar" element={<TrainingDashboardPage view="calendar" />} />
+            <Route path="/training/certificates" element={<TrainingDashboardPage view="certificates" />} />
           </Route>
           <Route path="*" element={<Navigate to="/training/dashboard" replace />} />
         </Routes>
