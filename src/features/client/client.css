@@ -11570,3 +11570,313 @@ audio.evidence-media {
     box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3) !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CERTIFICATES PAGE — Filter bottom sheet portal
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Desktop: show inline, hide portal */
+@media (min-width: 641px) {
+  .cert-filter-desktop { display: flex !important; }
+  .cert-filter-sheet-backdrop { display: none !important; }
+}
+
+/* Mobile: hide inline, show portal */
+@media (max-width: 640px) {
+  .cert-filter-desktop { display: none !important; }
+
+  .cert-filter-sheet-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9998 !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    animation: prov-fade-in 200ms ease both !important;
+  }
+
+  .cert-filter-sheet {
+    width: 100% !important;
+    background: #0b0f1f !important;
+    border: 1px solid rgba(58, 130, 255, 0.14) !important;
+    border-bottom: none !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.7) !important;
+    animation: cert-sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+  }
+
+  .cert-filter-sheet-handle {
+    width: 36px !important;
+    height: 4px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    margin: 12px auto 0 !important;
+  }
+
+  .cert-filter-sheet-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 18px 10px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .cert-filter-sheet-title {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    color: #fff !important;
+  }
+
+  .cert-filter-sheet-close {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: rgba(148, 163, 184, 0.7) !important;
+    cursor: pointer !important;
+  }
+
+  .cert-filter-sheet-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 18px 18px 10px !important;
+  }
+
+  .cert-filter-sheet-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  /* Reuse req-filter-sheet-actions styles */
+  .cert-filter-sheet-actions {
+    display: flex !important;
+    gap: 10px !important;
+    padding: 12px 18px 28px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CERTIFICATES PAGE — Forecast chart fix
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Ensure the forecast card has enough height and the bars render */
+.prov-cert-forecast-card {
+  padding: 20px !important;
+}
+
+.prov-cert-forecast-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.prov-cert-forecast-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(235, 242, 255, 0.9);
+}
+
+.prov-cert-forecast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(58, 130, 255, 0.12);
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.prov-cert-forecast-chart {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  height: 96px !important;
+  margin-bottom: 10px !important;
+}
+
+.prov-cert-forecast-bar-col {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  height: 100% !important;
+  gap: 6px !important;
+}
+
+.prov-cert-forecast-bar {
+  width: 100% !important;
+  max-width: 40px !important;
+  border-radius: 5px 5px 0 0 !important;
+  background: rgba(58, 130, 255, 0.25) !important;
+  transition: height 500ms ease !important;
+  min-height: 4px !important;
+}
+
+.prov-cert-forecast-bar--active {
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35) !important;
+}
+
+.prov-cert-forecast-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: rgba(148, 163, 184, 0.55) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.prov-cert-forecast-sub {
+  margin: 0 !important;
+  font-size: 11px !important;
+  color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TASK 1 — Request cards: mobile tap-to-select checkbox
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Hidden on desktop — shown only on mobile */
+.prov-mobile-select-btn {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .prov-mobile-select-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    background: transparent !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+    transition: border-color 150ms, background 150ms !important;
+  }
+
+  .prov-mobile-select-btn--checked {
+    background: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+    color: #fff !important;
+  }
+
+  .prov-mobile-select-btn:hover {
+    border-color: rgba(58, 130, 255, 0.6) !important;
+  }
+
+  /* Bulk bar: prominent on mobile when items are selected */
+  .prov-bulk-bar {
+    border: 1px solid rgba(58, 130, 255, 0.25) !important;
+    background: rgba(14, 24, 52, 0.9) !important;
+  }
+
+  .prov-btn-bulk-approve {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    color: #4deba0 !important;
+    border-radius: 9px !important;
+    padding: 11px 16px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+  }
+
+  .prov-btn-bulk-reject {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    color: #f87171 !important;
+    border-radius: 9px !important;
+    padding: 11px 16px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TASK 2 — Calendar: clickable legend buttons + swipe hint
+   ══════════════════════════════════════════════════════════════════ */
+
+.prov-cal-legend-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 20px !important;
+  padding: 3px 10px 3px 6px !important;
+  cursor: pointer !important;
+  transition: background 130ms, border-color 130ms !important;
+  white-space: nowrap !important;
+}
+
+.prov-cal-legend-btn:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.prov-cal-legend-btn--active {
+  background: rgba(58, 130, 255, 0.12) !important;
+  border-color: rgba(58, 130, 255, 0.35) !important;
+}
+
+.prov-cal-legend-btn--active .prov-cal-legend-label {
+  color: #8ab8ff !important;
+}
+
+/* "All" button — no dot, slightly different style */
+.prov-cal-legend-btn:first-child {
+  padding: 3px 10px !important;
+}
+
+/* Touch swipe hint — mobile only, fades after interaction */
+@media (max-width: 640px) {
+  .prov-cal-card {
+    position: relative !important;
+  }
+
+  /* Swipe hint indicator */
+  .prov-cal-card::after {
+    content: '← swipe →';
+    display: block;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(148, 163, 184, 0.3);
+    padding: 6px 0 2px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Legend: wrap and scroll on mobile */
+  .prov-cal-legend {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    justify-content: center !important;
+  }
+
+  .prov-cal-legend-btn {
+    font-size: 10.5px !important;
+    padding: 4px 10px 4px 7px !important;
+  }
+
+  .prov-cal-legend-btn:first-child {
+    padding: 4px 10px !important;
+  }
+}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Calendar, Clock, MapPin, User, Users, ShieldAlert, Check, Search, X } from 'lucide-react'
+import { Calendar, Clock, MapPin, User, ShieldAlert, Check, X } from 'lucide-react'
+import { CustomSelect } from '../components/CustomSelect.jsx'
+import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
 
 function getTodayStr() {
   return new Date().toISOString().split('T')[0]
@@ -151,17 +153,6 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
     return org?.name || org?.companyName || org?.organizationName || 'Select client'
   })()
 
-  const selectStyle = {
-    width: '100%',
-    padding: '10px 14px',
-    background: '#070a13',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '13px',
-    outline: 'none',
-  }
-
   return (
     <div className="schedule-session-page">
       {/* Header */}
@@ -190,21 +181,27 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
             </h3>
             <div className="sched-field">
               <label className="sched-label">Course Title</label>
-              <select value={course} onChange={(e) => setCourse(e.target.value)} className="sched-select">
-                {coursesList.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <CustomSelect
+                value={course}
+                onChange={setCourse}
+                options={coursesList}
+                searchable
+                searchPlaceholder="Search course..."
+              />
             </div>
             <div className="sched-field">
               <label className="sched-label">Client Company</label>
-              <select value={company} onChange={(e) => setCompany(e.target.value)} className="sched-select">
-                {organizations && organizations.length > 0
-                  ? organizations.map((org) => (
-                      <option key={org.id} value={org.id}>
-                        {org.name || org.companyName || org.organizationName || org.id}
-                      </option>
-                    ))
-                  : <option value="">No organizations available</option>}
-              </select>
+              <CustomSelect
+                value={company}
+                onChange={setCompany}
+                options={organizations && organizations.length > 0
+                  ? organizations.map((org) => ({
+                      value: org.id,
+                      label: org.name || org.companyName || org.organizationName || org.id,
+                    }))
+                  : [{ value: '', label: 'No organizations available' }]
+                }
+              />
             </div>
           </div>
 
@@ -217,9 +214,14 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
               </h3>
               <div className="sched-field">
                 <label className="sched-label">Instructor</label>
-                <select value={instructor} onChange={(e) => setInstructor(e.target.value)} className="sched-select" disabled={employees.length === 0}>
-                  {instructorsList.map((ins) => <option key={ins} value={ins}>{ins}</option>)}
-                </select>
+                <CustomSelect
+                  value={instructor}
+                  onChange={setInstructor}
+                  options={instructorsList.map((ins) => ({ value: ins, label: ins }))}
+                  disabled={employees.length === 0}
+                  searchable
+                  searchPlaceholder="Search instructor..."
+                />
               </div>
               <div className="sched-availability">
                 <span className="sched-availability-badge">Availability Check</span>
@@ -234,9 +236,11 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
               </h3>
               <div className="sched-field">
                 <label className="sched-label">Location / Room</label>
-                <select value={location} onChange={(e) => setLocation(e.target.value)} className="sched-select">
-                  {locationsList.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
-                </select>
+                <CustomSelect
+                  value={location}
+                  onChange={setLocation}
+                  options={locationsList.map((loc) => ({ value: loc, label: loc }))}
+                />
               </div>
               <div className="sched-field">
                 <label className="sched-label">Max Participants</label>
@@ -254,19 +258,33 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
             <div className="sched-three-col">
               <div className="sched-field">
                 <label className="sched-label">Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="sched-input" />
+                <CustomDatePicker
+                  value={startDate}
+                  onChange={setStartDate}
+                  placeholder="Start date"
+                />
               </div>
               <div className="sched-field">
                 <label className="sched-label">End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="sched-input" />
+                <CustomDatePicker
+                  value={endDate}
+                  onChange={setEndDate}
+                  minDate={startDate || undefined}
+                  placeholder="End date"
+                />
               </div>
               <div className="sched-field">
                 <label className="sched-label">Time Slot</label>
-                <select value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} className="sched-select">
-                  <option value="08:00 AM - 12:00 PM">08:00 AM – 12:00 PM</option>
-                  <option value="09:00 AM - 05:00 PM">09:00 AM – 05:00 PM</option>
-                  <option value="01:00 PM - 05:00 PM">01:00 PM – 05:00 PM</option>
-                </select>
+                <CustomSelect
+                  value={timeSlot}
+                  onChange={setTimeSlot}
+                  options={[
+                    { value: '08:00 AM - 12:00 PM', label: '08:00 AM – 12:00 PM' },
+                    { value: '09:00 AM - 05:00 PM', label: '09:00 AM – 05:00 PM' },
+                    { value: '01:00 PM - 05:00 PM', label: '01:00 PM – 05:00 PM' },
+                  ]}
+                  searchable={false}
+                />
               </div>
             </div>
           </div>
@@ -279,11 +297,16 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
             </h3>
             <div className="sched-field">
               <label className="sched-label">Priority Level</label>
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="sched-select">
-                <option value="Active">Active</option>
-                <option value="Completed">Completed</option>
-                <option value="High Priority">High Priority</option>
-              </select>
+              <CustomSelect
+                value={priority}
+                onChange={setPriority}
+                options={[
+                  { value: 'Active', label: 'Active' },
+                  { value: 'Completed', label: 'Completed' },
+                  { value: 'High Priority', label: 'High Priority' },
+                ]}
+                searchable={false}
+              />
             </div>
           </div>
 

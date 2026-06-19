@@ -71,6 +71,9 @@ export function CalendarPage({
   const [locationFilter, setLocationFilter] = useState('All')
   const [instructorFilter, setInstructorFilter] = useState('All')
 
+  // ── Quick status filter (mobile legend tabs) ─────────────
+  const [statusFilter, setStatusFilter] = useState('All') // All | Active | Completed | High Priority
+
   // ── Scheduling Subpage View State ────────────────────────
   const [isScheduling, setIsScheduling] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -80,6 +83,10 @@ export function CalendarPage({
   const [newSessionFeedback, setNewSessionFeedback] = useState(null)
   const [highlightedSessionId, setHighlightedSessionId] = useState(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // ── Swipe state for touch navigation ────────────────────
+  const touchStartX = useRef(null)
+  const touchStartY = useRef(null)
 
   useEffect(() => {
     if (!highlightedSessionId) return
@@ -165,6 +172,7 @@ export function CalendarPage({
     if (courseFilter !== 'All' && e.course !== courseFilter) return false
     if (locationFilter !== 'All' && e.classroom !== locationFilter) return false
     if (instructorFilter !== 'All' && e.instructor !== instructorFilter) return false
+    if (statusFilter !== 'All' && e.priority !== statusFilter) return false
     return true
   })
 
@@ -238,6 +246,25 @@ export function CalendarPage({
   const handleManualRefresh = () => {
     setIsRefreshing(true)
     setTimeout(() => setIsRefreshing(false), 900)
+  }
+
+  // ── Swipe handlers ────────────────────────────────────────
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
+    // Only swipe if horizontal motion is dominant and > 50px
+    if (Math.abs(dx) > 50 && dy < 80) {
+      if (dx < 0) handleNext()   // swipe left → next
+      else handlePrev()           // swipe right → prev
+    }
+    touchStartX.current = null
+    touchStartY.current = null
   }
 
   const getEventStyles = (priority) => {
@@ -554,9 +581,11 @@ export function CalendarPage({
   const vrCount = monthEvents.filter((e) => e.classroom?.includes('Sim')).length
   const theaterCount = monthEvents.filter((e) => e.classroom?.includes('Auditorium') || e.classroom?.includes('Digital')).length
 
-  const alphaUtil = Math.min(100, 35 + alphaCount * 15)
-  const vrUtil = Math.min(100, 20 + vrCount * 20)
-  const theaterUtil = Math.min(100, 45 + theaterCount * 12)
+  // Real utilization: 0% when no events in that facility this month
+  const totalEvents = monthEvents.length || 1
+  const alphaUtil = alphaCount === 0 ? 0 : Math.min(100, Math.round((alphaCount / totalEvents) * 100))
+  const vrUtil = vrCount === 0 ? 0 : Math.min(100, Math.round((vrCount / totalEvents) * 100))
+  const theaterUtil = theaterCount === 0 ? 0 : Math.min(100, Math.round((theaterCount / totalEvents) * 100))
 
   const isPrevDisabled = isDateBeforeLimit(prevDate)
 
@@ -682,27 +711,35 @@ export function CalendarPage({
           </div>
         </div>
 
-        {/* Status Legends */}
+        {/* Status Legend — clickable quick filters */}
         <div className="prov-cal-legend">
-          <span className="prov-cal-legend-item">
-            <span className="prov-cal-legend-dot prov-cal-legend-dot--blue" />
-            <span className="prov-cal-legend-label">Active</span>
-          </span>
-          <span className="prov-cal-legend-item">
-            <span className="prov-cal-legend-dot prov-cal-legend-dot--green" />
-            <span className="prov-cal-legend-label">Completed</span>
-          </span>
-          <span className="prov-cal-legend-item">
-            <span className="prov-cal-legend-dot prov-cal-legend-dot--red" />
-            <span className="prov-cal-legend-label">High Priority</span>
-          </span>
+          {[
+            { key: 'All', label: 'All', dotClass: '' },
+            { key: 'Active', label: 'Active', dotClass: 'prov-cal-legend-dot--blue' },
+            { key: 'Completed', label: 'Completed', dotClass: 'prov-cal-legend-dot--green' },
+            { key: 'High Priority', label: 'Priority', dotClass: 'prov-cal-legend-dot--red' },
+          ].map(({ key, label, dotClass }) => (
+            <button
+              key={key}
+              type="button"
+              className={`prov-cal-legend-item prov-cal-legend-btn${statusFilter === key ? ' prov-cal-legend-btn--active' : ''}`}
+              onClick={() => setStatusFilter(key)}
+            >
+              {key !== 'All' && <span className={`prov-cal-legend-dot ${dotClass}`} />}
+              <span className="prov-cal-legend-label">{label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Main Content Split: Left Calendar + Right widgets */}
       <div className="prov-cal-main-split">
         {/* Left column: active view renderer */}
-        <div className="prov-section-card prov-cal-card">
+        <div
+          className="prov-section-card prov-cal-card"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           {newSessionFeedback && (
             <div className="prov-cal-session-banner">
               <span>

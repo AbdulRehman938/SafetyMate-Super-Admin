@@ -304,6 +304,15 @@ export function RequestsPage({
 
                   {/* Company Badge and Details */}
                   <div className="prov-company-cell">
+                    {/* Mobile inline checkbox */}
+                    <button
+                      type="button"
+                      className={`prov-mobile-select-btn ${isChecked ? 'prov-mobile-select-btn--checked' : ''}`}
+                      onClick={() => onToggleSelect(req.id)}
+                      aria-label={`Select request from ${req.company}`}
+                    >
+                      {isChecked ? <Check size={11} /> : null}
+                    </button>
                     <div className={`prov-company-badge prov-company-badge--${badgeColor}`}>
                       {initials(req.company)}
                     </div>

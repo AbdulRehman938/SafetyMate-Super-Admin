@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus,
   TrendingUp,
@@ -13,6 +14,26 @@ import {
 } from 'lucide-react'
 import { IssueCertificatePage } from './IssueCertificatePage.jsx'
 import { useToast } from '../../../shared/toast/toastContext.js'
+
+// ── Filter bottom-sheet portal ────────────────────────────────────
+function CertFilterSheet({ open, onClose, children }) {
+  if (!open) return null
+  return createPortal(
+    <div className="cert-filter-sheet-backdrop" onClick={onClose}>
+      <div className="cert-filter-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="cert-filter-sheet-handle" />
+        <div className="cert-filter-sheet-header">
+          <span className="cert-filter-sheet-title">Filter Certificates</span>
+          <button type="button" className="cert-filter-sheet-close" onClick={onClose} aria-label="Close">
+            <X size={16} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body
+  )
+}
 
 // ── Custom animated dropdown ─────────────────────────────────────────────────
 function CustomSelect({ label, value, onChange, options }) {
@@ -332,8 +353,9 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                 <SlidersHorizontal size={13} />
                 Filter
               </button>
+              {/* Desktop inline dropdown */}
               {showFilters && (
-                <div className="prov-filters-panel prov-cert-filters-panel">
+                <div className="prov-filters-panel prov-cert-filters-panel cert-filter-desktop">
                   <div className="prov-filter-group">
                     <label className="prov-filter-label">Status</label>
                     <CustomSelect
@@ -361,20 +383,53 @@ export function CertificatesPage({ competencies = [], employees = [], organizati
                     />
                   </div>
                   {(statusFilter !== 'All' || courseFilter !== 'All') && (
-                    <button
-                      type="button"
-                      className="prov-filter-reset-btn"
-                      onClick={() => {
-                        setStatusFilter('All')
-                        setCourseFilter('All')
-                      }}
-                    >
+                    <button type="button" className="prov-filter-reset-btn" onClick={() => { setStatusFilter('All'); setCourseFilter('All') }}>
                       Clear Filters
                     </button>
                   )}
                 </div>
               )}
             </div>
+
+            {/* Mobile portal bottom sheet */}
+            <CertFilterSheet open={showFilters} onClose={() => setShowFilters(false)}>
+              <div className="cert-filter-sheet-body">
+                <div className="cert-filter-sheet-group">
+                  <label className="prov-filter-label">Status</label>
+                  <CustomSelect
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    options={[
+                      { value: 'All', label: 'All Statuses' },
+                      { value: 'COMPLIANT', label: 'Compliant' },
+                      { value: 'EXPIRING SOON', label: 'Expiring Soon' },
+                      { value: 'EXPIRED', label: 'Expired' },
+                    ]}
+                  />
+                </div>
+                <div className="cert-filter-sheet-group">
+                  <label className="prov-filter-label">Certificate</label>
+                  <CustomSelect
+                    value={courseFilter}
+                    onChange={setCourseFilter}
+                    options={[
+                      { value: 'All', label: 'All Certificates' },
+                      ...availableCourses.map((c) => ({ value: c, label: c })),
+                    ]}
+                  />
+                </div>
+                <div className="cert-filter-sheet-actions">
+                  {(statusFilter !== 'All' || courseFilter !== 'All') && (
+                    <button type="button" className="req-filter-sheet-clear" onClick={() => { setStatusFilter('All'); setCourseFilter('All') }}>
+                      Clear
+                    </button>
+                  )}
+                  <button type="button" className="req-filter-sheet-apply" onClick={() => setShowFilters(false)}>
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </CertFilterSheet>
 
             <div className="prov-cert-sort-wrapper" ref={sortRef}>
               <button
