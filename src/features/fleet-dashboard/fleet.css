@@ -1,0 +1,2143 @@
+/* ═══════════════════════════════════════════════════════════════════
+   FLEET DASHBOARD — Scoped under .fleet-dash
+   Mirrors training-dashboard (prov-*) patterns with fleet-* prefix
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Page entry animation ─────────────────────────────────── */
+@keyframes fleet-page-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fleet-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fleet-scale-up {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes fleet-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fleet-pulse-dot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(22,201,136,0.55); }
+  70%      { box-shadow: 0 0 0 8px rgba(22,201,136,0); }
+}
+@keyframes fleet-pulse-red {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,83,95,0.55); }
+  70%      { box-shadow: 0 0 0 8px rgba(255,83,95,0); }
+}
+@keyframes fleet-dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fleet-sheet-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Layout shell ─────────────────────────────────────────── */
+.fleet-dash {
+  display: flex;
+  flex-direction: column;
+  flex: 1;            /* fill the locked .client-page-content */
+  min-height: 0;      /* allow flex children to shrink */
+  max-width: 1380px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 18px 24px 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: fleet-page-enter 0.28s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* Force page-content to not scroll when .fleet-dash is rendered inside it.
+   We scope this with a class on the parent, but since we can't add classes
+   to the parent from here, we rely on .fleet-dash overflow:hidden + height:100%
+   propagating correctly. The parent .page-content has min-height:0 which allows
+   this to work. */
+
+/* When fleet-dash is a direct child of page-content, stop page-level scroll.
+   The JS useEffect in FleetDashboardPage handles this dynamically. */
+.fleet-subpage {
+  padding: 28px 28px 56px;
+  max-width: 1380px;
+  margin: 0 auto;
+  animation: fleet-page-enter 0.28s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── Page header ──────────────────────────────────────────── */
+.fleet-dash-header {
+  margin-bottom: 26px;
+}
+.fleet-dash-title {
+  margin: 0 0 4px;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: rgba(235,242,255,0.97);
+}
+.fleet-dash-sub {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(148,163,184,0.8);
+}
+.fleet-subpage-title {
+  margin: 0 0 4px;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: rgba(235,242,255,0.97);
+}
+.fleet-subpage-sub {
+  margin: 0 0 22px;
+  font-size: 12.5px;
+  color: rgba(148,163,184,0.75);
+}
+
+/* ── KPI stat cards row ───────────────────────────────────── */
+.fleet-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.fleet-kpi-card {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  background: rgba(12,18,36,0.65);
+  padding: 18px 20px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 150ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+.fleet-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  border-color: rgba(58,130,255,0.18);
+}
+.fleet-kpi-card--accent {
+  background: linear-gradient(135deg, rgba(25,90,210,0.55), rgba(14,55,145,0.42));
+  border-color: rgba(58,130,255,0.28);
+}
+.fleet-kpi-card--danger {
+  border-color: rgba(255,83,95,0.3);
+  background: linear-gradient(135deg, rgba(80,20,28,0.35), rgba(12,18,36,0.55));
+}
+.fleet-kpi-card--warn {
+  border-color: rgba(254,142,42,0.28);
+  background: linear-gradient(135deg, rgba(60,36,12,0.3), rgba(12,18,36,0.55));
+}
+.fleet-kpi-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.8);
+  margin: 0 0 8px;
+}
+.fleet-kpi-value {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: rgba(235,242,255,0.97);
+  margin: 0 0 6px;
+}
+.fleet-kpi-value--blue  { color: #5ba8ff; }
+.fleet-kpi-value--green { color: #4deba0; }
+.fleet-kpi-value--red   { color: #ff6b6b; }
+.fleet-kpi-value--orange{ color: #ffb56e; }
+.fleet-kpi-meta {
+  font-size: 11.5px;
+  color: rgba(148,163,184,0.7);
+  margin: 0;
+}
+.fleet-kpi-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.fleet-kpi-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 500ms ease;
+}
+.fleet-kpi-bar-fill--blue   { background: linear-gradient(90deg,#3a82ff,#2563eb); }
+.fleet-kpi-bar-fill--green  { background: linear-gradient(90deg,#16c988,#0fa066); }
+.fleet-kpi-bar-fill--red    { background: linear-gradient(90deg,#ff535f,#c93a44); }
+.fleet-kpi-bar-fill--orange { background: linear-gradient(90deg,#fe8e2a,#d97218); }
+
+/* ── Section cards ────────────────────────────────────────── */
+.fleet-section-card {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  background: rgba(10,14,28,0.7);
+  overflow: hidden;
+  transition: box-shadow 200ms ease;
+}
+.fleet-section-card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+.fleet-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-section-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.95);
+}
+.fleet-section-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Dashboard main grid ──────────────────────────────────── */
+.fleet-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 360px;
+  gap: 14px;
+  align-items: stretch;
+  flex: 1;         /* grow to fill remaining .fleet-dash height */
+  min-height: 0;   /* allow shrink — required for scrollable children */
+  padding-bottom: 18px;
+  box-sizing: border-box;
+}
+.fleet-top-row {
+  display: grid;
+  grid-template-columns: 220px minmax(0,1fr) minmax(0,1fr) 290px;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Critical Alerts Card ─────────────────────────────────── */
+.fleet-alerts-card {
+  border-color: rgba(255,83,95,0.3);
+  background: rgba(12,18,36,0.75);
+}
+.fleet-alerts-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255,83,95,0.18);
+}
+.fleet-alerts-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff6b6b;
+}
+.fleet-alerts-icon {
+  color: #ff6b6b;
+  flex-shrink: 0;
+}
+.fleet-alert-item {
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  transition: background 130ms;
+}
+.fleet-alert-item:last-child { border-bottom: none; }
+.fleet-alert-item:hover { background: rgba(255,83,95,0.06); }
+.fleet-alert-unit {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(148,163,184,0.65);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+.fleet-alert-msg {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.95);
+  margin: 0;
+}
+.fleet-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.fleet-alert-badge--critical {
+  background: rgba(255,83,95,0.15);
+  color: #ff8080;
+  border: 1px solid rgba(255,83,95,0.3);
+}
+.fleet-alert-badge--warn {
+  background: rgba(254,142,42,0.15);
+  color: #ffb56e;
+  border: 1px solid rgba(254,142,42,0.3);
+}
+
+/* ── Site Readiness Donut ─────────────────────────────────── */
+.fleet-readiness-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 160px;
+  padding: 20px 16px;
+}
+.fleet-readiness-kicker {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.7);
+  margin: 0 0 12px;
+}
+.fleet-readiness-donut {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.fleet-readiness-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  fill: rgba(235,242,255,0.97);
+  letter-spacing: -0.03em;
+}
+.fleet-readiness-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4deba0;
+}
+
+/* ── GPS Map Section ──────────────────────────────────────── */
+.fleet-map-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.fleet-map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(10,14,28,0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-map-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.95);
+  margin: 0;
+}
+.fleet-map-title-icon { color: #3a82ff; }
+.fleet-map-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5ba8ff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: color 150ms;
+}
+.fleet-map-expand-btn:hover { color: #8ab8ff; }
+.fleet-map-container {
+  position: relative;
+  height: 340px;
+  background: linear-gradient(160deg, #0a0e1a 0%, #0d1424 60%, #0a1128 100%);
+  overflow: hidden;
+}
+/* Terrain lines SVG background */
+.fleet-map-terrain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+}
+.fleet-map-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 60% 40%, rgba(42,123,214,0.08) 0%, transparent 60%);
+}
+
+/* Vehicle pins on map */
+.fleet-vehicle-pin {
+  position: absolute;
+  cursor: pointer;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  transition: transform 150ms ease;
+}
+.fleet-vehicle-pin:hover { transform: translate(-50%,-50%) scale(1.15); }
+.fleet-vehicle-pin-body {
+  background: rgba(22,42,82,0.92);
+  border: 2px solid #3a82ff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.fleet-vehicle-pin-body--active { border-color: #4deba0; background: rgba(10,40,30,0.9); }
+.fleet-vehicle-pin-body--alert  { border-color: #ff535f; background: rgba(40,10,18,0.9); }
+.fleet-vehicle-pin-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a82ff;
+  margin: 3px auto 0;
+}
+.fleet-vehicle-pin-dot--active { background: #4deba0; animation: fleet-pulse-dot 2s ease-out infinite; }
+.fleet-vehicle-pin-dot--alert  { background: #ff535f; animation: fleet-pulse-red 2s ease-out infinite; }
+
+/* ── Site Fleet List (right panel) ───────────────────────── */
+.fleet-list-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.fleet-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-list-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.95);
+}
+.fleet-list-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fleet-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(148,163,184,0.8);
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+.fleet-icon-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(235,242,255,0.95);
+}
+
+/* Vehicle list items */
+.fleet-vehicle-item {
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  transition: background 130ms;
+}
+.fleet-vehicle-item:last-child { border-bottom: none; }
+.fleet-vehicle-item:hover { background: rgba(255,255,255,0.025); }
+.fleet-vehicle-item--selected { background: rgba(58,130,255,0.07); border-left: 3px solid rgba(58,130,255,0.5); }
+.fleet-vehicle-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.fleet-vehicle-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: rgba(235,242,255,0.97);
+  margin: 0 0 2px;
+}
+.fleet-vehicle-type {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.6);
+  margin: 0;
+}
+.fleet-defect-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.fleet-defect-badge--active {
+  background: rgba(255,83,95,0.15);
+  color: #ff8080;
+  border: 1px solid rgba(255,83,95,0.3);
+}
+.fleet-defect-badge--none {
+  background: rgba(148,163,184,0.1);
+  color: rgba(148,163,184,0.7);
+  border: 1px solid rgba(148,163,184,0.2);
+}
+.fleet-vehicle-meta-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.fleet-vehicle-meta-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.55);
+  margin: 0 0 3px;
+}
+.fleet-vehicle-status {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.fleet-vehicle-status--completed { color: #4deba0; }
+.fleet-vehicle-status--pending   { color: rgba(148,163,184,0.8); }
+.fleet-vehicle-status--active    { color: #5ba8ff; }
+.fleet-vehicle-status--maintenance{ color: #ffb56e; }
+
+/* Health bar */
+.fleet-health-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  margin-top: 3px;
+}
+.fleet-health-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 500ms ease;
+}
+.fleet-health-fill--high   { background: linear-gradient(90deg,#16c988,#0fa066); }
+.fleet-health-fill--mid    { background: linear-gradient(90deg,#fe8e2a,#d97218); }
+.fleet-health-fill--low    { background: linear-gradient(90deg,#ff535f,#c93a44); }
+
+/* Footer actions */
+.fleet-list-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-btn-export {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(203,214,255,0.85);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.fleet-btn-export:hover { background: rgba(255,255,255,0.08); }
+.fleet-btn-assign {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg,#2a7bd6,#1e5fb0);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 150ms;
+}
+.fleet-btn-assign:hover { filter: brightness(1.1); }
+
+/* ── General buttons ──────────────────────────────────────── */
+.fleet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 150ms, filter 150ms;
+}
+.fleet-btn--primary {
+  background: linear-gradient(135deg,#2a7bd6,#1e5fb0);
+  color: #fff;
+  border-color: rgba(255,255,255,0.1);
+}
+.fleet-btn--primary:hover { filter: brightness(1.08); }
+.fleet-btn--ghost {
+  background: rgba(42,123,214,0.12);
+  color: #8ab8ff;
+  border-color: rgba(42,123,214,0.3);
+}
+.fleet-btn--ghost:hover { background: rgba(42,123,214,0.2); }
+.fleet-btn--danger {
+  background: rgba(255,83,95,0.12);
+  color: #ff8080;
+  border-color: rgba(255,83,95,0.25);
+}
+.fleet-btn--danger:hover { background: rgba(255,83,95,0.2); }
+.fleet-btn--muted {
+  background: transparent;
+  color: rgba(148,163,184,0.8);
+  border-color: rgba(255,255,255,0.08);
+}
+.fleet-btn--muted:hover { color: rgba(235,242,255,0.9); background: rgba(255,255,255,0.04); }
+.fleet-btn--success {
+  background: linear-gradient(135deg,#16c988,#0fa066);
+  color: #041b12;
+  border-color: rgba(255,255,255,0.1);
+}
+.fleet-btn--success:hover { filter: brightness(1.06); }
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.fleet-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-top-color: rgba(42,123,214,0.9);
+  animation: fleet-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+.fleet-spinner--lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* ── Status pills ─────────────────────────────────────────── */
+.fleet-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.fleet-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fleet-pill--active {
+  background: rgba(42,123,214,0.12);
+  color: #8ab8ff;
+  border: 1px solid rgba(42,123,214,0.28);
+}
+.fleet-pill--active .fleet-status-dot { background: #3a82ff; }
+.fleet-pill--ok {
+  background: rgba(22,201,136,0.1);
+  color: #4deba0;
+  border: 1px solid rgba(22,201,136,0.25);
+}
+.fleet-pill--ok .fleet-status-dot { background: #16c988; }
+.fleet-pill--warn {
+  background: rgba(254,142,42,0.1);
+  color: #ffb56e;
+  border: 1px solid rgba(254,142,42,0.25);
+}
+.fleet-pill--warn .fleet-status-dot { background: #fe8e2a; }
+.fleet-pill--danger {
+  background: rgba(255,83,95,0.12);
+  color: #ff8080;
+  border: 1px solid rgba(255,83,95,0.28);
+}
+.fleet-pill--danger .fleet-status-dot { background: #ff535f; }
+.fleet-pill--muted {
+  background: rgba(148,163,184,0.08);
+  color: rgba(148,163,184,0.8);
+  border: 1px solid rgba(148,163,184,0.2);
+}
+.fleet-pill--muted .fleet-status-dot { background: rgba(148,163,184,0.6); }
+
+/* ── Empty state ──────────────────────────────────────────── */
+.fleet-empty {
+  padding: 40px 20px;
+  text-align: center;
+}
+.fleet-empty-icon { font-size: 2.2rem; margin-bottom: 12px; }
+.fleet-empty-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.78);
+}
+.fleet-empty-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: rgba(148,163,184,0.6);
+  line-height: 1.5;
+}
+
+/* ── Table layout ─────────────────────────────────────────── */
+.fleet-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.fleet-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 760px;
+}
+.fleet-table thead th {
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.75);
+  background: rgba(7,12,28,0.55);
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-weight: 700;
+}
+.fleet-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: rgba(235,242,255,0.9);
+  font-size: 13px;
+  vertical-align: middle;
+}
+.fleet-table tbody tr:last-child td { border-bottom: none; }
+.fleet-table tbody tr:hover td { background: rgba(255,255,255,0.02); cursor: pointer; }
+.fleet-td-strong { font-weight: 700; }
+.fleet-td-muted  { color: rgba(148,163,184,0.7); font-size: 12px; }
+.fleet-td-actions { text-align: right; white-space: nowrap; }
+
+/* ── Filter bar ───────────────────────────────────────────── */
+.fleet-filter-tabs {
+  display: flex;
+  background: rgba(10,14,28,0.65);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+.fleet-filter-tab {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: rgba(148,163,184,0.8);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms, color 150ms;
+}
+.fleet-filter-tab:hover { color: #fff; }
+.fleet-filter-tab--active {
+  background: rgba(58,130,255,0.2);
+  color: #8ab8ff;
+}
+.fleet-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.fleet-search-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: rgba(235,242,255,0.9);
+  font-size: 12.5px;
+  padding: 7px 12px;
+  width: 200px;
+  outline: none;
+  transition: border-color 150ms;
+}
+.fleet-search-input:focus { border-color: rgba(58,130,255,0.45); }
+
+/* ── Pagination ───────────────────────────────────────────── */
+.fleet-pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.fleet-pagination-info { font-size: 12px; color: rgba(148,163,184,0.55); }
+.fleet-pagination-controls { display: flex; gap: 6px; align-items: center; }
+.fleet-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  color: rgba(148,163,184,0.8);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms, color 150ms;
+}
+.fleet-page-btn:hover:not(:disabled) { background: rgba(255,255,255,0.06); color: #fff; }
+.fleet-page-btn--active {
+  background: rgba(58,130,255,0.2);
+  border-color: rgba(58,130,255,0.35);
+  color: #8ab8ff;
+}
+.fleet-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Modal overlay ────────────────────────────────────────── */
+.fleet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4,7,18,0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 20px;
+  animation: fleet-fade-in 200ms ease both;
+}
+.fleet-modal {
+  width: 100%;
+  max-width: 520px;
+  background: #0b0f19;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 26px 24px 22px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.04);
+  animation: fleet-scale-up 220ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.fleet-modal-title {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fleet-modal-close {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(148,163,184,0.7);
+  cursor: pointer;
+}
+.fleet-modal-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.fleet-form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.fleet-form-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(148,163,184,0.65);
+}
+.fleet-form-input, .fleet-form-select, .fleet-form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 9px;
+  color: rgba(235,242,255,0.92);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 150ms;
+  box-sizing: border-box;
+}
+.fleet-form-input:focus, .fleet-form-select:focus, .fleet-form-textarea:focus {
+  border-color: rgba(58,130,255,0.5);
+  box-shadow: 0 0 0 2px rgba(58,130,255,0.15);
+}
+.fleet-form-select option { background: #0b0f1f; }
+.fleet-form-textarea { min-height: 90px; resize: vertical; }
+.fleet-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.fleet-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Side drawer ──────────────────────────────────────────── */
+.fleet-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4,8,20,0.55);
+  backdrop-filter: blur(10px);
+  z-index: 1200;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.fleet-drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1201;
+  width: min(460px,100vw);
+  background: linear-gradient(180deg,rgba(12,18,38,0.98),rgba(7,10,24,0.98));
+  border-left: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -16px 0 48px rgba(0,0,0,0.45);
+}
+.fleet-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.fleet-drawer-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: rgba(235,242,255,0.97); }
+.fleet-drawer-body { padding: 18px; overflow-y: auto; flex: 1; min-height: 0; }
+.fleet-drawer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 13px;
+}
+.fleet-drawer-row:last-child { border-bottom: none; }
+.fleet-drawer-dt { color: rgba(148,163,184,0.6); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.fleet-drawer-dd { color: rgba(235,242,255,0.92); font-weight: 600; text-align: right; }
+
+/* ── Fuel chart ───────────────────────────────────────────── */
+.fleet-fuel-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 80px;
+  margin: 16px 20px 10px;
+}
+.fleet-fuel-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 5px;
+}
+.fleet-fuel-bar {
+  width: 100%;
+  max-width: 36px;
+  border-radius: 4px 4px 0 0;
+  background: rgba(58,130,255,0.25);
+  transition: height 500ms ease;
+  min-height: 4px;
+}
+.fleet-fuel-bar--active { background: linear-gradient(180deg,#3a82ff,#1d4ed8); box-shadow: 0 2px 8px rgba(58,130,255,0.3); }
+.fleet-fuel-bar-label { font-size: 9px; font-weight: 700; color: rgba(148,163,184,0.5); text-transform: uppercase; }
+.fleet-fuel-chart-sub { margin: 0 0 0; font-size: 11px; color: rgba(148,163,184,0.55); padding: 0 20px 14px; }
+
+/* ── Inspection log timeline ──────────────────────────────── */
+.fleet-timeline {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px;
+  gap: 0;
+}
+.fleet-timeline-item {
+  display: flex;
+  gap: 14px;
+  padding-bottom: 16px;
+  position: relative;
+}
+.fleet-timeline-item:last-child { padding-bottom: 0; }
+.fleet-timeline-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 20px;
+}
+.fleet-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+  flex-shrink: 0;
+  margin-top: 3px;
+  background: transparent;
+}
+.fleet-timeline-dot--ok     { border-color: #16c988; background: rgba(22,201,136,0.2); }
+.fleet-timeline-dot--warn   { border-color: #fe8e2a; background: rgba(254,142,42,0.2); }
+.fleet-timeline-dot--danger { border-color: #ff535f; background: rgba(255,83,95,0.2); }
+.fleet-timeline-connector {
+  width: 1px;
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  margin-top: 3px;
+}
+.fleet-timeline-item:last-child .fleet-timeline-connector { display: none; }
+.fleet-timeline-content { flex: 1; min-width: 0; }
+.fleet-timeline-title { font-size: 13px; font-weight: 700; color: rgba(235,242,255,0.92); margin: 0 0 3px; }
+.fleet-timeline-meta { font-size: 11px; color: rgba(148,163,184,0.65); margin: 0; }
+
+/* ── Vehicle Twins page ───────────────────────────────────── */
+.fleet-twin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+.fleet-twin-card {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(12,18,36,0.55);
+  padding: 18px 16px;
+  cursor: pointer;
+  transition: border-color 180ms, box-shadow 180ms, transform 150ms;
+}
+.fleet-twin-card:hover {
+  border-color: rgba(58,130,255,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  transform: translateY(-1px);
+}
+.fleet-twin-card--alert { border-color: rgba(255,83,95,0.3); background: rgba(40,12,18,0.55); }
+.fleet-twin-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.fleet-twin-id { font-size: 1.2rem; font-weight: 900; color: #fff; margin: 0 0 2px; }
+.fleet-twin-subtype { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(148,163,184,0.6); margin: 0; font-weight: 700; }
+.fleet-twin-metrics { display: grid; gap: 10px; }
+.fleet-twin-metric-row { display: flex; flex-direction: column; gap: 4px; }
+.fleet-twin-metric-head { display: flex; justify-content: space-between; align-items: center; }
+.fleet-twin-metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(148,163,184,0.55); font-weight: 700; }
+.fleet-twin-metric-value { font-size: 12px; font-weight: 700; color: rgba(235,242,255,0.9); }
+.fleet-twin-metric-track { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.fleet-twin-metric-fill { height: 100%; border-radius: 999px; transition: width 500ms ease; }
+.fleet-twin-footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
+.fleet-twin-last-seen { font-size: 10.5px; color: rgba(148,163,184,0.55); }
+
+/* ── Fuel Intelligence page ───────────────────────────────── */
+.fleet-fuel-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.fleet-fuel-kpi {
+  padding: 16px 18px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  background: rgba(12,18,36,0.55);
+}
+.fleet-fuel-kpi-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.7);
+  margin: 0 0 8px;
+}
+.fleet-fuel-kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: rgba(235,242,255,0.97);
+  margin: 0 0 4px;
+}
+.fleet-fuel-kpi-meta { font-size: 11.5px; color: rgba(148,163,184,0.65); margin: 0; }
+
+/* ── Site Map page ────────────────────────────────────────── */
+.fleet-sitemap-full {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.07);
+  min-height: 480px;
+  background: linear-gradient(160deg,#0a0e1a 0%,#0d1424 60%,#0a1128 100%);
+  position: relative;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .fleet-top-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .fleet-main-grid { grid-template-columns: 1fr; }
+  .fleet-kpi-row { grid-template-columns: repeat(2,1fr); }
+  .fleet-fuel-kpis { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 960px) {
+  .fleet-dash, .fleet-subpage { padding: 16px 14px 40px; }
+  .fleet-kpi-row { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .fleet-twin-grid { grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); padding: 14px; }
+}
+@media (max-width: 640px) {
+  .fleet-dash, .fleet-subpage { padding: 14px 10px 36px; }
+  .fleet-kpi-row { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .fleet-kpi-value { font-size: 1.9rem; }
+  .fleet-top-row { grid-template-columns: 1fr; }
+  .fleet-main-grid { grid-template-columns: 1fr; }
+  .fleet-fuel-kpis { grid-template-columns: 1fr; }
+  .fleet-twin-grid { grid-template-columns: 1fr; padding: 12px; }
+  .fleet-controls-row { flex-direction: column; align-items: stretch; }
+  .fleet-search-input { width: 100%; }
+  .fleet-filter-tabs { overflow-x: auto; scrollbar-width: none; }
+  .fleet-filter-tabs::-webkit-scrollbar { display: none; }
+  .fleet-filter-tab { flex-shrink: 0; font-size: 12px; }
+  .fleet-form-row { grid-template-columns: 1fr; }
+  .fleet-modal { padding: 20px 16px 18px; }
+  .fleet-modal-overlay { align-items: flex-end; padding: 0; }
+  .fleet-modal {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    padding: 20px 16px 32px;
+    animation: fleet-sheet-up 280ms cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .fleet-map-container { height: 240px; }
+  .fleet-pagination-row { flex-direction: column; gap: 10px; align-items: center; }
+  .fleet-section-head { flex-wrap: wrap; gap: 8px; }
+}
+@media (max-width: 420px) {
+  .fleet-kpi-row { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD — sizing overrides (layout is defined in the original blocks above)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* fleet-list-scroll defined in the list-card block above */
+.fleet-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(58,130,255,0.22) transparent;
+}
+.fleet-list-scroll::-webkit-scrollbar { width: 4px; }
+.fleet-list-scroll::-webkit-scrollbar-thumb { background: rgba(58,130,255,0.25); border-radius: 4px; }
+
+/* Alerts scrollable list */
+.fleet-alerts-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,83,95,0.2) transparent;
+}
+.fleet-alerts-scroll::-webkit-scrollbar { width: 3px; }
+.fleet-alerts-scroll::-webkit-scrollbar-thumb { background: rgba(255,83,95,0.25); border-radius: 4px; }
+
+/* KPI card text sizes */
+.fleet-kpi-label {
+  font-size: 11.5px !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.8);
+  margin: 0 0 10px;
+}
+.fleet-kpi-value {
+  font-size: 2.6rem !important;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: rgba(235,242,255,0.97);
+  margin: 0 0 8px;
+}
+.fleet-kpi-meta {
+  font-size: 12.5px !important;
+  color: rgba(148,163,184,0.7);
+  margin: 0;
+}
+
+/* Alerts card */
+.fleet-alerts-title {
+  font-size: 11.5px !important;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #ff6b6b;
+}
+.fleet-alert-unit  { font-size: 11px !important; }
+.fleet-alert-msg   { font-size: 14px !important; }
+
+/* Vehicle list text */
+.fleet-vehicle-name       { font-size: 14.5px !important; font-weight: 800; }
+.fleet-vehicle-type       { font-size: 11px !important; }
+.fleet-vehicle-meta-label { font-size: 10px !important; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.fleet-vehicle-status     { font-size: 12.5px !important; font-weight: 700; }
+
+/* Map title */
+.fleet-map-title { font-size: 15px !important; font-weight: 700; }
+.fleet-section-head h2 { font-size: 15px !important; font-weight: 700; }
+
+/* Dashboard title */
+.fleet-dash-title { font-size: 1.85rem !important; }
+.fleet-dash-sub   { font-size: 13.5px !important; }
+
+/* Readiness card */
+.fleet-readiness-card { padding: 20px 16px; }
+.fleet-readiness-kicker { font-size: 11.5px !important; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(148,163,184,0.75); margin: 0 0 12px; }
+.fleet-readiness-tag { font-size: 12px !important; font-weight: 700; margin-top: 8px; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .fleet-top-row { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
+  .fleet-main-grid { grid-template-columns: 1fr; flex: unset; }
+  .fleet-dash { overflow: visible; min-height: unset; padding-bottom: 32px; }
+}
+@media (max-width: 640px) {
+  .fleet-top-row { grid-template-columns: 1fr 1fr; }
+  .fleet-dash { padding: 14px 12px 0; }
+  .fleet-kpi-value { font-size: 2rem !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ASSIGN UNIT PAGE
+   ══════════════════════════════════════════════════════════════════ */
+
+.fleet-assign-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0;              /* .fleet-dash parent already provides 18px 24px padding */
+  box-sizing: border-box;
+  animation: fleet-page-enter 0.22s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* Header */
+.fleet-assign-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.fleet-assign-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.fleet-assign-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(148,163,184,0.8);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms, color 150ms;
+}
+.fleet-assign-back-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.fleet-assign-title {
+  margin: 0 0 3px;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: rgba(235,242,255,0.97);
+}
+.fleet-assign-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: rgba(148,163,184,0.7);
+}
+
+/* Search bar */
+.fleet-assign-search-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.fleet-assign-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(148,163,184,0.5);
+  pointer-events: none;
+}
+.fleet-assign-search {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
+  color: rgba(235,242,255,0.92);
+  font-size: 13px;
+  padding: 9px 14px 9px 36px;
+  width: 280px;
+  outline: none;
+  transition: border-color 150ms, background 150ms;
+}
+.fleet-assign-search:focus {
+  border-color: rgba(58,130,255,0.45);
+  background: rgba(58,130,255,0.06);
+}
+.fleet-assign-search::placeholder { color: rgba(148,163,184,0.45); }
+
+/* Body layout */
+.fleet-assign-body {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 360px;  /* wider config panel */
+  gap: 22px;
+  align-items: start;
+  flex: 1;
+}
+.fleet-assign-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.fleet-assign-right {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+}
+
+/* ── Active selection card ── */
+.fleet-active-sel-card {
+  background: linear-gradient(135deg, rgba(14,38,82,0.65) 0%, rgba(8,18,44,0.75) 100%);
+  border: 1.5px solid rgba(58,130,255,0.35);
+  border-radius: 16px;
+  padding: 22px 24px 18px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 32px rgba(42,123,214,0.1);
+}
+.fleet-active-sel-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 0%, rgba(42,123,214,0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+.fleet-active-sel-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5ba8ff;
+  background: rgba(42,123,214,0.14);
+  border: 1px solid rgba(58,130,255,0.3);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 14px;
+}
+.fleet-active-sel-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.fleet-active-sel-id {
+  margin: 0 0 4px;
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #fff;
+  line-height: 1;
+}
+.fleet-active-sel-type {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(148,163,184,0.75);
+  font-weight: 500;
+}
+.fleet-active-sel-health {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.fleet-active-sel-health-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.55);
+  margin-bottom: 4px;
+}
+.fleet-active-sel-health-value {
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.fleet-active-sel-meta {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 14px;
+}
+.fleet-active-sel-meta-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.55);
+  margin: 0 0 5px;
+}
+.fleet-active-sel-meta-value {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.95);
+  margin: 0;
+}
+.fleet-active-sel-status {
+  font-size: 12.5px;
+  font-weight: 700;
+  margin: 0;
+}
+.fleet-active-sel-alerts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.fleet-active-alert-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255,83,95,0.12);
+  color: #ff8080;
+  border: 1px solid rgba(255,83,95,0.25);
+}
+
+/* ── Secondary vehicle cards row ── */
+.fleet-assign-secondary-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+}
+.fleet-secondary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(12,18,36,0.55);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms, background 150ms, transform 100ms;
+  width: 100%;
+}
+.fleet-secondary-card:hover {
+  border-color: rgba(58,130,255,0.25);
+  background: rgba(14,24,52,0.65);
+}
+.fleet-secondary-card--selected {
+  border-color: rgba(58,130,255,0.5);
+  background: rgba(14,28,62,0.7);
+  box-shadow: 0 0 0 1px rgba(58,130,255,0.2);
+}
+.fleet-secondary-card--alert {
+  border-color: rgba(255,83,95,0.25);
+  background: rgba(40,12,18,0.5);
+}
+.fleet-secondary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fleet-secondary-info { flex: 1; min-width: 0; }
+.fleet-secondary-id {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(235,242,255,0.95);
+  margin: 0 0 2px;
+}
+.fleet-secondary-type {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(148,163,184,0.6);
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+.fleet-secondary-status {
+  font-size: 11px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fleet-secondary-status--alert { color: #ff8080; }
+.fleet-secondary-health { flex-shrink: 0; }
+
+/* ── Telemetry card ── */
+.fleet-telemetry-card { padding: 0; }
+.fleet-telemetry-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-telemetry-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.75);
+}
+.fleet-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 0;
+}
+.fleet-telemetry-cell {
+  padding: 16px 20px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  text-align: center;
+}
+.fleet-telemetry-cell:last-child { border-right: none; }
+.fleet-telemetry-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.55);
+  margin: 0 0 6px;
+}
+.fleet-telemetry-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* ── Configuration card ── */
+.fleet-config-card { padding: 20px; display: flex; flex-direction: column; gap: 0; }
+.fleet-config-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-config-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(42,123,214,0.14);
+  border: 1px solid rgba(58,130,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fleet-config-title {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(235,242,255,0.97);
+}
+.fleet-config-sub {
+  margin: 0;
+  font-size: 11.5px;
+  color: rgba(148,163,184,0.65);
+}
+.fleet-config-field { margin-bottom: 16px; }
+.fleet-config-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.6);
+  margin-bottom: 7px;
+}
+.fleet-config-select-wrap {
+  position: relative;
+}
+.fleet-config-select {
+  width: 100%;
+  padding: 11px 36px 11px 14px;
+  background: rgba(12,18,36,0.7);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: rgba(235,242,255,0.92);
+  font-size: 13.5px;
+  font-weight: 600;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 150ms;
+}
+.fleet-config-select:focus { border-color: rgba(58,130,255,0.45); }
+.fleet-config-select option { background: #0b0f1f; }
+.fleet-config-chevron {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(148,163,184,0.5);
+  pointer-events: none;
+}
+
+/* Duration toggle */
+.fleet-duration-toggle {
+  display: flex;
+  background: rgba(7,11,24,0.7);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 3px;
+}
+.fleet-duration-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(148,163,184,0.7);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+.fleet-duration-btn--active {
+  background: rgba(58,130,255,0.2);
+  color: #8ab8ff;
+  border: 1px solid rgba(58,130,255,0.25);
+}
+.fleet-duration-btn:not(.fleet-duration-btn--active):hover {
+  background: rgba(255,255,255,0.04);
+  color: rgba(235,242,255,0.85);
+}
+
+/* Confirm / cancel buttons */
+.fleet-confirm-assign-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 16px;
+  background: linear-gradient(135deg,#2a7bd6,#1a55a8);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(42,123,214,0.35);
+  transition: filter 150ms, transform 100ms;
+}
+.fleet-confirm-assign-btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.fleet-confirm-assign-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.fleet-cancel-assign-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: rgba(148,163,184,0.65);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+  transition: color 150ms;
+}
+.fleet-cancel-assign-btn:hover { color: rgba(235,242,255,0.8); }
+.fleet-assign-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.fleet-assign-note p {
+  margin: 0;
+  font-size: 10.5px;
+  color: rgba(148,163,184,0.5);
+  line-height: 1.5;
+}
+
+/* ── Fleet Register Bottom Bar — flex child, always in view ── */
+.fleet-register-bottom-bar {
+  flex-shrink: 0;
+  background: rgba(5, 9, 22, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(58, 130, 255, 0.12);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  animation: fleet-page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .fleet-assign-body { grid-template-columns: 1fr; }
+  .fleet-assign-right { position: static; }
+  .fleet-telemetry-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 640px) {
+  .fleet-assign-header { flex-direction: column; align-items: stretch; }
+  .fleet-assign-search { width: 100%; }
+  .fleet-assign-search-wrap { width: 100%; }
+  .fleet-assign-title { font-size: 1.4rem; }
+  .fleet-assign-secondary-row { grid-template-columns: 1fr; }
+  .fleet-active-sel-meta { grid-template-columns: 1fr 1fr; }
+  .fleet-telemetry-grid { grid-template-columns: repeat(2,1fr); }
+  .fleet-telemetry-cell { padding: 12px 14px; }
+}
+
+/* ── Custom overrides for Vehicle Registry & Detail views ── */
+
+/* Active link indicator for Fleet sidebar */
+.client-sidebar:has(.fleet-sidebar-brand) .nav-link {
+  border-radius: 0 !important;
+  border-right: 3px solid transparent;
+  color: rgba(148, 163, 184, 0.7);
+  transition: all 0.22s ease-in-out;
+}
+.client-sidebar:has(.fleet-sidebar-brand) .nav-link:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: #ffffff;
+}
+.client-sidebar:has(.fleet-sidebar-brand) .nav-link-active {
+  background: rgba(58, 130, 255, 0.08) !important;
+  border-right: 3px solid #3a82ff !important;
+  color: #ffffff !important;
+}
+
+/* Micro-animations and polish for stats cards */
+.fleet-section-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+.fleet-section-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45) !important;
+  border-color: rgba(58, 130, 255, 0.2) !important;
+}
+
+/* Table rows styling and hover transition */
+.fleet-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+.fleet-table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+}
+
+/* Vehicle details container entry animation */
+.fleet-details-container {
+  animation: fleet-sheet-up 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Defect table hover styling */
+.fleet-table tbody tr:hover td span {
+  filter: brightness(1.1);
+}
+
+/* ── Register Vehicle Page & Profile Settings Layouts ── */
+.fleet-register-page {
+  animation: fleet-page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.fleet-register-page input,
+.fleet-register-page select,
+.fleet-register-page textarea {
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.fleet-register-page input:focus,
+.fleet-register-page select:focus {
+  border-color: rgba(58, 130, 255, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 10px rgba(58, 130, 255, 0.15) !important;
+}
+
+/* ── Fleet Register Bottom Bar ── */
+.fleet-register-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 280px;
+  right: 0;
+  background: rgba(5, 9, 22, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(58, 130, 255, 0.12);
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 200;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  animation: fleet-page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Fleet CustomSelect Trigger Overrides ── */
+.fleet-subpage .prov-custom-select-trigger,
+.fleet-register-page .prov-custom-select-trigger {
+  background: rgba(12, 18, 36, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  color: rgba(235, 242, 255, 0.9) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 10px 14px !important;
+  min-height: 42px !important;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.fleet-subpage .prov-custom-select-trigger:hover,
+.fleet-register-page .prov-custom-select-trigger:hover {
+  background: rgba(20, 28, 52, 0.9) !important;
+  border-color: rgba(58, 130, 255, 0.3) !important;
+}
+
+.fleet-subpage .prov-custom-select--open .prov-custom-select-trigger,
+.fleet-register-page .prov-custom-select--open .prov-custom-select-trigger {
+  border-color: rgba(58, 130, 255, 0.5) !important;
+  background: rgba(20, 28, 52, 0.95) !important;
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.08) !important;
+}
+
+/* Dropdown panel — fleet deep dark theme */
+.prov-custom-select-dropdown {
+  background: #070c1c !important;
+  border: 1px solid rgba(58, 130, 255, 0.18) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85),
+              0 4px 16px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px) !important;
+  animation: fleet-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+/* Option rows */
+.prov-custom-select-option {
+  color: rgba(203, 213, 225, 0.85) !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease !important;
+}
+
+.prov-custom-select-option:hover,
+.prov-custom-select-option--focused {
+  background: rgba(58, 130, 255, 0.1) !important;
+  color: rgba(235, 242, 255, 0.97) !important;
+  transform: translateX(2px) !important;
+}
+
+.prov-custom-select-option--selected {
+  background: rgba(58, 130, 255, 0.14) !important;
+  color: #8ab8ff !important;
+  font-weight: 700 !important;
+}
+
+/* Search bar inside dropdown */
+.prov-custom-select-search {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 8px !important;
+}
+.prov-custom-select-search-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: rgba(235, 242, 255, 0.9) !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+.prov-custom-select-search-input:focus {
+  border-color: rgba(58, 130, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  outline: none !important;
+}
+.prov-custom-select-search-input::placeholder {
+  color: rgba(148, 163, 184, 0.4) !important;
+}
+
+/* Placeholder & chevron */
+.fleet-subpage .prov-custom-select-placeholder,
+.fleet-register-page .prov-custom-select-placeholder {
+  color: rgba(148, 163, 184, 0.5) !important;
+}
+.fleet-subpage .prov-custom-select-chevron,
+.fleet-register-page .prov-custom-select-chevron {
+  color: rgba(148, 163, 184, 0.5) !important;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.fleet-subpage .prov-custom-select--open .prov-custom-select-chevron,
+.fleet-register-page .prov-custom-select--open .prov-custom-select-chevron {
+  transform: rotate(180deg) !important;
+  color: #3a82ff !important;
+}
+
+/* ── Fleet DatePicker Trigger Overrides ── */
+.fleet-register-page .prov-datepicker-trigger,
+.fleet-subpage .prov-datepicker-trigger {
+  background: rgba(12, 18, 36, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  color: rgba(235, 242, 255, 0.9) !important;
+  font-size: 13px !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+.fleet-register-page .prov-datepicker-trigger:hover,
+.fleet-subpage .prov-datepicker-trigger:hover {
+  background: rgba(20, 28, 52, 0.9) !important;
+  border-color: rgba(58, 130, 255, 0.3) !important;
+}
+.fleet-register-page .prov-datepicker--open .prov-datepicker-trigger,
+.fleet-subpage .prov-datepicker--open .prov-datepicker-trigger {
+  border-color: rgba(58, 130, 255, 0.5) !important;
+  background: rgba(20, 28, 52, 0.95) !important;
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.08) !important;
+}
+.prov-datepicker-icon { color: #3a82ff !important; }
+
+/* Calendar popup panel */
+.prov-datepicker-panel {
+  background: #070c1c !important;
+  border: 1px solid rgba(58, 130, 255, 0.18) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85),
+              0 4px 16px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px) !important;
+  animation: fleet-dropdown-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+.prov-datepicker-header {
+  background: rgba(12, 18, 36, 0.6) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+.prov-datepicker-month-label {
+  color: rgba(235, 242, 255, 0.95) !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+}
+.prov-datepicker-nav {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: rgba(148, 163, 184, 0.7) !important;
+  border-radius: 6px !important;
+  transition: background 0.15s, color 0.15s !important;
+}
+.prov-datepicker-nav:hover {
+  background: rgba(58, 130, 255, 0.1) !important;
+  color: #3a82ff !important;
+  border-color: rgba(58, 130, 255, 0.25) !important;
+}
+.prov-datepicker-dow {
+  color: rgba(148, 163, 184, 0.5) !important;
+  font-weight: 800 !important;
+  font-size: 9.5px !important;
+  letter-spacing: 0.05em !important;
+}
+.prov-datepicker-day {
+  color: rgba(203, 213, 225, 0.85) !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease !important;
+}
+.prov-datepicker-day:hover:not(:disabled) {
+  background: rgba(58, 130, 255, 0.12) !important;
+  color: rgba(235, 242, 255, 0.97) !important;
+  transform: scale(1.08) !important;
+}
+.prov-datepicker-day--selected {
+  background: #3a82ff !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  transform: scale(1.08) !important;
+  box-shadow: 0 2px 12px rgba(58, 130, 255, 0.5) !important;
+}
+.prov-datepicker-day--today {
+  border: 1px solid rgba(58, 130, 255, 0.4) !important;
+  color: #8ab8ff !important;
+}
+.prov-datepicker-day--past,
+.prov-datepicker-day--disabled {
+  color: rgba(148, 163, 184, 0.2) !important;
+  cursor: not-allowed !important;
+}
+.prov-datepicker-placeholder { color: rgba(148, 163, 184, 0.45) !important; }
+
+/* ── Advanced Filters Panel Reveal Animation ── */
+@keyframes fleet-filters-in {
+  from { opacity: 0; transform: translateY(-6px) scaleY(0.96); transform-origin: top; }
+  to   { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+/* Advanced Filters Toggle Button */
+.fleet-advanced-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(235, 242, 255, 0.85);
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fleet-advanced-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.fleet-advanced-btn.active {
+  background: rgba(58, 130, 255, 0.15);
+  border-color: rgba(58, 130, 255, 0.4);
+  color: #8ab8ff;
+  box-shadow: 0 0 12px rgba(58, 130, 255, 0.12);
+}
+
+.fleet-advanced-btn.active:hover {
+  background: rgba(58, 130, 255, 0.22);
+  border-color: rgba(58, 130, 255, 0.55);
+}
+
+/* Custom responsive media overrides */
+@media (max-width: 960px) {
+  .fleet-register-page .fleet-register-form {
+    grid-template-columns: 1fr !important;
+  }
+  .fleet-register-bottom-bar {
+    padding: 14px 20px !important;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .fleet-register-bottom-bar > div:first-child {
+    display: none; /* hide hint text on small screens */
+  }
+  .fleet-register-bottom-bar > div:last-child {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INSPECTION LOG — Vehicle Selection Redesign
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Native select dark styling */
+.fleet-subpage select option {
+  background: #0b0f1f;
+  color: rgba(235, 242, 255, 0.9);
+}
+
+/* Responsive: 2-col → 1-col on small */
+@media (max-width: 720px) {
+  .fleet-inspection-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Scan modal laser keyframe */
+@keyframes fleet-laser-sweep {
+  0%   { top: 10%; }
+  50%  { top: 85%; }
+  100% { top: 10%; }
+}
+
+/* Vehicle card image hover zoom */
+.fleet-vehicle-card-img {
+  transition: transform 0.4s ease;
+}
+.fleet-vehicle-card-img:hover {
+  transform: scale(1.03);
+}

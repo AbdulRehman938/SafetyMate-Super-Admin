@@ -364,9 +364,12 @@ export function GlobalSearch() {
     if (first) choose(first)
   }
 
-  const placeholder = isTrainingProvider
-    ? 'Search requests, certificates… (⌘K)'
-    : 'Search incidents, certificates, PPE… (⌘K)'
+  const placeholder =
+    role === 'FLEET'
+      ? 'Global search...'
+      : isTrainingProvider
+      ? 'Search requests, certificates… (⌘K)'
+      : 'Search incidents, certificates, PPE… (⌘K)'
 
   return (
     <div className="client-topbar-search client-global-search" ref={containerRef}>

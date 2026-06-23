@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, Check, Search, X } from 'lucide-react'
 
 /**
@@ -175,7 +176,7 @@ export function CustomSelect({
         <ChevronDown size={15} className="prov-custom-select-chevron" />
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           className="prov-custom-select-dropdown"
           data-open="true"
@@ -241,7 +242,8 @@ export function CustomSelect({
               ))
             )}
           </ul>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

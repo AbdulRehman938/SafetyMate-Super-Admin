@@ -35,7 +35,9 @@ export const analytics = (() => {
 
   isSupported()
     .then((supported) => {
-      if (supported) getAnalytics(app)
+      if (supported) {
+        try { getAnalytics(app) } catch { /* blocked by ad-blocker — safe to ignore */ }
+      }
     })
     .catch(() => {})
 

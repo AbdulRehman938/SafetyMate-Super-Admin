@@ -28,7 +28,12 @@ import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
 import { CertificatesPage } from '../../features/client/pages/CertificatesPage.jsx'
 import { PPEPage } from '../../features/client/pages/PPEPage.jsx'
 import { TrainingDashboardPage } from '../../features/training-dashboard/pages/TrainingDashboardPage.jsx'
-import { FleetDashboardPage } from '../../features/client/pages/FleetDashboardPage.jsx'
+import { FleetDashboardPage }       from '../../features/fleet-dashboard/pages/FleetDashboardPage.jsx'
+import { SiteMapPage }              from '../../features/fleet-dashboard/pages/SiteMapPage.jsx'
+import { VehicleTwinsPage }         from '../../features/fleet-dashboard/pages/VehicleTwinsPage.jsx'
+import { InspectionLogPage }        from '../../features/fleet-dashboard/pages/InspectionLogPage.jsx'
+import { FuelIntelligencePage }     from '../../features/fleet-dashboard/pages/FuelIntelligencePage.jsx'
+import { ProfileSettingsPage }      from '../../features/fleet-dashboard/pages/ProfileSettingsPage.jsx'
 import { FireExtinguisherDashboardPage } from '../../features/client/pages/FireExtinguisherDashboardPage.jsx'
 import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
 import { useAuth } from '../providers/authContext.js'
@@ -199,7 +204,12 @@ export function AppRouter() {
       return (
         <Routes>
           <Route element={<ClientLayout />}>
-            <Route path="/fleet/dashboard" element={<FleetDashboardPage />} />
+            <Route path="/fleet/dashboard"   element={<FleetDashboardPage />} />
+            <Route path="/fleet/site-map"    element={<SiteMapPage />} />
+            <Route path="/fleet/twins"       element={<VehicleTwinsPage />} />
+            <Route path="/fleet/inspections" element={<InspectionLogPage />} />
+            <Route path="/fleet/fuel"        element={<FuelIntelligencePage />} />
+            <Route path="/fleet/profile"     element={<ProfileSettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/fleet/dashboard" replace />} />
         </Routes>

@@ -71,6 +71,40 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ── fleet_vehicles ────────────────────────────────────────
+    // Reads: any authenticated user (onSnapshot works without role check)
+    // Writes: myRole() checked only on write — no inter-doc read on plain reads
+    match /fleet_vehicles/{vehicleId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FLEET' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── fleet_inspections ─────────────────────────────────────
+    match /fleet_inspections/{inspectionId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FLEET' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── fleet_fuel_logs ───────────────────────────────────────
+    match /fleet_fuel_logs/{logId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FLEET' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── fleet_alerts ──────────────────────────────────────────
+    match /fleet_alerts/{alertId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FLEET' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
     // ── Everything else: Super Admin only ─────────────────────
     match /{document=**} {
       allow read, write: if isSuperAdmin();

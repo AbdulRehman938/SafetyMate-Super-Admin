@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Calendar, ChevronLeft, ChevronRight, Lock } from 'lucide-react'
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -69,6 +70,7 @@ export function CustomDatePicker({
   disabled,
   placeholder = 'Select date',
   id,
+  allowPast = false,
 }) {
   const [open, setOpen] = useState(false)
   const [panelStyle, setPanelStyle] = useState({})
@@ -77,8 +79,11 @@ export function CustomDatePicker({
   const selectedDate = parseISO(value)
   const highlightD = parseISO(highlightDate)
 
-  // Effective min: the later of minDate and today (always block past)
+  // Effective min: the later of minDate and today (always block past unless allowPast is true)
   const minD = (() => {
+    if (allowPast) {
+      return parseISO(minDate) || null
+    }
     const todayD = today
     const propMin = parseISO(minDate)
     if (!propMin) return todayD
@@ -253,11 +258,11 @@ export function CustomDatePicker({
           {value ? formatDisplay(value) : placeholder}
         </span>
         {lockAll && (
-          <span className="prov-datepicker-lock" aria-label={lockMessage}>🔒</span>
+          <span className="prov-datepicker-lock" aria-label={lockMessage}><Lock size={12} /></span>
         )}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           className="prov-datepicker-panel"
           style={panelStyle}
@@ -289,7 +294,7 @@ export function CustomDatePicker({
           {/* lockAll overlay */}
           {lockAll ? (
             <div className="prov-datepicker-lockscreen">
-              <span className="prov-datepicker-lockscreen-icon">🔒</span>
+              <span className="prov-datepicker-lockscreen-icon"><Lock size={20} /></span>
               <p className="prov-datepicker-lockscreen-msg">{lockMessage}</p>
               {/* Still render grid but fully disabled so user can see all dates strikethrough */}
               <div className="prov-datepicker-dow-row prov-datepicker-dow-row--muted">
@@ -334,7 +339,7 @@ export function CustomDatePicker({
                         isSelected(day) ? 'prov-datepicker-day--selected' : '',
                         isHighlighted(day) && !isSelected(day) ? 'prov-datepicker-day--highlighted' : '',
                         isTodayDay(day) && !isSelected(day) && !isHighlighted(day) ? 'prov-datepicker-day--today' : '',
-                        isPast(day) ? 'prov-datepicker-day--past' : '',
+                        isPast(day) && !allowPast ? 'prov-datepicker-day--past' : '',
                         isDayDisabled(day) ? 'prov-datepicker-day--disabled' : '',
                       ].filter(Boolean).join(' ')}
                     >
@@ -355,7 +360,8 @@ export function CustomDatePicker({
               )}
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
