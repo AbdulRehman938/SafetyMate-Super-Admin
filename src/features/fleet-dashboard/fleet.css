@@ -2141,3 +2141,2395 @@
 .fleet-vehicle-card-img:hover {
   transform: scale(1.03);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   INSPECTION LOG PAGE  —  .insp-*
+   Pixel-matched to Figma "Select Vehicle for Inspection"
+   Fully responsive: mobile → tablet → laptop
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Loading state */
+.insp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 12px;
+  color: rgba(148, 163, 184, 0.8);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Page wrapper — inherits .fleet-subpage scroll */
+.insp-page {
+  padding-bottom: 60px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.insp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.insp-header-text { flex: 1; min-width: 0; }
+
+.insp-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #3a82ff;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.insp-title {
+  margin: 0 0 10px;
+  font-size: clamp(1.55rem, 3vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: rgba(235, 242, 255, 0.97);
+  line-height: 1.1;
+}
+.insp-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.72);
+  font-weight: 500;
+  line-height: 1.55;
+  max-width: 520px;
+}
+
+/* Scan QR / VIN button */
+.insp-scan-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 22px;
+  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
+  border: 1px solid rgba(58, 130, 255, 0.4);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(42, 123, 214, 0.32);
+  transition: filter 0.18s, transform 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.insp-scan-trigger:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+/* ── Filter bar ───────────────────────────────────────────── */
+.insp-filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+/* select wrapper */
+.insp-select-wrap { display: flex; flex-direction: column; gap: 4px; }
+.insp-select-label {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.insp-select-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.insp-select-box::after {
+  content: '';
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid rgba(148, 163, 184, 0.5);
+  pointer-events: none;
+}
+.insp-select {
+  appearance: none;
+  background: rgba(10, 14, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  color: rgba(235, 242, 255, 0.9);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 32px 9px 13px;
+  outline: none;
+  cursor: pointer;
+  min-width: 170px;
+  transition: border-color 0.15s;
+}
+.insp-select:focus { border-color: rgba(58, 130, 255, 0.5); }
+.insp-select option { background: #0b0f1f; color: rgba(235, 242, 255, 0.9); }
+
+/* filter action buttons */
+.insp-filter-btn {
+  padding: 9px 15px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.insp-filter-btn--clear {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: rgba(148, 163, 184, 0.8);
+}
+.insp-filter-btn--clear:hover { background: rgba(255, 255, 255, 0.08); }
+.insp-filter-btn--filters {
+  background: rgba(58, 130, 255, 0.09);
+  border: 1px solid rgba(58, 130, 255, 0.28);
+  color: #8ab8ff;
+}
+.insp-filter-btn--filters:hover { background: rgba(58, 130, 255, 0.15); }
+
+/* Ready units widget */
+.insp-ready-widget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 14, 30, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 8px 14px 8px 12px;
+}
+.insp-ready-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.insp-ready-label {
+  font-size: 8px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.insp-ready-count {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+.insp-ready-total {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.5);
+  font-weight: 600;
+}
+
+/* ── 2-column card grid ───────────────────────────────────── */
+.insp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+/* ── Vehicle Card ─────────────────────────────────────────── */
+.insp-card {
+  background: rgba(8, 12, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.insp-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  border-color: rgba(58, 130, 255, 0.22);
+}
+.insp-card--locked {
+  border-color: rgba(255, 83, 95, 0.28);
+}
+.insp-card--locked:hover {
+  box-shadow: 0 8px 32px rgba(255, 83, 95, 0.08);
+  border-color: rgba(255, 83, 95, 0.4);
+}
+
+/* image area */
+.insp-card-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.insp-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform 0.4s ease;
+  background: #07111e; /* shown while image loads */
+}
+.insp-card:hover .insp-card-img { transform: scale(1.03); }
+.insp-card-img-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.12) 0%,
+    rgba(0, 0, 0, 0.5)  100%
+  );
+}
+
+/* badges */
+.insp-card-badge {
+  position: absolute;
+  top: 10px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  line-height: 1.4;
+}
+.insp-card-badge--id {
+  left: 10px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.insp-card-badge--status { right: 10px; }
+
+/* body */
+.insp-card-body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  flex: 1;
+}
+
+/* name row */
+.insp-card-name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.insp-card-name-col { flex: 1; min-width: 0; }
+.insp-card-name {
+  margin: 0 0 3px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insp-card-vin {
+  margin: 0;
+  font-size: 10.5px;
+  color: rgba(148, 163, 184, 0.5);
+  font-weight: 600;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insp-card-health-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.insp-card-health-label {
+  font-size: 7.5px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.insp-card-health-value {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* meta row */
+.insp-card-meta-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.insp-card-meta-cell { display: flex; flex-direction: column; gap: 3px; }
+.insp-card-meta-label {
+  display: flex;
+  align-items: center;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.insp-card-meta-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(235, 242, 255, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* CTA buttons */
+.insp-card-start-btn {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
+  border: 1px solid rgba(58, 130, 255, 0.3);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: filter 0.18s;
+}
+.insp-card-start-btn:hover { filter: brightness(1.12); }
+
+.insp-card-locked-btn {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: rgba(148, 163, 184, 0.5);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* ── Pagination footer ────────────────────────────────────── */
+.insp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.insp-pagination-info {
+  font-size: 12.5px;
+  color: rgba(148, 163, 184, 0.5);
+  font-weight: 600;
+}
+.insp-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.insp-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0 6px;
+}
+.insp-page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+.insp-page-btn--active {
+  background: rgba(58, 130, 255, 0.22);
+  border-color: rgba(58, 130, 255, 0.45);
+  color: #8ab8ff;
+  font-weight: 800;
+}
+.insp-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Scanner Modal ────────────────────────────────────────── */
+.insp-scan-modal {
+  width: 100%;
+  max-width: 500px;
+  background: #080d1c;
+  border: 1px solid rgba(58, 130, 255, 0.2);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.insp-scan-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.insp-scan-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(58, 130, 255, 0.12);
+  border: 1px solid rgba(58, 130, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5ba8ff;
+  flex-shrink: 0;
+}
+.insp-scan-title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+.insp-scan-sub {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.6);
+  font-weight: 600;
+}
+.insp-scan-close {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(148, 163, 184, 0.7);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.insp-scan-close:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+/* viewfinder */
+.insp-viewfinder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.insp-viewfinder-err {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(148, 163, 184, 0.55);
+  text-align: center;
+  padding: 20px;
+}
+.insp-viewfinder-err p  { margin: 0; font-size: 12px; font-weight: 600; }
+.insp-viewfinder-err span { font-size: 11px; color: rgba(148, 163, 184, 0.4); }
+.insp-vf-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(0,0,0,.45) 0%,
+    transparent 25%,
+    transparent 75%,
+    rgba(0,0,0,.45) 100%
+  );
+}
+/* green finder rect */
+.insp-vf-finder {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 54%;
+  height: 54%;
+  border: 2px solid rgba(58, 230, 130, 0.85);
+  border-radius: 10px;
+}
+/* corner accents */
+.insp-vf-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+}
+.insp-vf-corner--tl { top: -2px;  left: -2px;  border-top: 3px solid #4deba0; border-left:  3px solid #4deba0; }
+.insp-vf-corner--tr { top: -2px;  right: -2px; border-top: 3px solid #4deba0; border-right: 3px solid #4deba0; }
+.insp-vf-corner--bl { bottom: -2px; left: -2px;  border-bottom: 3px solid #4deba0; border-left:  3px solid #4deba0; }
+.insp-vf-corner--br { bottom: -2px; right: -2px; border-bottom: 3px solid #4deba0; border-right: 3px solid #4deba0; }
+/* red sweep laser */
+.insp-vf-laser {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff3c3c, #ff3c3c, transparent);
+  box-shadow: 0 0 8px rgba(255, 60, 60, 0.9);
+  transition: top 22ms linear;
+}
+
+/* search row */
+.insp-scan-search-row {
+  display: flex;
+  gap: 10px;
+}
+.insp-scan-search-wrap {
+  position: relative;
+  flex: 1;
+}
+.insp-scan-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(148, 163, 184, 0.4);
+  pointer-events: none;
+}
+.insp-scan-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.insp-scan-search-input:focus { border-color: rgba(58, 130, 255, 0.5); }
+.insp-scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #2a7bd6, #1e5fb0);
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s;
+}
+.insp-scan-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.insp-scan-btn:not(:disabled):hover { filter: brightness(1.1); }
+
+/* results dropdown */
+.insp-scan-results {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.insp-scan-result-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  text-align: left;
+  color: #fff;
+  transition: background 0.12s;
+}
+.insp-scan-result-item:last-child { border-bottom: none; }
+.insp-scan-result-item:hover { background: rgba(58, 130, 255, 0.1); }
+.insp-scan-result-id {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(235, 242, 255, 0.92);
+  white-space: nowrap;
+}
+.insp-scan-result-model {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.55);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insp-scan-result-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 860px) {
+  .insp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .insp-filter-bar {
+    gap: 8px;
+  }
+  .insp-select { min-width: 140px; }
+  .insp-scan-trigger {
+    padding: 11px 16px;
+    font-size: 12.5px;
+  }
+}
+
+/* Large mobile */
+@media (max-width: 640px) {
+  .insp-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .insp-scan-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+  .insp-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .insp-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .insp-select { min-width: 100%; }
+  .insp-select-wrap { width: 100%; }
+  .insp-select-box { width: 100%; }
+  .insp-filter-btn { width: 100%; justify-content: center; }
+  .insp-ready-widget { width: 100%; justify-content: space-between; }
+  .insp-pagination { flex-direction: column; align-items: center; }
+  .insp-scan-modal { border-radius: 16px 16px 0 0; max-height: 85vh; }
+  .fleet-modal-overlay { align-items: flex-end; }
+}
+
+/* Small mobile */
+@media (max-width: 420px) {
+  .insp-card-name { font-size: 14px; }
+  .insp-card-health-value { font-size: 18px; }
+  .insp-title { font-size: 1.4rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DAILY INSPECTION WIZARD  —  .wiz-*
+   Pixel-matched to Figma "Vehicle Daily Inspection"
+   Fully responsive: mobile → tablet → laptop
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Page shell */
+.wiz-page {
+  padding-bottom: 60px;
+  animation: fleet-page-enter 0.25s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── Critical warning banner ────────────────────────────────── */
+.wiz-critical-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(139, 18, 24, 0.35);
+  border: 1px solid rgba(255, 83, 95, 0.45);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+.wiz-critical-icon {
+  color: #ff535f;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.wiz-critical-title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ff8080;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wiz-critical-body {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(235, 242, 255, 0.75);
+  line-height: 1.5;
+}
+
+/* ── Page header ─────────────────────────────────────────────── */
+.wiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.wiz-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.wiz-back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(148,163,184,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.wiz-back-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+
+.wiz-title {
+  margin: 0 0 4px;
+  font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: rgba(235,242,255,0.97);
+  line-height: 1.1;
+}
+.wiz-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 12px;
+  color: #3a82ff;
+  font-weight: 700;
+}
+
+.wiz-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.wiz-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: filter 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.wiz-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.wiz-btn--ghost {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(235,242,255,0.85);
+}
+.wiz-btn--ghost:not(:disabled):hover { background: rgba(255,255,255,0.1); }
+.wiz-btn--primary {
+  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
+  border: 1px solid rgba(58,130,255,0.35);
+  color: #fff;
+  box-shadow: 0 3px 14px rgba(42,123,214,0.3);
+}
+.wiz-btn--primary:not(:disabled):hover { filter: brightness(1.1); }
+
+/* error bar */
+.wiz-error-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255,83,95,0.1);
+  border: 1px solid rgba(255,83,95,0.3);
+  border-radius: 8px;
+  color: #ff8080;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* ── Odometer card ───────────────────────────────────────────── */
+.wiz-odometer-card {
+  background: rgba(8,12,28,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  max-width: 420px;
+}
+.wiz-odometer-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(148,163,184,0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.wiz-odometer-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.wiz-odometer-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(148,163,184,0.35);
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  padding: 0;
+  min-width: 0;
+}
+.wiz-odometer-input:focus { color: rgba(235,242,255,0.88); }
+.wiz-odometer-input::placeholder { color: rgba(148,163,184,0.22); }
+/* hide number spinners */
+.wiz-odometer-input::-webkit-inner-spin-button,
+.wiz-odometer-input::-webkit-outer-spin-button { appearance: none; }
+.wiz-odometer-unit {
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(148,163,184,0.4);
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  padding-left: 8px;
+}
+
+/* ── Checklist 2-col grid ────────────────────────────────────── */
+.wiz-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* ── Section card (shared by checklist, evidence, sig) ──────── */
+.wiz-section-card {
+  background: rgba(8,12,28,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.wiz-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.wiz-section-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(58,130,255,0.1);
+  border: 1px solid rgba(58,130,255,0.22);
+  color: #5ba8ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wiz-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(235,242,255,0.92);
+}
+
+/* checklist items */
+.wiz-section-items { padding: 0 18px; }
+.wiz-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.wiz-item-row:last-child { border-bottom: none; }
+.wiz-item-label {
+  font-size: 12.5px;
+  color: rgba(203,214,255,0.82);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.wiz-item-btns {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.wiz-outcome-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.13s ease;
+  white-space: nowrap;
+}
+.wiz-outcome-btn:hover { opacity: 0.85; }
+
+/* ── Evidence + Defects bottom row ──────────────────────────── */
+.wiz-bottom-row {
+  display: grid;
+  grid-template-columns: 280px minmax(0,1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+  align-items: start;
+}
+
+/* evidence card */
+.wiz-evidence-card {
+  background: rgba(8,12,28,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.wiz-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+.wiz-photo-slot {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.wiz-photo-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(148,163,184,0.5);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 80px;
+}
+.wiz-photo-upload:hover {
+  border-color: rgba(58,130,255,0.35);
+  background: rgba(58,130,255,0.05);
+}
+.wiz-photo-thumb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 80px;
+}
+.wiz-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.wiz-photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255,83,95,0.85);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+/* defects card */
+.wiz-defects-card {
+  background: rgba(8,12,28,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.wiz-defects-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 14px 18px;
+  color: rgba(203,214,255,0.82);
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.55;
+  min-height: 130px;
+}
+.wiz-defects-textarea::placeholder { color: rgba(148,163,184,0.3); }
+
+/* ── Digital Signature card ─────────────────────────────────── */
+.wiz-sig-card {
+  background: rgba(8,12,28,0.85);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.wiz-sig-head {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.wiz-sig-clear-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #ff535f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+.wiz-sig-clear-btn:hover { opacity: 0.75; }
+.wiz-sig-wrap {
+  position: relative;
+  margin: 12px 18px;
+  border: 1px dashed rgba(58,130,255,0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 120px;
+}
+.wiz-sig-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+.wiz-sig-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 14px;
+  color: rgba(58,130,255,0.25);
+  font-style: italic;
+  pointer-events: none;
+}
+.wiz-sig-clear-inner {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,83,95,0.12);
+  border: 1px solid rgba(255,83,95,0.3);
+  color: #ff8080;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.wiz-sig-disclaimer {
+  margin: 0;
+  padding: 10px 18px 14px;
+  font-size: 9px;
+  color: rgba(148,163,184,0.35);
+  text-align: center;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* ── Success screen ─────────────────────────────────────────── */
+.wiz-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 16px;
+}
+.wiz-success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(22,201,136,0.1);
+  border: 1px solid rgba(22,201,136,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wiz-success-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: rgba(235,242,255,0.97);
+}
+.wiz-success-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: rgba(148,163,184,0.7);
+  max-width: 420px;
+  line-height: 1.55;
+}
+.wiz-success-btn {
+  margin-top: 6px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
+  border: 1px solid rgba(58,130,255,0.35);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.wiz-success-btn:hover { filter: brightness(1.1); }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+/* Tablet */
+@media (max-width: 860px) {
+  .wiz-checklist-grid { grid-template-columns: 1fr; }
+  .wiz-bottom-row     { grid-template-columns: 1fr; }
+  .wiz-odometer-card  { max-width: 100%; }
+}
+/* Mobile */
+@media (max-width: 600px) {
+  .wiz-header         { flex-direction: column; align-items: stretch; }
+  .wiz-header-left    { flex-wrap: wrap; }
+  .wiz-header-actions { justify-content: flex-end; }
+  .wiz-btn            { padding: 9px 14px; font-size: 11.5px; }
+  .wiz-title          { font-size: 1.25rem; }
+  .wiz-photo-grid     { grid-template-columns: repeat(3, 1fr); }
+  .wiz-item-label     { font-size: 11.5px; }
+}
+@media (max-width: 400px) {
+  .wiz-outcome-btn    { padding: 3px 7px; font-size: 9px; }
+  .wiz-photo-grid     { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INSPECTION LOG — Status filter pills
+───────────────────────────────────────────────────────────── */
+
+/* Active FILTERS button state */
+.insp-filter-btn--filters-active {
+  background: rgba(58, 130, 255, 0.18) !important;
+  border-color: rgba(58, 130, 255, 0.5) !important;
+  color: #8ab8ff !important;
+}
+
+/* red dot on FILTERS btn when a filter is active */
+.insp-filter-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff535f;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+/* Status pills row */
+.insp-status-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  background: rgba(8, 12, 28, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  animation: fleet-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.insp-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(148, 163, 184, 0.75);
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+  white-space: nowrap;
+}
+.insp-status-pill:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(235, 242, 255, 0.9);
+}
+.insp-status-pill--active {
+  background: rgba(58, 130, 255, 0.18);
+  border-color: rgba(58, 130, 255, 0.45);
+  color: #8ab8ff;
+}
+.insp-status-pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.7);
+}
+.insp-status-pill--active .insp-status-pill-count {
+  background: rgba(58, 130, 255, 0.25);
+  color: #8ab8ff;
+}
+
+/* Cleared card variant */
+.insp-card--cleared {
+  border-color: rgba(58, 130, 255, 0.22);
+}
+.insp-card--cleared:hover {
+  border-color: rgba(58, 130, 255, 0.38);
+}
+
+/* Draft / submitted CTA button variants */
+.insp-card-start-btn--draft {
+  background: linear-gradient(135deg, #d97218, #a35610) !important;
+  border-color: rgba(254, 142, 42, 0.4) !important;
+}
+.insp-card-start-btn--submitted {
+  background: rgba(58, 130, 255, 0.12) !important;
+  border: 1px solid rgba(58, 130, 255, 0.3) !important;
+  color: #8ab8ff !important;
+}
+.insp-card-start-btn--submitted:hover { filter: brightness(1.1) !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   INSPECTION WIZARD — Resume + Save-ok banner
+───────────────────────────────────────────────────────────── */
+.wiz-resume-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(58, 130, 255, 0.08);
+  border: 1px solid rgba(58, 130, 255, 0.22);
+  border-radius: 8px;
+  color: #8ab8ff;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.wiz-save-ok-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(22, 201, 136, 0.08);
+  border: 1px solid rgba(22, 201, 136, 0.25);
+  border-radius: 8px;
+  color: #4deba0;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.wiz-meta-draft {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fe8e2a;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FUEL INTELLIGENCE PAGE  —  .fuel-*
+   Matches Figma "Unified Command Center"
+   Fully responsive: mobile → tablet → laptop
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base page shell */
+.fuel-page {
+  padding-bottom: 60px;
+}
+
+/* Shared card base */
+.fuel-section-card {
+  background: rgba(8, 12, 28, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ── Page header ──────────────────────────────────────────────── */
+.fuel-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.fuel-kicker {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #3a82ff;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.fuel-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: rgba(235, 242, 255, 0.97);
+  line-height: 1.1;
+}
+.fuel-view-toggle {
+  display: flex;
+  background: rgba(10, 14, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.fuel-toggle-btn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.65);
+  transition: background 0.15s, color 0.15s;
+}
+.fuel-toggle-btn--active {
+  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
+  color: #fff;
+}
+
+/* ── Shared card sub-elements ────────────────────────────────── */
+.fuel-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.fuel-card-head-plain {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.fuel-card-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(58, 130, 255, 0.12);
+  border: 1px solid rgba(58, 130, 255, 0.22);
+  color: #5ba8ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fuel-card-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(235, 242, 255, 0.85);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+.fuel-card-title-plain {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(235, 242, 255, 0.85);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+.fuel-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(148, 163, 184, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.fuel-icon-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+/* ── ROW 1: Capture | Donuts | Anomalies ────────────────────── */
+.fuel-row1 {
+  display: grid;
+  grid-template-columns: 220px 1fr 280px;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+/* Fuel capture card */
+.fuel-capture-card { display: flex; flex-direction: column; }
+.fuel-form-fields { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.fuel-field-group { display: flex; flex-direction: column; gap: 4px; }
+.fuel-field-label {
+  font-size: 8px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.fuel-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fuel-field-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(235, 242, 255, 0.85);
+  font-size: 12.5px;
+  padding: 8px 11px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.fuel-field-input:focus { border-color: rgba(58, 130, 255, 0.45); }
+.fuel-field-input--err { border-color: rgba(255, 83, 95, 0.5) !important; }
+.fuel-field-input option { background: #0b0f1f; }
+.fuel-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
+  border: 1px solid rgba(58, 130, 255, 0.35);
+  border-radius: 9px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: filter 0.15s;
+  margin-top: 4px;
+}
+.fuel-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.fuel-submit-btn:not(:disabled):hover { filter: brightness(1.1); }
+
+/* KPI donut cards row */
+.fuel-kpi-donuts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.fuel-kpi-donut-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px 14px;
+  gap: 10px;
+}
+.fuel-kpi-donut-label {
+  margin: 0;
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.55);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.4;
+}
+.fuel-kpi-donut-sub {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(148, 163, 184, 0.6);
+  letter-spacing: 0.06em;
+}
+
+/* Anomalies card */
+.fuel-anomalies-card { display: flex; flex-direction: column; }
+.fuel-anomaly-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 83, 95, 0.18);
+  color: #ff8080;
+  border: 1px solid rgba(255, 83, 95, 0.3);
+  white-space: nowrap;
+}
+.fuel-anomaly-list { flex: 1; overflow-y: auto; max-height: 280px; }
+.fuel-anomaly-item {
+  padding: 10px 14px 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s;
+}
+.fuel-anomaly-item:hover { background: rgba(255, 255, 255, 0.02); }
+.fuel-anomaly-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+.fuel-anomaly-type {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.fuel-anomaly-ago {
+  font-size: 9.5px;
+  color: rgba(148, 163, 184, 0.45);
+  font-weight: 600;
+}
+.fuel-anomaly-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: rgba(203, 214, 255, 0.72);
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+/* ── ROW 2: Temporal | Receipt | Hotspot ─────────────────────── */
+.fuel-row2 {
+  display: grid;
+  grid-template-columns: 1fr 180px 200px;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+/* Temporal analysis card */
+.fuel-temporal-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 16px;
+  min-height: 200px;
+}
+.fuel-temporal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.fuel-temporal-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(235, 242, 255, 0.92);
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.fuel-temporal-sub {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.6);
+  font-weight: 500;
+  max-width: 220px;
+}
+.fuel-temporal-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.65);
+  flex-shrink: 0;
+}
+.fuel-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.fuel-legend-dot--blue { background: #3a82ff; }
+.fuel-legend-dot--grey { background: rgba(148, 163, 184, 0.5); }
+
+/* Weekly chart */
+.fuel-weekly-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex: 1;
+  min-height: 100px;
+  padding-top: 8px;
+}
+.fuel-weekly-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  height: 120px;
+  justify-content: flex-end;
+}
+.fuel-weekly-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+}
+.fuel-weekly-bar {
+  width: 100%;
+  min-height: 3px;
+  max-width: 28px;
+  margin: 0 auto;
+  border-radius: 4px 4px 0 0;
+  background: rgba(58, 130, 255, 0.22);
+  transition: height 500ms ease;
+}
+.fuel-weekly-bar--today {
+  background: linear-gradient(180deg, #3a82ff, #1d4ed8);
+  box-shadow: 0 2px 10px rgba(58, 130, 255, 0.35);
+}
+.fuel-weekly-label {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.05em;
+}
+
+/* Receipt card */
+.fuel-receipt-card {
+  display: flex;
+  flex-direction: column;
+}
+.fuel-receipt-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 14px;
+  cursor: pointer;
+  flex: 1;
+  min-height: 120px;
+}
+.fuel-receipt-drop-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(235, 242, 255, 0.75);
+}
+.fuel-receipt-drop-hint {
+  font-size: 10px;
+  color: rgba(148, 163, 184, 0.45);
+  font-weight: 600;
+}
+.fuel-receipt-preview {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fuel-receipt-file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(148, 163, 184, 0.5);
+  font-size: 11px;
+  font-weight: 600;
+}
+.fuel-receipt-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 83, 95, 0.1);
+  border: 1px solid rgba(255, 83, 95, 0.25);
+  color: #ff8080;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Hotspot matrix */
+.fuel-hotspot-card {
+  display: flex;
+  flex-direction: column;
+}
+.fuel-hotspot-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 3px;
+  padding: 12px 14px 8px;
+  flex: 1;
+  min-height: 100px;
+}
+.fuel-hotspot-cell {
+  border-radius: 3px;
+  aspect-ratio: 1;
+  transition: background 0.3s ease;
+}
+.fuel-hotspot-legend {
+  padding: 8px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fuel-hotspot-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: rgba(148, 163, 184, 0.7);
+  font-weight: 600;
+}
+.fuel-hotspot-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fuel-hotspot-tag {
+  margin-left: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── ROW 3: Performers | Transactions ────────────────────────── */
+.fuel-row3 {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Performers */
+.fuel-performers-card { }
+.fuel-performers-list {
+  padding: 10px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.fuel-performer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fuel-performer-rank {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(148, 163, 184, 0.4);
+  width: 18px;
+  flex-shrink: 0;
+}
+.fuel-performer-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.fuel-performer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fuel-performer-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.fuel-performer-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(235, 242, 255, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fuel-performer-stat {
+  font-size: 10px;
+  color: rgba(148, 163, 184, 0.55);
+  font-weight: 600;
+}
+.fuel-performer-trend {
+  flex-shrink: 0;
+}
+
+/* Transactions */
+.fuel-transactions-card { }
+.fuel-tx-table-wrap { overflow-x: auto; }
+.fuel-tx-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 520px;
+}
+.fuel-tx-table thead th {
+  padding: 9px 14px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.55);
+  background: rgba(7, 12, 28, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: left;
+  white-space: nowrap;
+}
+.fuel-tx-table tbody tr {
+  transition: background 0.12s;
+}
+.fuel-tx-table tbody tr:hover td { background: rgba(255, 255, 255, 0.015); }
+.fuel-tx-table tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 12.5px;
+  vertical-align: middle;
+  color: rgba(235, 242, 255, 0.88);
+}
+.fuel-tx-table tbody tr:last-child td { border-bottom: none; }
+.fuel-tx-time { font-family: 'SFMono-Regular', 'Consolas', monospace; font-size: 12px; color: rgba(148, 163, 184, 0.7); }
+.fuel-tx-driver { display: block; font-weight: 700; font-size: 12.5px; }
+.fuel-tx-unit   { display: block; font-size: 10.5px; color: rgba(148, 163, 184, 0.5); font-weight: 600; margin-top: 1px; }
+.fuel-tx-station { color: rgba(148, 163, 184, 0.75); font-size: 12px; }
+.fuel-tx-volume  { font-weight: 700; }
+.fuel-tx-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.fuel-tx-status--verified {
+  background: rgba(22, 201, 136, 0.12);
+  color: #4deba0;
+  border: 1px solid rgba(22, 201, 136, 0.28);
+}
+.fuel-tx-status--flagged {
+  background: rgba(255, 83, 95, 0.12);
+  color: #ff8080;
+  border: 1px solid rgba(255, 83, 95, 0.28);
+}
+.fuel-tx-status--pending {
+  background: rgba(148, 163, 184, 0.08);
+  color: rgba(148, 163, 184, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .fuel-row1 { grid-template-columns: 200px 1fr 240px; }
+  .fuel-row2 { grid-template-columns: 1fr 160px 180px; }
+}
+@media (max-width: 900px) {
+  .fuel-row1 { grid-template-columns: 1fr 1fr; }
+  .fuel-row1 > .fuel-anomalies-card { grid-column: 1 / -1; }
+  .fuel-kpi-donuts { grid-template-columns: repeat(3, 1fr); }
+  .fuel-row2 { grid-template-columns: 1fr 1fr; }
+  .fuel-row2 > .fuel-hotspot-card { grid-column: 1 / -1; }
+  .fuel-row3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .fuel-row1 { grid-template-columns: 1fr; }
+  .fuel-kpi-donuts { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .fuel-row2 { grid-template-columns: 1fr; }
+  .fuel-row3 { grid-template-columns: 1fr; }
+  .fuel-kpi-donut-card { padding: 14px 10px; }
+  .fuel-page-header { flex-direction: column; align-items: stretch; }
+  .fuel-view-toggle { align-self: flex-start; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BASE CLASSES used by SiteMapPage allocation table
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Scroll wrapper — horizontal scroll on mobile, full width on desktop */
+.fleet-site-alloc-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 5-column grid row (headers + data rows share same class) */
+.fleet-site-alloc-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1fr 1.4fr;
+  min-width: 560px;  /* ensures columns stay readable before scroll kicks in */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRODUCTION-READY RESPONSIVE OVERRIDES
+   Breakpoints: 1200px (laptop), 960px (tablet), 640px (mobile), 400px (small phone)
+   These override inline styles and grid definitions that were
+   hardcoded and could not reflow on small viewports.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Fleet Dashboard top-row + main grid ─────────────────── */
+
+/* The inline grid `gridTemplateColumns: '220px 240px 1fr'` cannot
+   be overridden from CSS so we target the parent .fleet-dash directly */
+
+/* Laptop (≤1200px): collapse donut card into same row as stats */
+@media (max-width: 1200px) {
+  .fleet-dash-top-row-override {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Tablet (≤960px): all pages become single scrollable column */
+@media (max-width: 960px) {
+  /* Fleet subpages use this wrapper */
+  .fleet-subpage {
+    padding: 18px 16px 60px !important;
+  }
+
+  /* Allow .client-page-content to scroll when FleetDashboard locks it on mobile */
+  .client-page-content {
+    overflow: auto !important;
+  }
+
+  /* Site fleet list: remove fixed 360px column */
+  .fleet-main-grid {
+    grid-template-columns: 1fr !important;
+    flex: unset !important;
+  }
+
+  /* SiteMap / FleetDashboard top-row 3-col → 1-col */
+  .fleet-top-row-3col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Vehicle Twins KPI grid */
+  .fleet-twins-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Fuel rows */
+  .fuel-row1 {
+    grid-template-columns: 1fr !important;
+  }
+  .fuel-row2 {
+    grid-template-columns: 1fr !important;
+  }
+  .fuel-row3 {
+    grid-template-columns: 1fr !important;
+  }
+  .fuel-kpi-donuts {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  /* Site allocation 5-col data grid → scrollable */
+  .fleet-site-alloc-row {
+    grid-template-columns: minmax(180px, 2fr) 1fr 1.2fr 1fr 1.4fr !important;
+    min-width: 560px;
+  }
+  .fleet-site-alloc-wrap {
+    overflow-x: auto !important;
+  }
+}
+
+/* Mobile (≤640px) */
+@media (max-width: 640px) {
+  .fleet-subpage {
+    padding: 14px 12px 60px !important;
+  }
+
+  /* All 3-col KPI grids → 1-col on small phone */
+  .fleet-kpi-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Vehicle Twins KPI → 1 col */
+  .fleet-twins-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fuel page */
+  .fuel-kpi-donuts {
+    grid-template-columns: 1fr !important;
+  }
+  .fuel-page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .fuel-view-toggle {
+    width: 100% !important;
+    justify-content: center;
+  }
+  .fuel-row1,
+  .fuel-row2,
+  .fuel-row3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Register form */
+  .fleet-register-form {
+    grid-template-columns: 1fr !important;
+  }
+  .fleet-register-bottom-bar {
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+    left: 0 !important;  /* override left: 280px */
+  }
+
+  /* Inspection grid */
+  .insp-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .insp-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .insp-scan-trigger {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .insp-filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .insp-select-wrap,
+  .insp-select-box,
+  .insp-select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .insp-ready-widget {
+    justify-content: space-between !important;
+  }
+  .insp-pagination {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  /* Wizard */
+  .wiz-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .wiz-header-actions {
+    justify-content: flex-end !important;
+  }
+  .wiz-checklist-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .wiz-bottom-row {
+    grid-template-columns: 1fr !important;
+  }
+  .wiz-odometer-card {
+    max-width: 100% !important;
+  }
+
+  /* Fleet table — horizontal scroll on mobile */
+  .fleet-table {
+    min-width: 540px;
+  }
+
+  /* Fuel capture form */
+  .fuel-field-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* SiteMap allocation table: scroll not collapse */
+  .fleet-site-alloc-row {
+    min-width: 500px;
+  }
+}
+
+/* Small phone (≤400px) */
+@media (max-width: 400px) {
+  .fleet-subpage {
+    padding: 12px 10px 56px !important;
+  }
+  .insp-card-name {
+    font-size: 14px !important;
+  }
+  .insp-card-health-value {
+    font-size: 18px !important;
+  }
+  .wiz-title {
+    font-size: 1.15rem !important;
+  }
+  .wiz-btn {
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+  }
+  .fuel-kpi-donut-card {
+    padding: 12px 8px !important;
+  }
+  /* Pagination numbers — don't overflow */
+  .insp-pagination-controls {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+}
+
+/* ── 2. .fleet-register-bottom-bar: fix left offset on mobile ── */
+/* On mobile the sidebar is 0px wide (slides off screen) but the bar
+   was using `left: 280px`. We override via the sidebar-closed class. */
+.sidebar-closed .fleet-register-bottom-bar,
+.app-shell:not(.sidebar-open) .fleet-register-bottom-bar {
+  left: 0 !important;
+}
+/* When sidebar is collapsed to 80px */
+.sidebar-collapsed .fleet-register-bottom-bar {
+  left: 80px !important;
+}
+
+/* ── 3. VehicleTwins filter row — allow wrap ──────────────────── */
+.fleet-vt-filter-row {
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+.fleet-vt-filter-row > * {
+  min-width: 130px;
+}
+@media (max-width: 640px) {
+  .fleet-vt-filter-row {
+    flex-direction: column !important;
+  }
+  .fleet-vt-filter-row > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── 4. SiteMapPage top row inline grid → responsive ─────────── */
+/* The top row uses inline `gridTemplateColumns: '220px 240px 1fr'` */
+/* We target the parent by class and override with a utility class  */
+.fleet-sitemap-top-row {
+  display: grid !important;
+  grid-template-columns: 220px 240px 1fr !important;
+  gap: 14px;
+}
+@media (max-width: 960px) {
+  .fleet-sitemap-top-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+@media (max-width: 600px) {
+  .fleet-sitemap-top-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 5. FleetDashboard top-row same pattern ───────────────────── */
+.fleet-dash-top-row {
+  display: grid !important;
+  grid-template-columns: 220px 240px 1fr !important;
+  gap: 14px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  align-items: stretch;
+}
+@media (max-width: 960px) {
+  .fleet-dash-top-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+@media (max-width: 600px) {
+  .fleet-dash-top-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* The main 2-col grid (map + list) */
+.fleet-dash-main-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) 360px !important;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 18px;
+  align-items: stretch;
+}
+@media (max-width: 960px) {
+  .fleet-dash-main-grid {
+    grid-template-columns: 1fr !important;
+    flex: unset !important;
+    padding-bottom: 24px;
+  }
+}
+
+/* ── 6. VehicleTwinsPage KPI row ─────────────────────────────── */
+.fleet-vt-kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+@media (max-width: 768px) {
+  .fleet-vt-kpi-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+@media (max-width: 480px) {
+  .fleet-vt-kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 7. VehicleDetails inner grids ───────────────────────────── */
+.fleet-details-mid-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr) !important;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+@media (max-width: 768px) {
+  .fleet-details-mid-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 8. Fuel Transactions table — scrollable on mobile ──────── */
+.fuel-tx-table-wrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+.fuel-tx-table {
+  min-width: 480px !important;
+}
+
+/* ── 9. Inspection Wizard bottom row ─────────────────────────── */
+@media (max-width: 860px) {
+  .wiz-checklist-grid { grid-template-columns: 1fr !important; }
+  .wiz-bottom-row     { grid-template-columns: 1fr !important; }
+}
+
+/* ── 10. Fleet table always scrollable ───────────────────────── */
+.fleet-table-wrap,
+.fleet-section-card > div[style*="overflowX"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── 11. TopBar search on mobile: don't overflow ─────────────── */
+@media (max-width: 640px) {
+  .topbar-search-wrap {
+    max-width: 160px !important;
+  }
+  .topbar-search-wrap input {
+    font-size: 12px !important;
+  }
+}
+
+/* ── 12. Ensure all modal overlays work on mobile ────────────── */
+@media (max-width: 640px) {
+  .fleet-modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .fleet-modal {
+    max-width: 100% !important;
+    border-radius: 18px 18px 0 0 !important;
+    border-bottom: none !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .insp-scan-modal {
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 88vh;
+  }
+}

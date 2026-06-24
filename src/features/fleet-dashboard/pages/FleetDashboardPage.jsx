@@ -144,14 +144,7 @@ export function FleetDashboardPage() {
           [2] Active Fleet + Crew Ready stacked in ONE card
           [3] Critical Alerts — full height, scrollable
           ══════════════════════════════════════════════════════════════ */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '220px 240px 1fr',
-        gap: '14px',
-        marginBottom: '14px',
-        flexShrink: 0,
-        alignItems: 'stretch',
-      }}>
+      <div className="fleet-dash-top-row">
 
         {/* ── Col 1: Site Readiness Score ── */}
         <div className="fleet-section-card" style={{
@@ -266,15 +259,7 @@ export function FleetDashboardPage() {
         </div>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0,1fr) 360px',
-        gap: '14px',
-        flex: 1,
-        minHeight: 0,
-        paddingBottom: '18px',
-        alignItems: 'stretch',
-      }}>
+      <div className="fleet-dash-main-grid">
 
         {/* GPS Live Tracking */}
         <div className="fleet-section-card fleet-map-section" style={{ display:'flex', flexDirection:'column', minHeight:0 }}>

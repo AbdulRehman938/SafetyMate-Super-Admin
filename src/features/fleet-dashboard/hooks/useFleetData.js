@@ -122,6 +122,56 @@ export function useFleetData() {
     return docRef
   }, [authUser])
 
+  /** Upsert a draft inspection — creates on first save, updates on subsequent saves */
+  const upsertDraftInspection = useCallback(async (vehicleId, draftId, data) => {
+    if (draftId) {
+      // update existing draft
+      await updateDoc(doc(db, 'fleet_inspections', draftId), {
+        ...data,
+        status: 'draft',
+        updatedAt: serverTimestamp(),
+      })
+      return draftId
+    }
+    // create new draft
+    const ref = await addDoc(collection(db, 'fleet_inspections'), {
+      ...data,
+      vehicleId,
+      status: 'draft',
+      inspectedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      createdBy: authUser?.uid ?? '',
+    })
+    return ref.id
+  }, [authUser])
+
+  /** Finalise a draft: set status submitted + update vehicle */
+  const finaliseInspection = useCallback(async (draftId, vehicleId, data) => {
+    if (draftId) {
+      await updateDoc(doc(db, 'fleet_inspections', draftId), {
+        ...data,
+        status: 'submitted',
+        inspectedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    } else {
+      await addDoc(collection(db, 'fleet_inspections'), {
+        ...data,
+        vehicleId,
+        status: 'submitted',
+        inspectedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: authUser?.uid ?? '',
+      })
+    }
+    // update vehicle record
+    await updateDoc(doc(db, 'fleet_vehicles', vehicleId), {
+      lastInspection: serverTimestamp(),
+      status: data.outcome === 'fail' ? 'maintenance' : 'active',
+      updatedAt: serverTimestamp(),
+    })
+  }, [authUser])
+
   // ── Fuel log CRUD ───────────────────────────────────────────
   const addFuelLog = useCallback(async (data) => {
     return addDoc(collection(db, 'fleet_fuel_logs'), {
@@ -168,6 +218,8 @@ export function useFleetData() {
     // actions
     addVehicle, updateVehicle, deleteVehicle,
     addInspection,
+    upsertDraftInspection,
+    finaliseInspection,
     addFuelLog,
     resolveAlert, addAlert,
     refreshAlerts,

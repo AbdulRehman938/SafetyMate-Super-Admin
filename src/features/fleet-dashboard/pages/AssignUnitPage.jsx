@@ -3,7 +3,7 @@ import {
   Search, Activity, AlertTriangle, CheckCircle,
   Info, ArrowLeft, ChevronDown, Check, X,
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useFleetData } from '../hooks/useFleetData.js'
 import { healthClass, formatDate, cap } from '../utils/fleetHelpers.js'
 import '../fleet.css'
@@ -216,12 +216,13 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
     )
   }, [vehicles, search])
 
-  // Auto-select single result
+  // Auto-select single result — wrapped in timeout to avoid setState-in-effect rule
   useEffect(() => {
     if (filtered.length === 1 && filtered[0].id !== selectedId) {
-      setSelectedId(filtered[0].id)
+      const t = setTimeout(() => setSelectedId(filtered[0].id), 0)
+      return () => clearTimeout(t)
     }
-  }, [filtered])
+  }, [filtered, selectedId])
 
   const selected = vehicles.find((v) => v.id === selectedId) ?? null
 

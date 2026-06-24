@@ -1,257 +1,172 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
-  ScanLine, X, ChevronLeft, ChevronRight, ClipboardList, Lock,
-  Zap, Fuel, Wrench, AlertTriangle, Camera, Search,
+  ScanLine, X, ChevronLeft, ChevronRight,
+  ClipboardList, Lock, Zap, Fuel, Wrench,
+  AlertTriangle, Camera, Search, SlidersHorizontal,
+  CheckCircle, Clock, Play,
 } from 'lucide-react'
 import { useFleetData } from '../hooks/useFleetData.js'
-import { VehicleDetails } from '../components/VehicleDetails.jsx'
+import { InspectionWizardPage } from './InspectionWizardPage.jsx'
+import { timeAgo } from '../utils/fleetHelpers.js'
 import '../fleet.css'
 
+/* ─────────────────────────────────────────────────────────────
+   Constants
+───────────────────────────────────────────────────────────── */
 const PAGE_SIZE = 4
 
-/* ── Unsplash images keyed by vehicle type / model keywords ── */
-const VEHICLE_IMAGES = [
-  { keys: ['interceptor', 'pickup', 'ranger', 'hilux', 'raptor', 'tacoma'],
-    url: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=640&q=80' },
-  { keys: ['transport', 'semi', 'truck', 'hauler', 'freighter', 'atlas'],
-    url: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=640&q=80' },
-  { keys: ['ev', 'electric', 'pulse', 'tesla', 'vanguard'],
-    url: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=640&q=80' },
-  { keys: ['utility', 'van', 'transit', 'titan', 'rig'],
-    url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=640&q=80' },
-  { keys: ['suv', 'patrol', 'cruiser', 'land'],
-    url: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=640&q=80' },
+/**
+ * Status filter options for the FILTERS panel.
+ * Each filter maps to a function that decides if a vehicle card is shown.
+ *
+ *   all           — every vehicle
+ *   pending       — no inspection ever submitted today, not locked
+ *   in_progress   — has a draft inspection saved today
+ *   cleared       — has a submitted inspection today
+ *   locked        — maintenance status or active critical alert
+ */
+const STATUS_FILTERS = [
+  { id: 'all',         label: 'All',           icon: SlidersHorizontal },
+  { id: 'pending',     label: 'Pending',        icon: Clock            },
+  { id: 'in_progress', label: 'In Progress',    icon: Play             },
+  { id: 'cleared',     label: 'Cleared',        icon: CheckCircle      },
+  { id: 'locked',      label: 'Locked',         icon: Lock             },
 ]
-const FALLBACK_IMG = 'https://images.unsplash.com/photo-1485291571150-772bcfc10da5?w=640&q=80'
 
-function getVehicleImage(vehicle) {
-  if (vehicle.image) return vehicle.image
-  const name = `${vehicle.model || ''} ${vehicle.vehicleType || ''}`.toLowerCase()
-  for (const { keys, url } of VEHICLE_IMAGES) {
-    if (keys.some((k) => name.includes(k))) return url
-  }
-  return FALLBACK_IMG
-}
-
-function timeAgo(ts) {
-  if (!ts) return null
-  const ms = typeof ts.toMillis === 'function' ? ts.toMillis() : new Date(ts).getTime()
-  const diff = Date.now() - ms
-  const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`
-  const months = Math.floor(days / 30)
-  return `${months} month${months !== 1 ? 's' : ''} ago`
-}
-
-/* ── SVG Circle Gauge ── */
-function CircleGauge({ pct = 0, size = 44, stroke = 4 }) {
-  const r = (size - stroke) / 2
-  const circ = 2 * Math.PI * r
-  const dash = (pct / 100) * circ
-  const color = pct >= 80 ? '#4deba0' : pct >= 50 ? '#fe8e2a' : '#ff535f'
+/* ─────────────────────────────────────────────────────────────
+   SVG Circle Gauge  (READY UNITS widget)
+───────────────────────────────────────────────────────────── */
+function CircleGauge({ pct = 0, size = 46, strokeW = 4 }) {
+  const r      = (size - strokeW) / 2
+  const circ   = 2 * Math.PI * r
+  const filled = (pct / 100) * circ
+  const color  = pct >= 80 ? '#4deba0' : pct >= 50 ? '#fe8e2a' : '#ff535f'
   return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={stroke}
-        strokeDasharray={`${dash} ${circ - dash}`}
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}
+      style={{ flexShrink: 0, transform: 'rotate(-90deg)' }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none"
+        stroke="rgba(255,255,255,0.07)" strokeWidth={strokeW} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none"
+        stroke={color} strokeWidth={strokeW}
+        strokeDasharray={`${filled} ${circ - filled}`}
         strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.5s ease' }} />
+        style={{ transition: 'stroke-dasharray .5s ease' }} />
       <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: 'center', fill: color,
-          fontSize: size * 0.22 + 'px', fontWeight: 800, fontFamily: 'inherit' }}>
+        style={{ transform: 'rotate(90deg)', transformOrigin: 'center',
+          fill: color, fontSize: size * 0.23 + 'px', fontWeight: 800, fontFamily: 'inherit' }}>
         {pct}%
       </text>
     </svg>
   )
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
    QR / VIN Scanner Modal
-   ══════════════════════════════════════════════════════════════ */
+───────────────────────────────────────────────────────────── */
 function ScanModal({ vehicles, onClose, onSelect }) {
-  const videoRef = useRef(null)
+  const videoRef  = useRef(null)
   const streamRef = useRef(null)
-  const [camError, setCamError] = useState(null)
+  const [camErr,   setCamErr]   = useState(null)
+  const [query,    setQuery]    = useState('')
+  const [laserY,   setLaserY]   = useState(30)
   const [scanning, setScanning] = useState(false)
-  const [query, setQuery] = useState('')
-  const [laserY, setLaserY] = useState(30)
 
-  /* Start camera */
   useEffect(() => {
-    let cancelled = false
+    let dead = false
     navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' } })
       .then((stream) => {
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
+        if (dead) { stream.getTracks().forEach((t) => t.stop()); return }
         streamRef.current = stream
-        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play() }
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}) }
       })
-      .catch((err) => {
-        if (!cancelled) setCamError(err.message || 'Camera unavailable')
-      })
-    return () => {
-      cancelled = true
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-    }
+      .catch((e) => { if (!dead) setCamErr(e.message || 'Camera unavailable') })
+    return () => { dead = true; streamRef.current?.getTracks().forEach((t) => t.stop()) }
   }, [])
 
-  /* Laser animation */
   useEffect(() => {
-    if (camError) return
+    if (camErr) return
     let dir = 1
     const id = setInterval(() => {
-      setLaserY((y) => {
-        if (y >= 90) dir = -1
-        if (y <= 10) dir = 1
-        return y + dir * 1.4
-      })
-    }, 25)
+      setLaserY((y) => { if (y >= 88) dir = -1; if (y <= 12) dir = 1; return y + dir * 1.6 })
+    }, 22)
     return () => clearInterval(id)
-  }, [camError])
+  }, [camErr])
 
-  /* Simulate scan */
-  function simulateScan() {
-    if (!query.trim()) return
+  const results = useMemo(() => {
+    if (!query.trim()) return []
+    const q = query.toLowerCase()
+    return vehicles.filter((v) =>
+      (v.unitId || '').toLowerCase().includes(q) ||
+      (v.vin    || '').toLowerCase().includes(q) ||
+      (v.model  || '').toLowerCase().includes(q)
+    ).slice(0, 6)
+  }, [vehicles, query])
+
+  function handleSearch() {
+    if (!query.trim() || results.length === 0) return
     setScanning(true)
-    setTimeout(() => {
-      const q = query.toLowerCase()
-      const found = vehicles.find((v) =>
-        (v.unitId || '').toLowerCase().includes(q) ||
-        (v.vin || '').toLowerCase().includes(q) ||
-        (v.model || '').toLowerCase().includes(q)
-      )
-      setScanning(false)
-      if (found) { onSelect(found); onClose() }
-    }, 1200)
+    setTimeout(() => { setScanning(false); onSelect(results[0]); onClose() }, 900)
   }
-
-  const filtered = query.trim()
-    ? vehicles.filter((v) =>
-        (v.unitId || '').toLowerCase().includes(query.toLowerCase()) ||
-        (v.vin || '').toLowerCase().includes(query.toLowerCase()) ||
-        (v.model || '').toLowerCase().includes(query.toLowerCase()))
-    : []
 
   return (
     <div className="fleet-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ width: '100%', maxWidth: '520px', background: '#080d1c',
-        border: '1px solid rgba(58,130,255,0.2)', borderRadius: '20px',
-        padding: '24px', boxShadow: '0 32px 80px rgba(0,0,0,0.8)', position: 'relative' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px',
-            background: 'rgba(58,130,255,0.12)', border: '1px solid rgba(58,130,255,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5ba8ff' }}>
-            <ScanLine size={18} />
-          </div>
+      <div className="insp-scan-modal">
+        <div className="insp-scan-head">
+          <div className="insp-scan-icon-wrap"><ScanLine size={17} /></div>
           <div>
-            <p style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#fff' }}>QR / VIN Scanner</p>
-            <p style={{ margin: 0, fontSize: '11px', color: 'rgba(148,163,184,0.6)', fontWeight: 600 }}>
-              Point camera at QR code or enter VIN manually
-            </p>
+            <p className="insp-scan-title">QR / VIN Scanner</p>
+            <p className="insp-scan-sub">Point camera at QR code or search manually</p>
           </div>
-          <button type="button" onClick={onClose} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', width: '32px', height: '32px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(148,163,184,0.7)', cursor: 'pointer' }}>
-            <X size={14} />
-          </button>
+          <button type="button" className="insp-scan-close" onClick={onClose}><X size={14} /></button>
         </div>
-
-        {/* Viewfinder */}
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', background: '#000',
-          borderRadius: '14px', overflow: 'hidden', marginBottom: '16px' }}>
-          {camError ? (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'rgba(148,163,184,0.6)' }}>
-              <Camera size={40} style={{ opacity: 0.3 }} />
-              <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, textAlign: 'center', padding: '0 20px' }}>
-                {camError}
-              </p>
-              <p style={{ margin: 0, fontSize: '11px', color: 'rgba(148,163,184,0.4)' }}>
-                Use the manual search below
-              </p>
+        <div className="insp-viewfinder">
+          {camErr ? (
+            <div className="insp-viewfinder-err">
+              <Camera size={36} style={{ opacity: 0.3 }} />
+              <p>{camErr}</p>
+              <span>Use the search below instead</span>
             </div>
           ) : (
-            <video ref={videoRef} muted playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           )}
-          {/* Overlay + finder */}
-          <div style={{ position: 'absolute', inset: 0,
-            background: 'linear-gradient(rgba(0,0,0,0.45) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.45) 100%)' }} />
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-            width: '55%', height: '55%', border: '2px solid rgba(58,220,130,0.85)',
-            borderRadius: '12px', boxShadow: '0 0 0 9999px rgba(0,0,0,0.35)' }}>
-            {/* corner accents */}
-            {[['0','0','auto','auto'],['0','auto','auto','0'],['auto','0','0','auto'],['auto','auto','0','0']].map(([t,r,b,l], i) => (
-              <span key={i} style={{ position: 'absolute', width: '18px', height: '18px',
-                top: t !== 'auto' ? '-2px' : 'auto', right: r !== 'auto' ? '-2px' : 'auto',
-                bottom: b !== 'auto' ? '-2px' : 'auto', left: l !== 'auto' ? '-2px' : 'auto',
-                borderTop: (i < 2) ? '3px solid #4deba0' : 'none',
-                borderBottom: (i >= 2) ? '3px solid #4deba0' : 'none',
-                borderLeft: (i === 0 || i === 2) ? '3px solid #4deba0' : 'none',
-                borderRight: (i === 1 || i === 3) ? '3px solid #4deba0' : 'none',
-              }} />
-            ))}
-            {/* Laser */}
-            <div style={{ position: 'absolute', left: '5%', right: '5%', height: '2px',
-              top: `${laserY}%`, background: 'linear-gradient(90deg,transparent,#ff4444,#ff4444,transparent)',
-              boxShadow: '0 0 8px rgba(255,68,68,0.8)', transition: 'top 25ms linear' }} />
+          <div className="insp-vf-overlay" />
+          <div className="insp-vf-finder">
+            <span className="insp-vf-corner insp-vf-corner--tl" />
+            <span className="insp-vf-corner insp-vf-corner--tr" />
+            <span className="insp-vf-corner insp-vf-corner--bl" />
+            <span className="insp-vf-corner insp-vf-corner--br" />
+            <div className="insp-vf-laser" style={{ top: `${laserY}%` }} />
           </div>
         </div>
-
-        {/* Manual search */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: filtered.length ? '12px' : 0 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={13} style={{ position: 'absolute', left: '12px', top: '50%',
-              transform: 'translateY(-50%)', color: 'rgba(148,163,184,0.4)', pointerEvents: 'none' }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type VIN, unit ID, or model…"
-              onKeyDown={(e) => e.key === 'Enter' && simulateScan()}
-              style={{ width: '100%', padding: '10px 12px 10px 34px', background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)', borderRadius: '9px', color: '#fff',
-                fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+        <div className="insp-scan-search-row">
+          <div className="insp-scan-search-wrap">
+            <Search size={13} className="insp-scan-search-icon" />
+            <input type="text" className="insp-scan-search-input"
+              placeholder="Type VIN, Unit ID or model…" value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
           </div>
-          <button type="button" onClick={simulateScan} disabled={scanning || !query.trim()}
-            style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#2a7bd6,#1e5fb0)',
-              border: 'none', borderRadius: '9px', color: '#fff', fontSize: '12.5px', fontWeight: 700,
-              cursor: scanning || !query.trim() ? 'not-allowed' : 'pointer', opacity: scanning || !query.trim() ? 0.6 : 1,
-              display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-            {scanning ? <span className="fleet-spinner" style={{ width: 14, height: 14 }} /> : <ScanLine size={13} />}
+          <button type="button" className="insp-scan-btn" onClick={handleSearch} disabled={scanning || !query.trim()}>
+            {scanning ? <span className="fleet-spinner" style={{ width: 13, height: 13 }} /> : <ScanLine size={13} />}
             SCAN
           </button>
         </div>
-
-        {/* Dropdown results */}
-        {filtered.length > 0 && (
-          <div style={{ maxHeight: '180px', overflowY: 'auto', background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', scrollbarWidth: 'thin' }}>
-            {filtered.map((v) => (
-              <button key={v.id} type="button" onClick={() => { onSelect(v); onClose() }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  cursor: 'pointer', textAlign: 'left', color: '#fff', transition: 'background 0.15s' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(58,130,255,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0, overflow: 'hidden' }}>
-                  <img src={getVehicleImage(v)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-                <div>
-                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 700 }}>{v.unitId || v.id}</p>
-                  <p style={{ margin: 0, fontSize: '10.5px', color: 'rgba(148,163,184,0.55)' }}>
-                    {v.model || '—'} · {v.vehicleType || '—'}
-                  </p>
-                </div>
-                <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 800, padding: '2px 8px',
-                  borderRadius: '999px', background: v.status === 'maintenance' ? 'rgba(255,83,95,0.12)' : 'rgba(22,201,136,0.12)',
+        {results.length > 0 && (
+          <div className="insp-scan-results">
+            {results.map((v) => (
+              <button key={v.id} type="button" className="insp-scan-result-item"
+                onClick={() => { onSelect(v); onClose() }}>
+                <img src={v.image || '/vehicle car placeholder.png'} alt={v.unitId}
+                  onError={(e) => { e.target.src = '/vehicle car placeholder.png' }}
+                  style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                <span className="insp-scan-result-id">{v.unitId || v.id}</span>
+                <span className="insp-scan-result-model">{v.model || '—'} · {v.vehicleType || '—'}</span>
+                <span className="insp-scan-result-badge" style={{
+                  background: v.status === 'maintenance' ? 'rgba(255,83,95,0.12)' : 'rgba(22,201,136,0.12)',
                   color: v.status === 'maintenance' ? '#ff8080' : '#4deba0',
-                  border: `1px solid ${v.status === 'maintenance' ? 'rgba(255,83,95,0.25)' : 'rgba(22,201,136,0.25)'}` }}>
-                  {(v.status || 'READY').toUpperCase()}
+                  border: `1px solid ${v.status === 'maintenance' ? 'rgba(255,83,95,0.25)' : 'rgba(22,201,136,0.25)'}`,
+                }}>
+                  {v.status === 'maintenance' ? 'MAINTENANCE' : 'READY'}
                 </span>
               </button>
             ))}
@@ -262,124 +177,94 @@ function ScanModal({ vehicles, onClose, onSelect }) {
   )
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
    Vehicle Card
-   ══════════════════════════════════════════════════════════════ */
-function VehicleCard({ vehicle, alerts, onStart }) {
-  const isLocked = vehicle.status === 'maintenance' ||
-    alerts.some((a) => a.vehicleId === vehicle.id && a.severity === 'critical' && a.status !== 'resolved')
-  const isCritical = alerts.some((a) =>
-    a.vehicleId === vehicle.id && a.severity === 'critical' && a.status !== 'resolved')
-  const critAlert = alerts.find((a) =>
-    a.vehicleId === vehicle.id && a.severity === 'critical' && a.status !== 'resolved')
-  const health = vehicle.healthScore ?? 100
+───────────────────────────────────────────────────────────── */
+function VehicleCard({ vehicle, openAlerts, inspectionMap, onStart }) {
+  const critAlerts = openAlerts.filter(
+    (a) => a.vehicleId === vehicle.id && a.severity === 'critical' && a.status !== 'resolved'
+  )
+  const isLocked    = vehicle.status === 'maintenance' || critAlerts.length > 0
+  const isCritical  = critAlerts.length > 0
+  const health      = vehicle.healthScore ?? 100
+  const fuel        = vehicle.fuelLevel   ?? null
   const healthColor = health >= 80 ? '#4deba0' : health >= 50 ? '#fe8e2a' : '#ff535f'
-  const fuel = vehicle.fuelLevel ?? 100
-  const statusLabel = isLocked ? 'CRITICAL' : 'READY'
-  const img = getVehicleImage(vehicle)
+  const lastServiceLabel = timeAgo(vehicle.lastService) || '—'
+
+  /* inspection status for this vehicle today */
+  const todayInsp = inspectionMap[vehicle.id]   // { status, outcome } or undefined
+  const isCleared    = todayInsp?.status === 'submitted'
+  const isInProgress = todayInsp?.status === 'draft'
+
+  /* badge label */
+  let statusLabel = 'READY'
+  let statusBg    = 'rgba(22,201,136,0.88)'
+  let statusBdr   = '1px solid rgba(22,201,136,0.5)'
+  if (isLocked)      { statusLabel = 'CRITICAL'; statusBg = 'rgba(255,60,60,0.88)'; statusBdr = '1px solid rgba(255,83,95,0.5)' }
+  else if (isCleared)    { statusLabel = 'CLEARED';  statusBg = 'rgba(58,130,255,0.88)'; statusBdr = '1px solid rgba(58,130,255,0.5)' }
+  else if (isInProgress) { statusLabel = 'DRAFT';    statusBg = 'rgba(254,142,42,0.88)'; statusBdr = '1px solid rgba(254,142,42,0.5)' }
+
+  /* CTA label */
+  let ctaLabel = 'Start Inspection'
+  let ctaIcon  = <ClipboardList size={14} />
+  if (isCleared)    { ctaLabel = 'View Submitted'; ctaIcon = <CheckCircle size={14} /> }
+  if (isInProgress) { ctaLabel = 'Continue Inspection'; ctaIcon = <Play size={14} /> }
 
   return (
-    <div style={{ background: 'rgba(8,12,28,0.9)', border: `1px solid ${isLocked ? 'rgba(255,83,95,0.3)' : 'rgba(255,255,255,0.08)'}`,
-      borderRadius: '14px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-      transition: 'box-shadow 0.2s, border-color 0.2s',
-      boxShadow: isLocked ? '0 4px 24px rgba(255,83,95,0.08)' : '0 4px 20px rgba(0,0,0,0.3)' }}>
-
-      {/* Image */}
-      <div style={{ position: 'relative', height: '180px', overflow: 'hidden', flexShrink: 0 }}>
-        <img src={img} alt={vehicle.model || vehicle.unitId}
-          style={{ width: '100%', height: '100%', objectFit: 'cover',
-            filter: isLocked ? 'brightness(0.7) saturate(0.5)' : 'brightness(0.85)' }}
-          onError={(e) => { e.target.src = FALLBACK_IMG }}
+    <div className={`insp-card${isLocked ? ' insp-card--locked' : ''}${isCleared ? ' insp-card--cleared' : ''}`}>
+      <div className="insp-card-img-wrap">
+        <img
+          src={vehicle.image || '/vehicle car placeholder.png'}
+          alt={vehicle.model || vehicle.unitId}
+          className="insp-card-img"
+          style={{ filter: isLocked ? 'brightness(0.65) saturate(0.4)' : isCleared ? 'brightness(0.75) saturate(0.6)' : 'brightness(0.9)' }}
+          onError={(e) => { e.target.src = '/vehicle car placeholder.png' }}
         />
-        {/* Gradient */}
-        <div style={{ position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.5) 100%)' }} />
-
-        {/* Unit ID badge — top left */}
-        <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.72)',
-          backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px',
-          padding: '3px 9px', fontSize: '10px', fontWeight: 800, color: '#fff', letterSpacing: '0.05em' }}>
-          {vehicle.unitId || vehicle.id}
-        </span>
-
-        {/* Status badge — top right */}
-        <span style={{ position: 'absolute', top: '10px', right: '10px',
-          background: isLocked ? 'rgba(255,83,95,0.85)' : 'rgba(22,201,136,0.85)',
-          backdropFilter: 'blur(8px)', border: `1px solid ${isLocked ? 'rgba(255,83,95,0.5)' : 'rgba(22,201,136,0.5)'}`,
-          borderRadius: '6px', padding: '3px 9px', fontSize: '9.5px', fontWeight: 800,
-          color: '#fff', letterSpacing: '0.08em' }}>
+        <div className="insp-card-img-fade" />
+        <span className="insp-card-badge insp-card-badge--id">{vehicle.unitId || vehicle.id}</span>
+        <span className="insp-card-badge insp-card-badge--status"
+          style={{ background: statusBg, color: '#fff', border: statusBdr }}>
           {statusLabel}
         </span>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
-        {/* Name + Health */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ minWidth: 0 }}>
-            <h3 style={{ margin: '0 0 3px', fontSize: '16px', fontWeight: 800, color: '#fff',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {vehicle.model || vehicle.unitId}
-            </h3>
-            <p style={{ margin: 0, fontSize: '10.5px', color: 'rgba(148,163,184,0.5)', fontWeight: 600,
-              fontFamily: 'monospace', letterSpacing: '0.04em' }}>
-              VIN: {(vehicle.vin || vehicle.id || '').toUpperCase().slice(0, 17)}
-            </p>
+      <div className="insp-card-body">
+        <div className="insp-card-name-row">
+          <div className="insp-card-name-col">
+            <h3 className="insp-card-name">{vehicle.model || vehicle.unitId}</h3>
+            <p className="insp-card-vin">VIN: {(vehicle.vin || vehicle.id || '').toUpperCase().slice(0, 17)}</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-            <p style={{ margin: '0 0 2px', fontSize: '8.5px', fontWeight: 800, color: 'rgba(148,163,184,0.5)',
-              letterSpacing: '0.09em', textTransform: 'uppercase' }}>HEALTH SCORE</p>
-            <span style={{ fontSize: '22px', fontWeight: 900, color: healthColor, lineHeight: 1 }}>{health}%</span>
+          <div className="insp-card-health-col">
+            <span className="insp-card-health-label">HEALTH SCORE</span>
+            <span className="insp-card-health-value" style={{ color: healthColor }}>{health}%</span>
           </div>
         </div>
 
-        {/* Meta row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div>
-            <p style={{ margin: '0 0 3px', fontSize: '8.5px', fontWeight: 800, color: 'rgba(148,163,184,0.45)',
-              letterSpacing: '0.09em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {isCritical ? <AlertTriangle size={9} style={{ color: '#ff8080' }} /> : <Wrench size={9} />}
-              {isCritical ? 'ALERT' : 'LAST SERVICE'}
-            </p>
-            {isCritical ? (
-              <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#ff8080' }}>
-                {critAlert?.message?.slice(0, 22) || 'Critical alert'}
-              </p>
-            ) : (
-              <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: 'rgba(235,242,255,0.85)' }}>
-                {timeAgo(vehicle.lastService) || '—'}
-              </p>
-            )}
+        <div className="insp-card-meta-row">
+          <div className="insp-card-meta-cell">
+            <span className="insp-card-meta-label">
+              {isCritical
+                ? <><AlertTriangle size={9} style={{ color: '#ff8080', marginRight: 3 }} />ALERT</>
+                : <><Wrench size={9} style={{ marginRight: 3 }} />LAST SERVICE</>}
+            </span>
+            {isCritical
+              ? <span className="insp-card-meta-value" style={{ color: '#ff8080' }}>{critAlerts[0]?.message?.slice(0, 24) || 'Critical alert'}</span>
+              : <span className="insp-card-meta-value">{lastServiceLabel}</span>
+            }
           </div>
-          <div>
-            <p style={{ margin: '0 0 3px', fontSize: '8.5px', fontWeight: 800, color: 'rgba(148,163,184,0.45)',
-              letterSpacing: '0.09em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Fuel size={9} /> FUEL/CHARGE
-            </p>
-            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: 'rgba(235,242,255,0.85)' }}>
-              {fuel}%
-            </p>
+          <div className="insp-card-meta-cell">
+            <span className="insp-card-meta-label"><Fuel size={9} style={{ marginRight: 3 }} />FUEL/CHARGE</span>
+            <span className="insp-card-meta-value">{fuel !== null ? `${fuel}%` : '—'}</span>
           </div>
         </div>
 
-        {/* CTA button */}
         {isLocked ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            padding: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '10px', color: 'rgba(148,163,184,0.5)', fontSize: '12px', fontWeight: 800,
-            letterSpacing: '0.06em', userSelect: 'none', marginTop: 'auto' }}>
-            <Lock size={13} /> LOCKED FOR REPAIR
-          </div>
+          <div className="insp-card-locked-btn"><Lock size={13} /> LOCKED FOR REPAIR</div>
         ) : (
-          <button type="button" onClick={() => onStart(vehicle)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '12px', background: 'linear-gradient(135deg,#2a7bd6,#1a55a8)',
-              border: '1px solid rgba(58,130,255,0.3)', borderRadius: '10px',
-              color: '#fff', fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.04em',
-              cursor: 'pointer', transition: 'filter 0.2s', marginTop: 'auto' }}
-            onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.12)'}
-            onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}>
-            <ClipboardList size={14} /> Start Inspection
+          <button type="button"
+            className={`insp-card-start-btn${isCleared ? ' insp-card-start-btn--submitted' : isInProgress ? ' insp-card-start-btn--draft' : ''}`}
+            onClick={() => onStart(vehicle)}>
+            {ctaIcon} {ctaLabel}
           </button>
         )}
       </div>
@@ -387,255 +272,292 @@ function VehicleCard({ vehicle, alerts, onStart }) {
   )
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────────────────────
    InspectionLogPage — main export
-   ══════════════════════════════════════════════════════════════ */
+───────────────────────────────────────────────────────────── */
 export function InspectionLogPage() {
-  const { vehicles, loading, openAlerts } = useFleetData()
+  const { vehicles, inspections, loading, openAlerts } = useFleetData()
 
-  const [showScanner, setShowScanner] = useState(false)
-  const [drawerVehicle, setDrawer] = useState(null)
-  const [siteFilter, setSiteFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [page, setPage] = useState(1)
+  const [showScanner,   setShowScanner]  = useState(false)
+  const [activeVehicle, setActive]       = useState(null)
+  const [siteFilter,    setSiteFilter]   = useState('all')
+  const [typeFilter,    setTypeFilter]   = useState('all')
+  const [statusFilter,  setStatusFilter] = useState('all')
+  const [showFilters,   setShowFilters]  = useState(false)
+  const [page,          setPage]         = useState(1)
 
-  /* Derive site list */
-  const sites = useMemo(() => {
-    const s = [...new Set(vehicles.map((v) => v.site).filter(Boolean))]
-    return s
-  }, [vehicles])
+  /* ── derive today's start timestamp for "today" comparisons ── */
+  const todayStart = useMemo(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d
+  }, [])
 
-  /* Derive type list */
-  const types = useMemo(() => {
-    const t = [...new Set(vehicles.map((v) => v.vehicleType).filter(Boolean))]
-    return t
-  }, [vehicles])
+  /**
+   * inspectionMap — keyed by vehicleId, value = most relevant inspection for today.
+   * Priority: submitted today > draft today
+   */
+  const inspectionMap = useMemo(() => {
+    const map = {}
+    // sort newest first — already ordered by Firestore desc
+    inspections.forEach((ins) => {
+      const vid = ins.vehicleId
+      if (!vid) return
+      const ts = ins.inspectedAt?.toMillis
+        ? ins.inspectedAt.toMillis()
+        : ins.inspectedAt?.seconds
+          ? ins.inspectedAt.seconds * 1000
+          : new Date(ins.inspectedAt || 0).getTime()
+      const isToday = ts >= todayStart.getTime()
 
-  /* Filtered vehicles */
+      // only track today's inspections for status badges
+      if (!isToday) return
+
+      // if we already have a submitted one for today, don't overwrite with a draft
+      if (map[vid]?.status === 'submitted') return
+      map[vid] = { status: ins.status, outcome: ins.outcome, id: ins.id, ...ins }
+    })
+    return map
+  }, [inspections, todayStart])
+
+  /* ── filter options from real data ── */
+  const sites = useMemo(
+    () => [...new Set(vehicles.map((v) => v.site).filter(Boolean))].sort(),
+    [vehicles]
+  )
+  const types = useMemo(
+    () => [...new Set(vehicles.map((v) => v.vehicleType).filter(Boolean))].sort(),
+    [vehicles]
+  )
+
+  /* ── apply all filters ── */
   const filtered = useMemo(() => {
     let list = [...vehicles]
+
+    // site filter
     if (siteFilter !== 'all') list = list.filter((v) => v.site === siteFilter)
+    // type filter
     if (typeFilter !== 'all') list = list.filter((v) => v.vehicleType === typeFilter)
+
+    // status filter
+    if (statusFilter !== 'all') {
+      list = list.filter((v) => {
+        const crit   = openAlerts.some((a) => a.vehicleId === v.id && a.severity === 'critical' && a.status !== 'resolved')
+        const locked = v.status === 'maintenance' || crit
+        const todayInsp = inspectionMap[v.id]
+
+        switch (statusFilter) {
+          case 'locked':
+            return locked
+          case 'cleared':
+            return !locked && todayInsp?.status === 'submitted'
+          case 'in_progress':
+            return !locked && todayInsp?.status === 'draft'
+          case 'pending':
+            return !locked && !todayInsp
+          default:
+            return true
+        }
+      })
+    }
+
     return list
-  }, [vehicles, siteFilter, typeFilter])
+  }, [vehicles, siteFilter, typeFilter, statusFilter, openAlerts, inspectionMap])
 
-  /* Ready units count */
-  const readyCount = useMemo(() =>
-    filtered.filter((v) => {
-      const locked = v.status === 'maintenance' ||
-        openAlerts.some((a) => a.vehicleId === v.id && a.severity === 'critical')
-      return !locked
+  /* ── ready units (not locked, not yet cleared) ── */
+  const readyCount = useMemo(
+    () => filtered.filter((v) => {
+      const crit = openAlerts.some((a) => a.vehicleId === v.id && a.severity === 'critical' && a.status !== 'resolved')
+      return v.status !== 'maintenance' && !crit
     }).length,
-  [filtered, openAlerts])
-
+    [filtered, openAlerts]
+  )
   const readyPct = filtered.length ? Math.round((readyCount / filtered.length) * 100) : 0
 
-  /* Pagination */
+  /* ── pagination ── */
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages)
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const safePage   = Math.min(page, totalPages)
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  /* Reset page on filter change */
-  useEffect(() => { setPage(1) }, [siteFilter, typeFilter])
+  /* ── reset page on filter change ── */
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 0)
+    return () => clearTimeout(t)
+  }, [siteFilter, typeFilter, statusFilter])
 
-  function handleStart(vehicle) { setDrawer(vehicle) }
-  function handleSelectFromScan(vehicle) { setDrawer(vehicle) }
+  /* ── counts for filter pill badges ── */
+  const statusCounts = useMemo(() => {
+    const counts = { all: vehicles.length, pending: 0, in_progress: 0, cleared: 0, locked: 0 }
+    vehicles.forEach((v) => {
+      const crit   = openAlerts.some((a) => a.vehicleId === v.id && a.severity === 'critical' && a.status !== 'resolved')
+      const locked = v.status === 'maintenance' || crit
+      const todayInsp = inspectionMap[v.id]
+      if (locked)                              counts.locked++
+      else if (todayInsp?.status === 'submitted') counts.cleared++
+      else if (todayInsp?.status === 'draft')     counts.in_progress++
+      else                                        counts.pending++
+    })
+    return counts
+  }, [vehicles, openAlerts, inspectionMap])
 
+  /* ── loading ── */
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh',
-      gap: '12px', color: 'rgba(148,163,184,0.8)' }}>
+    <div className="insp-loading">
       <span className="fleet-spinner fleet-spinner--lg" />
-      <span style={{ fontSize: '14px', fontWeight: 600 }}>Loading vehicles…</span>
+      <span>Loading vehicles…</span>
     </div>
   )
 
-  if (drawerVehicle) return (
-    <VehicleDetails
-      vehicle={drawerVehicle}
-      alerts={openAlerts}
-      onBack={() => setDrawer(null)}
-      viewOnly={false}
-      backText="Back to Inspection Log"
+  /* ── wizard sub-page ── */
+  if (activeVehicle) return (
+    <InspectionWizardPage
+      vehicle={activeVehicle}
+      draftInspection={inspectionMap[activeVehicle.id]?.status === 'draft' ? inspectionMap[activeVehicle.id] : null}
+      onBack={() => setActive(null)}
     />
   )
 
   return (
-    <div className="fleet-subpage" style={{ paddingBottom: '80px' }}>
+    <div className="fleet-subpage insp-page">
 
-      {/* ════ PAGE HEADER ════ */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        <div>
-          <p style={{ margin: '0 0 6px', fontSize: '10.5px', fontWeight: 800, color: '#3a82ff',
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Zap size={11} /> SAFETYMATE MODULE
-          </p>
-          <h1 style={{ margin: '0 0 8px', fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em',
-            color: 'rgba(235,242,255,0.97)', lineHeight: 1 }}>
-            Select Vehicle for Inspection
-          </h1>
-          <p style={{ margin: 0, fontSize: '13px', color: 'rgba(148,163,184,0.7)', fontWeight: 500,
-            maxWidth: '520px', lineHeight: 1.5 }}>
+      {/* ════ HEADER ════ */}
+      <div className="insp-header">
+        <div className="insp-header-text">
+          <p className="insp-kicker"><Zap size={11} /> SAFETYMATE MODULE</p>
+          <h1 className="insp-title">Select Vehicle for Inspection</h1>
+          <p className="insp-subtitle">
             Scan or select a tactical unit to begin the mandatory daily safety checklist.
             All data is encrypted and synced to the Sentinel cloud.
           </p>
         </div>
-
-        {/* Scan button */}
-        <button type="button" onClick={() => setShowScanner(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '13px 22px',
-            background: 'linear-gradient(135deg,#2a7bd6,#1a55a8)',
-            border: '1px solid rgba(58,130,255,0.35)', borderRadius: '12px',
-            color: '#fff', fontSize: '13.5px', fontWeight: 800, letterSpacing: '0.04em',
-            cursor: 'pointer', boxShadow: '0 4px 20px rgba(42,123,214,0.35)',
-            transition: 'filter 0.2s, transform 0.15s', flexShrink: 0 }}
-          onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none' }}>
-          <ScanLine size={17} /> Scan QR / VIN
+        <button type="button" className="insp-scan-trigger" onClick={() => setShowScanner(true)}>
+          <ScanLine size={16} /> Scan QR / VIN
         </button>
       </div>
 
-      {/* ════ FILTER ROW ════ */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '22px', flexWrap: 'wrap' }}>
-
-        {/* Quick filter — site */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ fontSize: '8.5px', fontWeight: 800, color: 'rgba(148,163,184,0.45)',
-            letterSpacing: '0.1em', textTransform: 'uppercase' }}>QUICK FILTER</label>
-          <select value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)}
-            style={{ background: 'rgba(10,14,28,0.85)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '9px', color: 'rgba(235,242,255,0.9)', fontSize: '12.5px', fontWeight: 600,
-              padding: '9px 32px 9px 12px', outline: 'none', cursor: 'pointer',
-              appearance: 'none', minWidth: '180px',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}>
-            <option value="all">All Site Assets</option>
-            {sites.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+      {/* ════ FILTER BAR ════ */}
+      <div className="insp-filter-bar">
+        {/* site */}
+        <div className="insp-select-wrap">
+          <label className="insp-select-label">QUICK FILTER</label>
+          <div className="insp-select-box">
+            <select value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} className="insp-select">
+              <option value="all">All Site Assets</option>
+              {sites.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
         </div>
 
-        {/* Vehicle type */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ fontSize: '8.5px', fontWeight: 800, color: 'rgba(148,163,184,0.45)',
-            letterSpacing: '0.1em', textTransform: 'uppercase' }}>VEHICLE TYPE</label>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-            style={{ background: 'rgba(10,14,28,0.85)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '9px', color: 'rgba(235,242,255,0.9)', fontSize: '12.5px', fontWeight: 600,
-              padding: '9px 32px 9px 12px', outline: 'none', cursor: 'pointer',
-              appearance: 'none', minWidth: '140px',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}>
-            <option value="all">All Types</option>
-            {types.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+        {/* type */}
+        <div className="insp-select-wrap">
+          <label className="insp-select-label">VEHICLE TYPE</label>
+          <div className="insp-select-box">
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="insp-select">
+              <option value="all">All Types</option>
+              {types.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
         </div>
 
-        {/* Clear */}
-        <button type="button"
-          onClick={() => { setSiteFilter('all'); setTypeFilter('all') }}
-          style={{ marginTop: '18px', padding: '9px 16px', background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.09)', borderRadius: '9px',
-            color: 'rgba(148,163,184,0.8)', fontSize: '12px', fontWeight: 700,
-            cursor: 'pointer', letterSpacing: '0.06em', transition: 'background 0.15s' }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}>
+        {/* CLEAR */}
+        <button type="button" className="insp-filter-btn insp-filter-btn--clear"
+          onClick={() => { setSiteFilter('all'); setTypeFilter('all'); setStatusFilter('all') }}>
           CLEAR
         </button>
 
-        {/* Filters button */}
+        {/* FILTERS toggle */}
         <button type="button"
-          style={{ marginTop: '18px', display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '9px 16px', background: 'rgba(58,130,255,0.1)',
-            border: '1px solid rgba(58,130,255,0.25)', borderRadius: '9px',
-            color: '#8ab8ff', fontSize: '12px', fontWeight: 700,
-            cursor: 'pointer', letterSpacing: '0.06em' }}>
-          ⚙ FILTERS
+          className={`insp-filter-btn insp-filter-btn--filters${showFilters ? ' insp-filter-btn--filters-active' : ''}`}
+          onClick={() => setShowFilters((v) => !v)}>
+          <SlidersHorizontal size={12} /> FILTERS
+          {statusFilter !== 'all' && <span className="insp-filter-dot" />}
         </button>
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Ready units gauge */}
-        <div style={{ marginTop: '18px', display: 'flex', alignItems: 'center', gap: '12px',
-          background: 'rgba(10,14,28,0.7)', border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: '12px', padding: '8px 14px 8px 10px' }}>
-          <div>
-            <p style={{ margin: '0 0 1px', fontSize: '8px', fontWeight: 800, color: 'rgba(148,163,184,0.45)',
-              letterSpacing: '0.1em', textTransform: 'uppercase' }}>READY UNITS</p>
-            <p style={{ margin: 0, fontSize: '18px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-              {readyCount}
-              <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>
-                {' '}/ {filtered.length}
-              </span>
-            </p>
+        {/* READY UNITS gauge */}
+        <div className="insp-ready-widget">
+          <div className="insp-ready-text">
+            <span className="insp-ready-label">READY UNITS</span>
+            <span className="insp-ready-count">
+              {readyCount}<span className="insp-ready-total"> / {filtered.length}</span>
+            </span>
           </div>
-          <CircleGauge pct={readyPct} size={48} stroke={4} />
+          <CircleGauge pct={readyPct} size={46} strokeW={4} />
         </div>
       </div>
 
-      {/* ════ VEHICLE GRID ════ */}
+      {/* ════ STATUS FILTER PILLS ════ */}
+      {showFilters && (
+        <div className="insp-status-filters">
+          {STATUS_FILTERS.map(({ id, label }) => (
+            <button key={id} type="button"
+              className={`insp-status-pill${statusFilter === id ? ' insp-status-pill--active' : ''}`}
+              onClick={() => setStatusFilter(id)}>
+              {label}
+              <span className="insp-status-pill-count">{statusCounts[id] ?? 0}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ════ CARD GRID ════ */}
       {filtered.length === 0 ? (
         <div className="fleet-empty">
-          <div className="fleet-empty-icon" style={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
-            <ClipboardList size={40} style={{ color: 'rgba(148,163,184,0.25)' }} />
+          <div className="fleet-empty-icon">
+            <ClipboardList size={38} style={{ color: 'rgba(148,163,184,0.22)' }} />
           </div>
           <p className="fleet-empty-title">No vehicles found</p>
-          <p className="fleet-empty-sub">Try adjusting the filters above, or register a new vehicle.</p>
+          <p className="fleet-empty-sub">
+            {vehicles.length === 0
+              ? 'Register your first vehicle to begin tracking.'
+              : 'No vehicles match the current filters.'}
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))',
-          gap: '18px', marginBottom: '28px' }}>
+        <div className="insp-grid">
           {paginated.map((v) => (
-            <VehicleCard key={v.id} vehicle={v} alerts={openAlerts} onStart={handleStart} />
+            <VehicleCard
+              key={v.id}
+              vehicle={v}
+              openAlerts={openAlerts}
+              inspectionMap={inspectionMap}
+              onStart={setActive}
+            />
           ))}
         </div>
       )}
 
       {/* ════ PAGINATION FOOTER ════ */}
       {filtered.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 0', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', gap: '10px' }}>
-          <span style={{ fontSize: '12.5px', color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>
+        <div className="insp-pagination">
+          <span className="insp-pagination-info">
             Showing {paginated.length} of {filtered.length} registered units
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={safePage <= 1}
-              style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '8px', color: 'rgba(148,163,184,0.6)', cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
-                opacity: safePage <= 1 ? 0.4 : 1 }}>
+          <div className="insp-pagination-controls">
+            <button type="button" className="insp-page-btn"
+              disabled={safePage <= 1} onClick={() => setPage((p) => p - 1)} aria-label="Previous page">
               <ChevronLeft size={14} />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <button key={n} type="button" onClick={() => setPage(n)}
-                style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: safePage === n ? 'rgba(58,130,255,0.25)' : 'rgba(255,255,255,0.03)',
-                  border: safePage === n ? '1px solid rgba(58,130,255,0.45)' : '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '8px', color: safePage === n ? '#8ab8ff' : 'rgba(148,163,184,0.7)',
-                  fontWeight: safePage === n ? 800 : 600, fontSize: '12px', cursor: 'pointer' }}>
+              <button key={n} type="button"
+                className={`insp-page-btn${safePage === n ? ' insp-page-btn--active' : ''}`}
+                onClick={() => setPage(n)}>
                 {n}
               </button>
             ))}
-            <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage >= totalPages}
-              style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '8px', color: 'rgba(148,163,184,0.6)', cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
-                opacity: safePage >= totalPages ? 0.4 : 1 }}>
+            <button type="button" className="insp-page-btn"
+              disabled={safePage >= totalPages} onClick={() => setPage((p) => p + 1)} aria-label="Next page">
               <ChevronRight size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Scanner Modal */}
+      {/* ════ SCANNER MODAL ════ */}
       {showScanner && (
         <ScanModal
           vehicles={vehicles}
           onClose={() => setShowScanner(false)}
-          onSelect={handleSelectFromScan}
+          onSelect={(v) => { setShowScanner(false); setActive(v) }}
         />
       )}
     </div>

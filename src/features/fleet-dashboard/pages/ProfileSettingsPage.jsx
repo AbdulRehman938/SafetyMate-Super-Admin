@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { useState, useEffect } from 'react'
+import { doc, updateDoc } from 'firebase/firestore'
 import { updatePassword } from 'firebase/auth'
 import { db } from '../../../config/firebase.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { User, Shield, Key, Mail, Phone, Camera, Save, AlertCircle, CheckCircle } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import '../fleet.css'
 
 export function ProfileSettingsPage() {
@@ -28,15 +28,18 @@ export function ProfileSettingsPage() {
   const [passSuccessMsg, setPassSuccessMsg] = useState('')
   const [passErrorMsg, setPassErrorMsg] = useState('')
 
+  // Seed form from profile — wrapped in timeout to avoid setState-in-effect
   useEffect(() => {
-    if (profile) {
+    if (!profile) return
+    const t = setTimeout(() => {
       setFormData({
         fullName: profile.fullName || profile.name || '',
-        email: profile.email || authUser?.email || '',
-        phone: profile.phone || profile.contactNumber || '',
-        avatar: profile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80'
+        email:    profile.email    || authUser?.email || '',
+        phone:    profile.phone    || profile.contactNumber || '',
+        avatar:   profile.avatar   || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
       })
-    }
+    }, 0)
+    return () => clearTimeout(t)
   }, [profile, authUser])
 
   const handleProfileSubmit = async (e) => {

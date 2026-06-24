@@ -1,5 +1,4 @@
-import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { X, Truck, Activity, Calendar, Fuel, User, Wrench } from 'lucide-react'
 import {
   formatDate, formatDateTime, healthClass, statusPillClass, cap, timeAgo

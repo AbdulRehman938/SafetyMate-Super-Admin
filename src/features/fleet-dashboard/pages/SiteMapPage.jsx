@@ -89,14 +89,7 @@ export function SiteMapPage() {
           [2] Active Fleet + Crew Ready stacked in ONE card
           [3] Critical Alerts — full height, scrollable
           ══════════════════════════════════════════════════════════════ */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '220px 240px 1fr',
-        gap: '14px',
-        marginBottom: '14px',
-        flexShrink: 0,
-        alignItems: 'stretch',
-      }}>
+      <div className="fleet-sitemap-top-row">
 
         {/* ── Col 1: Site Readiness Score ── */}
         <div className="fleet-section-card" style={{
@@ -310,22 +303,7 @@ export function SiteMapPage() {
           </button>
         </div>
 
-        {/* Column headers */}
-        {allocated.length > 0 && (
-          <div style={{
-            display:'grid', gridTemplateColumns:'2fr 1fr 1.2fr 1fr 1.4fr',
-            padding:'10px 20px 8px', gap:'12px',
-            borderBottom:'1px solid rgba(255,255,255,0.05)',
-          }}>
-            {['Asset Identifier', 'Type', 'Inspection Status', 'Defects', 'Service Health'].map((h) => (
-              <span key={h} style={{ fontSize:'9.5px', fontWeight:800, letterSpacing:'0.09em', textTransform:'uppercase', color:'rgba(148,163,184,0.5)' }}>
-                {h}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Rows */}
+        {/* Column headers + rows — all inside scroll wrapper */}
         {allocated.length === 0 ? (
           <div className="fleet-empty">
             <div className="fleet-empty-icon"><Truck size={32} style={{ color: 'rgba(148,163,184,0.45)', marginBottom: '8px' }} /></div>
@@ -333,91 +311,106 @@ export function SiteMapPage() {
             <p className="fleet-empty-sub">Assign vehicles to sites using the Assign Unit button.</p>
           </div>
         ) : (
-          paginated.map((v) => {
-            const activeDefects = openAlerts.filter((a) => a.vehicleId === v.id)
-            const lastIns = inspections
-              .filter((i) => i.vehicleId === v.id)
-              .sort((a, b) => (b.inspectedAt?.toMillis?.() ?? 0) - (a.inspectedAt?.toMillis?.() ?? 0))[0]
-            const insStatus = lastIns?.outcome ?? null
-            const svc = serviceHealth(v)
-
-            return (
-              <div
-                key={v.id}
-                onClick={() => setSelectedVehicle(v)}
-                style={{
-                  display:'grid', gridTemplateColumns:'2fr 1fr 1.2fr 1fr 1.4fr',
-                  padding:'14px 20px', gap:'12px', alignItems:'center',
-                  borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer',
-                  transition:'background 130ms',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                {/* Asset Identifier */}
-                <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                  <div style={{
-                    width:'34px', height:'34px', borderRadius:'9px', flexShrink:0,
-                    background:'rgba(58,130,255,0.1)', border:'1px solid rgba(58,130,255,0.2)',
-                    display:'flex', alignItems:'center', justifyContent:'center', color:'#5ba8ff',
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/>
-                      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p style={{ margin:'0 0 2px', fontSize:'13.5px', fontWeight:800, color:'rgba(235,242,255,0.97)' }}>
-                      Unit {v.unitId || v.id}
-                    </p>
-                    <p style={{ margin:0, fontSize:'10.5px', color:'rgba(148,163,184,0.5)' }}>
-                      VIN: {v.id?.slice(0, 8).toUpperCase() ?? '—'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Type */}
-                <span style={{ fontSize:'13px', color:'rgba(203,214,255,0.85)', fontWeight:500 }}>
-                  {v.vehicleType || '—'}
+          <div className="fleet-site-alloc-wrap">
+            {/* Column headers */}
+            <div className="fleet-site-alloc-row" style={{
+              padding:'10px 20px 8px', gap:'12px',
+              borderBottom:'1px solid rgba(255,255,255,0.05)',
+            }}>
+              {['Asset Identifier', 'Type', 'Inspection Status', 'Defects', 'Service Health'].map((h) => (
+                <span key={h} style={{ fontSize:'9.5px', fontWeight:800, letterSpacing:'0.09em', textTransform:'uppercase', color:'rgba(148,163,184,0.5)' }}>
+                  {h}
                 </span>
+              ))}
+            </div>
 
-                {/* Inspection Status */}
-                <div>
-                  {insStatus ? (
-                    <span style={{
-                      fontSize:'10px', fontWeight:800, padding:'3px 10px', borderRadius:'5px', letterSpacing:'0.06em',
-                      background: insStatus === 'pass' ? 'rgba(22,201,136,0.12)' : insStatus === 'fail' ? 'rgba(255,83,95,0.12)' : 'rgba(254,142,42,0.12)',
-                      color:       insStatus === 'pass' ? '#4deba0'              : insStatus === 'fail' ? '#ff8080'              : '#ffb56e',
-                      border:      insStatus === 'pass' ? '1px solid rgba(22,201,136,0.28)' : insStatus === 'fail' ? '1px solid rgba(255,83,95,0.28)' : '1px solid rgba(254,142,42,0.28)',
+            {/* Data rows */}
+            {paginated.map((v) => {
+              const activeDefects = openAlerts.filter((a) => a.vehicleId === v.id)
+              const lastIns = inspections
+                .filter((i) => i.vehicleId === v.id)
+                .sort((a, b) => (b.inspectedAt?.toMillis?.() ?? 0) - (a.inspectedAt?.toMillis?.() ?? 0))[0]
+              const insStatus = lastIns?.outcome ?? null
+              const svc = serviceHealth(v)
+
+              return (
+                <div
+                  key={v.id}
+                  onClick={() => setSelectedVehicle(v)}
+                  className="fleet-site-alloc-row"
+                  style={{
+                    padding:'14px 20px', gap:'12px', alignItems:'center',
+                    borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer',
+                    transition:'background 130ms',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  {/* Asset Identifier */}
+                  <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                    <div style={{
+                      width:'34px', height:'34px', borderRadius:'9px', flexShrink:0,
+                      background:'rgba(58,130,255,0.1)', border:'1px solid rgba(58,130,255,0.2)',
+                      display:'flex', alignItems:'center', justifyContent:'center', color:'#5ba8ff',
                     }}>
-                      ● {insStatus === 'pass' ? 'COMPLETED' : insStatus === 'fail' ? 'FAILED' : 'PENDING'}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize:'11px', color:'rgba(148,163,184,0.4)', fontStyle:'italic' }}>No record</span>
-                  )}
-                </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p style={{ margin:'0 0 2px', fontSize:'13.5px', fontWeight:800, color:'rgba(235,242,255,0.97)' }}>
+                        Unit {v.unitId || v.id}
+                      </p>
+                      <p style={{ margin:0, fontSize:'10.5px', color:'rgba(148,163,184,0.5)' }}>
+                        VIN: {v.id?.slice(0, 8).toUpperCase() ?? '—'}
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Defects */}
-                <div>
-                  {activeDefects.length > 0 ? (
-                    <span style={{ fontSize:'11px', fontWeight:800, color:'#ff8080', background:'rgba(255,83,95,0.1)', border:'1px solid rgba(255,83,95,0.25)', borderRadius:'5px', padding:'2px 8px' }}>
-                      ACTIVE ({activeDefects.length})
-                    </span>
-                  ) : (
-                    <span style={{ fontSize:'11.5px', color:'rgba(148,163,184,0.5)', fontWeight:600 }}>NONE</span>
-                  )}
-                </div>
+                  {/* Type */}
+                  <span style={{ fontSize:'13px', color:'rgba(203,214,255,0.85)', fontWeight:500 }}>
+                    {v.vehicleType || '—'}
+                  </span>
 
-                {/* Service Health */}
-                <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
-                  <span style={{ fontSize:'9.5px', fontWeight:800, letterSpacing:'0.07em', color: svc.color }}>{svc.label}</span>
-                  <div style={{ height:'4px', borderRadius:'999px', background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
-                    <div style={{ height:'100%', width:`${svc.pct}%`, borderRadius:'999px', background: svc.color, transition:'width 500ms ease' }} />
+                  {/* Inspection Status */}
+                  <div>
+                    {insStatus ? (
+                      <span style={{
+                        fontSize:'10px', fontWeight:800, padding:'3px 10px', borderRadius:'5px', letterSpacing:'0.06em',
+                        background: insStatus === 'pass' ? 'rgba(22,201,136,0.12)' : insStatus === 'fail' ? 'rgba(255,83,95,0.12)' : 'rgba(254,142,42,0.12)',
+                        color:       insStatus === 'pass' ? '#4deba0'              : insStatus === 'fail' ? '#ff8080'              : '#ffb56e',
+                        border:      insStatus === 'pass' ? '1px solid rgba(22,201,136,0.28)' : insStatus === 'fail' ? '1px solid rgba(255,83,95,0.28)' : '1px solid rgba(254,142,42,0.28)',
+                      }}>
+                        ● {insStatus === 'pass' ? 'COMPLETED' : insStatus === 'fail' ? 'FAILED' : 'PENDING'}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize:'11px', color:'rgba(148,163,184,0.4)', fontStyle:'italic' }}>No record</span>
+                    )}
+                  </div>
+
+                  {/* Defects */}
+                  <div>
+                    {activeDefects.length > 0 ? (
+                      <span style={{ fontSize:'11px', fontWeight:800, color:'#ff8080', background:'rgba(255,83,95,0.1)', border:'1px solid rgba(255,83,95,0.25)', borderRadius:'5px', padding:'2px 8px' }}>
+                        ACTIVE ({activeDefects.length})
+                      </span>
+                    ) : (
+                      <span style={{ fontSize:'11.5px', color:'rgba(148,163,184,0.5)', fontWeight:600 }}>NONE</span>
+                    )}
+                  </div>
+
+                  {/* Service Health */}
+                  <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+                    <span style={{ fontSize:'9.5px', fontWeight:800, letterSpacing:'0.07em', color: svc.color }}>{svc.label}</span>
+                    <div style={{ height:'4px', borderRadius:'999px', background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${svc.pct}%`, borderRadius:'999px', background: svc.color, transition:'width 500ms ease' }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })
+              )
+            })}
+          </div>
         )}
 
         {/* Pagination */}

@@ -219,7 +219,7 @@ export function VehicleTwinsPage() {
       </div>
 
       {/* Grid of 3 KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '22px' }}>
+      <div className="fleet-vt-kpi-row">
         
         {/* Card 1: Total Fleet Units */}
         <div className="fleet-section-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -322,7 +322,7 @@ export function VehicleTwinsPage() {
 
       {/* Filter and controls panel card */}
       <div
-        className="fleet-section-card"
+        className="fleet-section-card fleet-vt-filter-row"
         style={{
           padding: '12px 16px',
           background: 'rgba(12, 18, 36, 0.55)',
@@ -331,7 +331,6 @@ export function VehicleTwinsPage() {
           gap: '12px',
           alignItems: 'center',
           marginBottom: '20px',
-          flexWrap: 'wrap',
           borderRadius: '10px'
         }}
       >
