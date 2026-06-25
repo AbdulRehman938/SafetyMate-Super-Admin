@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Download, Plus, TrendingUp, RefreshCw, Search, X, Filter, CheckCircle, RotateCw } from 'lucide-react'
+import { AlertTriangle, Download, Plus, TrendingUp, RefreshCw, Search, X, Filter, CheckCircle, RotateCw, Truck } from 'lucide-react'
 import { useFleetData } from '../hooks/useFleetData.js'
 import { ReadinessDonut } from '../components/ReadinessDonut.jsx'
 import { VehicleDetails } from '../components/VehicleDetails.jsx'
 import { FleetMap } from '../components/FleetMap.jsx'
 import { AssignUnitPage } from './AssignUnitPage.jsx'
+import { RegisterVehiclePage } from './RegisterVehiclePage.jsx'
 import { healthClass, cap, exportToCSV, formatDate } from '../utils/fleetHelpers.js'
 import '../fleet.css'
 
@@ -32,10 +33,15 @@ export function FleetDashboardPage() {
     vehicles, openAlerts,
     loading, activeVehicles, totalVehicles,
     crewReady, avgHealth, resolveAlert,
+    addVehicle, updateVehicle,
   } = useFleetData()
 
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [showAssign, setShowAssign]           = useState(false)
+  const [showAdd, setShowAdd]                 = useState(false)
+  const [editVehicle, setEditVehicle]         = useState(null)
+  const [saving, setSaving]                   = useState(false)
+  const [statusResetVehicleId, setStatusResetVehicleId] = useState(null)
   const [listSearch, setListSearch]           = useState('')
   const [statusFilter, setStatusFilter]       = useState('All')
   const [showFilterMenu, setShowFilterMenu]   = useState(false)
@@ -96,6 +102,43 @@ export function FleetDashboardPage() {
     })), 'fleet-vehicles.csv')
   }
 
+  async function handleAdd(data) {
+    setSaving(true)
+    try {
+      if (editVehicle) {
+        const wasApproved = editVehicle.complianceStatus === 'Approved'
+        await updateVehicle(editVehicle.id, data)
+        if (wasApproved) {
+          setStatusResetVehicleId(editVehicle.id)
+        }
+      } else {
+        await addVehicle(data)
+      }
+    } finally {
+      setSaving(false)
+      setShowAdd(false)
+      setEditVehicle(null)
+    }
+  }
+
+  function handleEditVehicle(vehicle) {
+    setEditVehicle(vehicle)
+    setShowAdd(true)
+  }
+
+  if (showAdd) {
+    return (
+      <div className="fleet-dash" style={{ overflowY:'auto' }}>
+        <RegisterVehiclePage 
+          onSave={handleAdd} 
+          onCancel={() => { setShowAdd(false); setEditVehicle(null); }} 
+          loading={saving} 
+          editVehicle={editVehicle}
+        />
+      </div>
+    )
+  }
+
   if (showAssign) return (
     <div className="fleet-dash" style={{ overflowY:'auto' }}>
       <AssignUnitPage
@@ -113,9 +156,11 @@ export function FleetDashboardPage() {
       <VehicleDetails
         vehicle={selectedVehicle}
         alerts={openAlerts}
-        onBack={() => setSelectedVehicle(null)}
+        onBack={() => { setSelectedVehicle(null); setStatusResetVehicleId(null); }}
         viewOnly={true}
         backText="Back to Dashboard"
+        onEdit={handleEditVehicle}
+        statusReset={statusResetVehicleId === selectedVehicle.id}
       />
     )
   }

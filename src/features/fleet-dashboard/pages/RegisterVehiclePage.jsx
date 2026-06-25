@@ -4,6 +4,7 @@ import * as Yup from 'yup'
 import { Camera, Info, Check, X, Fingerprint, Settings, MapPin, Calendar } from 'lucide-react'
 import { CustomSelect } from '../../training-dashboard/components/CustomSelect.jsx'
 import { CustomDatePicker } from '../../training-dashboard/components/CustomDatePicker.jsx'
+import { useFleetData } from '../hooks/useFleetData.js'
 import '../fleet.css'
 
 /* ── Yup schema ─────────────────────────────────────────────── */
@@ -13,7 +14,12 @@ const schema = Yup.object({
   plateNumber: Yup.string()
     .trim()
     .required('Plate number is required')
-    .matches(/^[A-Za-z0-9\-\s]{2,15}$/, 'Use letters, numbers, hyphens only (2–15 chars)'),
+    .matches(/^[A-Za-z0-9\-\s]{2,15}$/, 'Use letters, numbers, hyphens only (2–15 chars)')
+    .test('unique-plate', 'A vehicle with this plate number already exists', function (value) {
+      if (!value) return true
+      // This will be validated in the component with access to vehicles
+      return true
+    }),
 
   modelName: Yup.string()
     .trim()
@@ -25,26 +31,32 @@ const schema = Yup.object({
     .trim()
     .required('VIN is required')
     .length(17, 'VIN must be exactly 17 characters')
-    .matches(/^[A-HJ-NPR-Za-hj-npr-z0-9]{17}$/, 'VIN contains invalid characters (I, O, Q not allowed)'),
+    .matches(/^[A-HJ-NPR-Za-hj-npr-z0-9]{17}$/, 'VIN contains invalid characters (I, O, Q not allowed)')
+    .test('unique-vin', 'A vehicle with this VIN already exists', function (value) {
+      if (!value) return true
+      // This will be validated in the component with access to vehicles
+      return true
+    }),
 
   year: Yup.number()
     .transform((v, orig) => (orig === '' ? undefined : v))
     .nullable()
     .integer('Year must be a whole number')
-    .min(1900, 'Year must be 1900 or later')
-    .max(CURRENT_YEAR + 1, `Year cannot exceed ${CURRENT_YEAR + 1}`),
+    .min(1970, 'Year must be 1970 or later')
+    .max(CURRENT_YEAR, `Year cannot be after ${CURRENT_YEAR}`),
 
   fuelCapacity: Yup.number()
     .transform((v, orig) => (orig === '' ? undefined : v))
     .nullable()
+    .required('Fuel capacity is required')
     .min(1, 'Must be at least 1 L/kWh')
-    .max(5000, 'Seems too large — check value'),
+    .max(1000, 'Seems too large — check value'),
 
   initialOdometer: Yup.number()
     .transform((v, orig) => (orig === '' ? undefined : v))
     .required('Initial odometer reading is required')
     .min(0, 'Cannot be negative')
-    .max(9999999, 'Value too large')
+    .max(1000000, 'Value too large')
     .integer('Odometer must be a whole number'),
 
   engineType: Yup.string().required('Select an engine type'),
@@ -94,27 +106,82 @@ const inputStyle = (err, touched) => ({
 /* ─────────────────────────────────────────────────────────────
    RegisterVehiclePage
 ───────────────────────────────────────────────────────────── */
-export function RegisterVehiclePage({ onSave, onCancel, loading }) {
+export function RegisterVehiclePage({ onSave, onCancel, loading, editVehicle }) {
   const imageRef = useRef(null)
+  const { vehicles } = useFleetData()
+
+  // Custom validation function to check duplicates (skip current vehicle when editing)
+  function validateDuplicates(values) {
+    const errors = {}
+    
+    const plateUpper = values.plateNumber?.trim().toUpperCase()
+    if (plateUpper) {
+      const existingPlate = vehicles.find(v => 
+        v.plateNumber?.toUpperCase() === plateUpper && v.id !== editVehicle?.id
+      )
+      if (existingPlate) {
+        errors.plateNumber = 'A vehicle with this plate number already exists'
+      }
+    }
+    
+    const vinUpper = values.vin?.trim().toUpperCase()
+    if (vinUpper) {
+      const existingVin = vehicles.find(v => 
+        v.vin?.toUpperCase() === vinUpper && v.id !== editVehicle?.id
+      )
+      if (existingVin) {
+        errors.vin = 'A vehicle with this VIN already exists'
+      }
+    }
+    
+    return errors
+  }
 
   const formik = useFormik({
     initialValues: {
-      plateNumber: '',
-      modelName: '',
-      vin: '',
-      year: '',
-      engineType: 'Internal Combustion (ICE)',
-      fuelCapacity: '',
-      initialOdometer: '',
-      assignedSite: '',
-      assignedDepartment: '',
-      lastServiceDate: '',
-      nextInspectionDate: '',
-      image: null,
+      plateNumber: editVehicle?.plateNumber || '',
+      modelName: editVehicle?.model || '',
+      vin: editVehicle?.vin || '',
+      year: editVehicle?.year || '',
+      engineType: editVehicle?.engineType || 'Internal Combustion (ICE)',
+      fuelCapacity: editVehicle?.fuelCapacity || '',
+      initialOdometer: editVehicle?.mileageKm || '',
+      assignedSite: editVehicle?.site || '',
+      assignedDepartment: editVehicle?.department || '',
+      lastServiceDate: (() => {
+        if (!editVehicle?.lastService) return ''
+        try {
+          let date
+          if (editVehicle.lastService.toDate) {
+            date = editVehicle.lastService.toDate()
+          } else {
+            date = new Date(editVehicle.lastService)
+          }
+          return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0]
+        } catch {
+          return ''
+        }
+      })(),
+      nextInspectionDate: (() => {
+        if (!editVehicle?.nextService) return ''
+        try {
+          let date
+          if (editVehicle.nextService.toDate) {
+            date = editVehicle.nextService.toDate()
+          } else {
+            date = new Date(editVehicle.nextService)
+          }
+          return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0]
+        } catch {
+          return ''
+        }
+      })(),
+      image: editVehicle?.image || null,
     },
     validationSchema: schema,
     validateOnBlur: true,
-    validateOnChange: false,
+    validateOnChange: true,
+    validate: validateDuplicates,
     onSubmit: async (values) => {
       const data = {
         unitId:       values.plateNumber.trim().toUpperCase(),
@@ -151,14 +218,17 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
   function handleImageChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onloadend = () => formik.setFieldValue('image', reader.result)
-    reader.readAsDataURL(file)
+    formik.setFieldValue('image', file)
   }
 
   const f = formik.values
   const e = formik.errors
   const t = formik.touched
+
+  // Get preview URL for image (handles both File objects and URLs)
+  const imagePreviewUrl = f.image instanceof File 
+    ? URL.createObjectURL(f.image) 
+    : f.image
 
   return (
     <div className="fleet-register-page"
@@ -168,10 +238,10 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
       <div style={{ padding: '24px 28px 16px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Register New Vehicle
+            {editVehicle ? 'Edit Vehicle' : 'Register New Vehicle'}
           </h1>
           <p style={{ margin: 0, fontSize: '13px', color: 'rgba(148,163,184,0.75)', fontWeight: 600, maxWidth: 600 }}>
-            Initialize a high-fidelity Digital Twin for fleet assets.
+            {editVehicle ? 'Update vehicle information and specifications.' : 'Initialize a high-fidelity Digital Twin for fleet assets.'}
           </p>
         </div>
         <div style={{ background: 'rgba(58,130,255,0.08)', border: '1px solid rgba(58,130,255,0.2)', color: '#3a82ff',
@@ -220,7 +290,7 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
                     onChange={(ev) => formik.setFieldValue('vin', ev.target.value.toUpperCase())} />
                 </Field>
                 <Field label="YEAR OF MANUFACTURE" error={e.year} touched={t.year}>
-                  <input type="number" placeholder="YYYY" min={1900} max={CURRENT_YEAR + 1}
+                  <input type="number" placeholder="YYYY" min={1970} max={CURRENT_YEAR}
                     style={inputStyle(e.year, t.year)}
                     {...formik.getFieldProps('year')} />
                 </Field>
@@ -265,7 +335,7 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
               alignItems: 'center', justifyContent: 'center', minHeight: '180px', cursor: 'pointer', overflow: 'hidden' }}>
               {f.image ? (
                 <div style={{ width: '100%', height: '150px', position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
-                  <img src={f.image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={imagePreviewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <button type="button"
                     onClick={() => { formik.setFieldValue('image', null); if (imageRef.current) imageRef.current.value = '' }}
                     style={{ position: 'absolute', right: '8px', top: '8px', background: 'rgba(0,0,0,0.6)',
@@ -298,13 +368,15 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <Field label="ASSIGNED SITE *" error={e.assignedSite} touched={t.assignedSite}>
                   <CustomSelect value={f.assignedSite}
-                    onChange={(val) => { formik.setFieldValue('assignedSite', val); formik.setFieldTouched('assignedSite', true) }}
+                    onChange={(val) => formik.setFieldValue('assignedSite', val)}
+                    onBlur={() => formik.setFieldTouched('assignedSite', true)}
                     options={['Obsidian Hub Alpha', 'Sector 7G - Perimeter', 'East Gate Complex', 'Workshop Bay 3']}
                     placeholder="Select Assigned Site" searchable />
                 </Field>
                 <Field label="ASSIGNED DEPARTMENT *" error={e.assignedDepartment} touched={t.assignedDepartment}>
                   <CustomSelect value={f.assignedDepartment}
-                    onChange={(val) => { formik.setFieldValue('assignedDepartment', val); formik.setFieldTouched('assignedDepartment', true) }}
+                    onChange={(val) => formik.setFieldValue('assignedDepartment', val)}
+                    onBlur={() => formik.setFieldTouched('assignedDepartment', true)}
                     options={['Rapid Response Fleet', 'Operations', 'Logistics', 'Maintenance']}
                     placeholder="Select Assigned Department" searchable={false} />
                 </Field>
@@ -321,12 +393,13 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
                 <Field label="LAST SERVICE DATE" error={e.lastServiceDate} touched={t.lastServiceDate}>
                   <CustomDatePicker value={f.lastServiceDate}
                     onChange={(val) => { formik.setFieldValue('lastServiceDate', val); formik.setFieldTouched('lastServiceDate', true) }}
-                    placeholder="Select Date" allowPast />
+                    placeholder="Select Date" />
                 </Field>
                 <Field label="NEXT MOT / INSPECTION DATE" error={e.nextInspectionDate} touched={t.nextInspectionDate}>
                   <CustomDatePicker value={f.nextInspectionDate}
                     onChange={(val) => { formik.setFieldValue('nextInspectionDate', val); formik.setFieldTouched('nextInspectionDate', true) }}
-                    placeholder="Select Date" allowPast />
+                    minDate={f.lastServiceDate}
+                    placeholder="Select Date" />
                 </Field>
               </div>
             </div>
@@ -338,7 +411,7 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
       <div className="fleet-register-bottom-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(148,163,184,0.7)', fontSize: '11.5px', fontWeight: 600 }}>
           <Info size={14} style={{ color: '#3a82ff', flexShrink: 0 }} />
-          All required fields (*) must be completed before registration.
+          {editVehicle ? 'Editing this vehicle will reset its approval status to Pending.' : 'All required fields (*) must be completed before registration.'}
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button type="button" onClick={onCancel} disabled={loading}
@@ -357,7 +430,7 @@ export function RegisterVehiclePage({ onSave, onCancel, loading }) {
             {loading || formik.isSubmitting
               ? <span className="fleet-spinner" />
               : <Check size={14} strokeWidth={3} />}
-            REGISTER VEHICLE
+            {editVehicle ? 'SAVE AND CONTINUE' : 'REGISTER VEHICLE'}
           </button>
         </div>
       </div>

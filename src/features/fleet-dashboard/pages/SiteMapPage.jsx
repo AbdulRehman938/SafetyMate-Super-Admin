@@ -5,6 +5,7 @@ import { useFleetData } from '../hooks/useFleetData.js'
 import { VehicleDetails } from '../components/VehicleDetails.jsx'
 import { FleetMap } from '../components/FleetMap.jsx'
 import { ReadinessDonut } from '../components/ReadinessDonut.jsx'
+import { RegisterVehiclePage } from './RegisterVehiclePage.jsx'
 import { cap } from '../utils/fleetHelpers.js'
 import '../fleet.css'
 
@@ -28,7 +29,7 @@ function serviceHealth(vehicle) {
 
 export function SiteMapPage() {
   const navigate = useNavigate()
-  const { vehicles, inspections, openAlerts, loading, resolveAlert, avgHealth, activeVehicles, totalVehicles, crewReady } = useFleetData()
+  const { vehicles, inspections, openAlerts, loading, resolveAlert, avgHealth, activeVehicles, totalVehicles, crewReady, addVehicle, updateVehicle } = useFleetData()
 
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [page, setPage]                       = useState(1)
@@ -36,6 +37,10 @@ export function SiteMapPage() {
   const [showFilters, setShowFilters]         = useState(false)
   const [mapExpanded, setMapExpanded]         = useState(false)
   const [alertSearch, setAlertSearch]         = useState('')
+  const [showAdd, setShowAdd]                 = useState(false)
+  const [editVehicle, setEditVehicle]         = useState(null)
+  const [saving, setSaving]                   = useState(false)
+  const [statusResetVehicleId, setStatusResetVehicleId] = useState(null)
 
   const filteredAlerts = useMemo(() => {
     if (!alertSearch.trim()) return openAlerts
@@ -46,6 +51,30 @@ export function SiteMapPage() {
       (a.severity    || '').toLowerCase().includes(q)
     )
   }, [openAlerts, alertSearch])
+
+  async function handleAdd(data) {
+    setSaving(true)
+    try {
+      if (editVehicle) {
+        const wasApproved = editVehicle.complianceStatus === 'Approved'
+        await updateVehicle(editVehicle.id, data)
+        if (wasApproved) {
+          setStatusResetVehicleId(editVehicle.id)
+        }
+      } else {
+        await addVehicle(data)
+      }
+    } finally {
+      setSaving(false)
+      setShowAdd(false)
+      setEditVehicle(null)
+    }
+  }
+
+  function handleEditVehicle(vehicle) {
+    setEditVehicle(vehicle)
+    setShowAdd(true)
+  }
 
   const totalCrew = vehicles.filter((v) => v.crewAssigned).length
 
@@ -60,15 +89,29 @@ export function SiteMapPage() {
   const safePage   = Math.min(page, totalPages)
   const paginated  = allocated.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
+  if (showAdd) {
+    return (
+      <div className="fleet-subpage" style={{ padding: '32px 28px 80px', color: '#ffffff' }}>
+        <RegisterVehiclePage 
+          onSave={handleAdd} 
+          onCancel={() => { setShowAdd(false); setEditVehicle(null); }} 
+          loading={saving} 
+          editVehicle={editVehicle}
+        />
+      </div>
+    )
+  }
 
   if (selectedVehicle) {
     return (
       <VehicleDetails
         vehicle={selectedVehicle}
         alerts={openAlerts}
-        onBack={() => setSelectedVehicle(null)}
+        onBack={() => { setSelectedVehicle(null); setStatusResetVehicleId(null); }}
         viewOnly={true}
         backText="Back to Site Map"
+        onEdit={handleEditVehicle}
+        statusReset={statusResetVehicleId === selectedVehicle.id}
       />
     )
   }

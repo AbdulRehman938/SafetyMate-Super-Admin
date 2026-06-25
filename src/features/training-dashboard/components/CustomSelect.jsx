@@ -30,6 +30,7 @@ export function CustomSelect({
   const [query, setQuery] = useState('')
   const [focusedIdx, setFocusedIdx] = useState(-1)
   const [panelStyle, setPanelStyle] = useState({})
+  const [isPositioned, setIsPositioned] = useState(false)
 
   const containerRef = useRef(null)
   const searchRef = useRef(null)
@@ -71,10 +72,14 @@ export function CustomSelect({
     if (open) {
       setQuery('')
       setFocusedIdx(-1)
+      setIsPositioned(false)
       requestAnimationFrame(() => {
         reposition()
+        setIsPositioned(true)
         if (searchable) searchRef.current?.focus()
       })
+    } else {
+      setIsPositioned(false)
     }
   }, [open, searchable, reposition])
 
@@ -176,7 +181,7 @@ export function CustomSelect({
         <ChevronDown size={15} className="prov-custom-select-chevron" />
       </button>
 
-      {open && createPortal(
+      {open && isPositioned && createPortal(
         <div
           className="prov-custom-select-dropdown"
           data-open="true"

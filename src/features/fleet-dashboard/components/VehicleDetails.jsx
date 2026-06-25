@@ -9,7 +9,8 @@ import {
   Shield,
   ShieldCheck,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react'
 import {
   BarChart,
@@ -39,11 +40,12 @@ function loadJsPDF() {
   })
 }
 
-export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false, backText = "Back to Registry" }) {
+export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false, backText = "Back to Registry", onEdit, statusReset }) {
   const [submitting, setSubmitting] = useState(false)
   const [approved, setApproved] = useState(vehicle.complianceStatus === 'Approved')
   const [showHistory, setShowHistory] = useState(false)
   const [message, setMessage] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
 
   // Filter alerts specifically for this vehicle
   const vehicleAlerts = alerts
@@ -54,29 +56,13 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
       return bDate - aDate
     })
 
-  // Fallback to exact Figma defect list for VX-702 (or if empty) to follow layout/design requirements
+  // Display actual vehicle alerts only - no dummy data
   const displayedAlerts = useMemo(() => {
-    let list = []
-    if (vehicle.unitId === 'VX-702') {
-      list = [
-        { id: 'figma-1', message: 'Headlight Assembly - LH Flicker', createdAt: new Date('2024-10-04'), severity: 'critical', status: 'resolved', reference: '#DEF-80' },
-        { id: 'figma-2', message: 'Brake Fluid Pressure Sensor Error', createdAt: new Date('2024-10-12'), severity: 'minor', status: 'pending', reference: '#DEF-81' },
-        { id: 'figma-3', message: 'Cab Door Seal Degradation', createdAt: new Date('2024-10-28'), severity: 'low', status: 'escalated', reference: '#DEF-84' }
-      ]
-    } else if (vehicleAlerts.length === 0) {
-      list = [
-        { id: 'figma-1', message: 'Engine Oil Sensor Calibration', createdAt: new Date(), severity: 'minor', status: 'resolved', reference: '#DEF-01' },
-        { id: 'figma-2', message: 'Tyre Pressure Sensor Warning', createdAt: new Date(), severity: 'low', status: 'pending', reference: '#DEF-02' }
-      ]
-    } else {
-      list = vehicleAlerts
-    }
-
     if (!showHistory) {
-      return list.filter((a) => a.status !== 'resolved')
+      return vehicleAlerts.filter((a) => a.status !== 'resolved')
     }
-    return list
-  }, [vehicleAlerts, vehicle.unitId, showHistory])
+    return vehicleAlerts
+  }, [vehicleAlerts, showHistory])
 
   // Calculate daily average based on mileage or standard progression
   const totalDistance = vehicle.mileageKm ? vehicle.mileageKm.toLocaleString() + ' KM' : '—'
@@ -84,16 +70,12 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
     ? (Math.floor((vehicle.mileageKm / 30) * 10) / 10).toLocaleString(undefined, { minimumFractionDigits: 1 }) + ' KM' 
     : '—'
 
-  // Generate dynamic chart data based on vehicle odometer to show progression cycle
-  const chartData = Array.from({ length: 15 }, (_, i) => {
-    // Generate deterministic variations based on vehicle ID index
-    const baseValue = vehicle.mileageKm ? (vehicle.mileageKm / 300) : 500
-    const randomVariation = Math.sin(i + (vehicle.unitId?.charCodeAt(3) || 0)) * (baseValue * 0.4)
-    return {
-      name: `Day ${i * 2 + 1}`,
-      distance: Math.max(10, Math.round(baseValue + randomVariation))
-    }
-  })
+  // Generate chart data from actual fuel logs if available, otherwise show empty state
+  const chartData = useMemo(() => {
+    // If we had fuel logs, we would use them here
+    // For now, return empty array to show no data state
+    return []
+  }, [])
 
   // Submit Approval: updates vehicle compliance status in Firestore
   async function handleSubmitApproval() {
@@ -265,28 +247,60 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
         </div>
 
         {viewOnly && (
-          <button
-            type="button"
-            onClick={handleDownloadPDF}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(58, 130, 255, 0.08)',
-              border: '1px solid rgba(58, 130, 255, 0.2)',
-              color: '#3a82ff',
-              borderRadius: '8px',
-              padding: '8px 16px',
-              fontSize: '12px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(58, 130, 255, 0.15)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(58, 130, 255, 0.08)'}
-          >
-            <Download size={13} /> Download Report PDF
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={handleDownloadPDF}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(58, 130, 255, 0.08)',
+                border: '1px solid rgba(58, 130, 255, 0.2)',
+                color: '#3a82ff',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(58, 130, 255, 0.15)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(58, 130, 255, 0.08)'}
+            >
+              <Download size={13} /> Download Report PDF
+            </button>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (vehicle.complianceStatus === 'Approved') {
+                    setShowEditModal(true)
+                  } else {
+                    onEdit(vehicle)
+                  }
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'rgba(58, 130, 255, 0.08)',
+                  border: '1px solid rgba(58, 130, 255, 0.2)',
+                  color: '#3a82ff',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(58, 130, 255, 0.15)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(58, 130, 255, 0.08)'}
+              >
+                <RefreshCw size={13} /> Edit Vehicle
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -299,13 +313,36 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
           alignItems: 'center',
           padding: '24px',
           background: 'rgba(12, 18, 36, 0.55)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          border: statusReset ? '1px solid rgba(255, 83, 95, 0.3)' : '1px solid rgba(255, 255, 255, 0.06)',
           marginBottom: '20px',
           borderRadius: '12px',
           flexWrap: 'wrap',
-          gap: '24px'
+          gap: '24px',
+          position: 'relative'
         }}
       >
+        {statusReset && (
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            background: 'rgba(255, 83, 95, 0.15)',
+            border: '1px solid rgba(255, 83, 95, 0.3)',
+            color: '#ff535f',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <AlertTriangle size={11} />
+            Approval Reset
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <div>
             <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', color: '#3a82ff', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -366,42 +403,56 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
           </div>
 
           <div style={{ flex: 1, minHeight: '180px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <XAxis 
-                  dataKey="name" 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tick={{ fill: 'rgba(148,163,184,0.5)', fontSize: 9, fontWeight: 700 }}
-                  padding={{ left: 10, right: 10 }}
-                />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(58, 130, 255, 0.05)' }} 
-                  contentStyle={{ background: '#0b0f19', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px' }}
-                  labelStyle={{ color: 'rgba(148,163,184,0.7)', fontSize: '11px', fontWeight: 700 }}
-                  itemStyle={{ color: '#3a82ff', fontSize: '13px', fontWeight: 800 }}
-                />
-                <Bar 
-                  dataKey="distance" 
-                  fill="#102f62" 
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={30}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={index === 5 || index === 11 ? '#1c5fb3' : '#142e5c'} 
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <XAxis 
+                    dataKey="name" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: 'rgba(148,163,184,0.5)', fontSize: 9, fontWeight: 700 }}
+                    padding={{ left: 10, right: 10 }}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(58, 130, 255, 0.05)' }} 
+                    contentStyle={{ background: '#0b0f19', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px' }}
+                    labelStyle={{ color: 'rgba(148,163,184,0.7)', fontSize: '11px', fontWeight: 700 }}
+                    itemStyle={{ color: '#3a82ff', fontSize: '13px', fontWeight: 800 }}
+                  />
+                  <Bar 
+                    dataKey="distance" 
+                    fill="#102f62" 
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={30}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={index === 5 || index === 11 ? '#1c5fb3' : '#142e5c'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%', 
+                color: 'rgba(148,163,184,0.4)', 
+                fontSize: '12px', 
+                fontWeight: 600 
+              }}>
+                No progression data available
+              </div>
+            )}
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'rgba(148,163,184,0.5)', fontWeight: 800, letterSpacing: '0.05em', marginTop: '12px' }}>
-            <span>OCT 01</span>
+            <span>No data</span>
             <span>PROGRESSION CYCLE</span>
-            <span>OCT 31</span>
+            <span>No data</span>
           </div>
         </div>
 
@@ -416,10 +467,10 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em' }}>
                 <span style={{ color: 'rgba(148,163,184,0.8)' }}>ENGINE LUBRICATION</span>
-                <span style={{ color: '#ffffff' }}>800 KM LEFT</span>
+                <span style={{ color: 'rgba(148,163,184,0.5)' }}>No data</span>
               </div>
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '80%', background: '#3a82ff', borderRadius: '999px' }} />
+                <div style={{ height: '100%', width: '0%', background: 'rgba(148,163,184,0.3)', borderRadius: '999px' }} />
               </div>
             </div>
 
@@ -427,10 +478,10 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em' }}>
                 <span style={{ color: 'rgba(148,163,184,0.8)' }}>BRAKING SYSTEM</span>
-                <span style={{ color: '#4deba0' }}>OPTIMAL</span>
+                <span style={{ color: 'rgba(148,163,184,0.5)' }}>No data</span>
               </div>
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '100%', background: '#16c988', borderRadius: '999px' }} />
+                <div style={{ height: '100%', width: '0%', background: 'rgba(148,163,184,0.3)', borderRadius: '999px' }} />
               </div>
             </div>
 
@@ -438,10 +489,10 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em' }}>
                 <span style={{ color: 'rgba(148,163,184,0.8)' }}>TYRE TREAD DEPTH</span>
-                <span style={{ color: '#ff535f' }}>CHECK SOON</span>
+                <span style={{ color: 'rgba(148,163,184,0.5)' }}>No data</span>
               </div>
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '22%', background: '#ff535f', borderRadius: '999px' }} />
+                <div style={{ height: '100%', width: '0%', background: 'rgba(148,163,184,0.3)', borderRadius: '999px' }} />
               </div>
             </div>
 
@@ -450,18 +501,18 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
               marginTop: 'auto',
               padding: '12px 14px',
               borderRadius: '8px',
-              background: 'rgba(58, 130, 255, 0.05)',
-              border: '1px solid rgba(58, 130, 255, 0.12)',
+              background: 'rgba(148,163,184,0.05)',
+              border: '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               alignItems: 'center',
               gap: '12px'
             }}>
-              <div style={{ color: '#3a82ff' }}>
+              <div style={{ color: 'rgba(148,163,184,0.5)' }}>
                 <Calendar size={18} />
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: '#ffffff' }}>Estimated Service</p>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(148, 163, 184, 0.65)', fontWeight: 600 }}>14 Days / 1,240 km</p>
+                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: 'rgba(148,163,184,0.5)' }}>Estimated Service</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(148, 163, 184, 0.4)', fontWeight: 600 }}>No data available</p>
               </div>
             </div>
           </div>
@@ -701,6 +752,85 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
           boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
         }}>
           {message}
+        </div>
+      )}
+
+      {/* Edit Confirmation Modal */}
+      {showEditModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            background: '#0b0f1d',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>
+                Edit Approved Vehicle
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                style={{ background: 'none', border: 'none', color: 'rgba(148, 163, 184, 0.7)', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'rgba(148, 163, 184, 0.8)', lineHeight: 1.5 }}>
+              This vehicle is currently <span style={{ color: '#4deba0', fontWeight: 600 }}>Approved</span>. Editing it will reset its compliance status to <span style={{ color: '#ff535f', fontWeight: 600 }}>Pending</span> and require re-approval. Do you want to continue?
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: '#ffffff',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditModal(false)
+                  onEdit(vehicle)
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #3a82ff, #1c5fb3)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Continue to Edit
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

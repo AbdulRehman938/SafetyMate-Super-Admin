@@ -105,6 +105,41 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ── Fire Extinguisher Collections ─────────────────────────
+    match /fe_assets/{assetId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fe_inspections/{inspectionId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fe_alerts/{alertId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fe_activity_log/{logId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /fe_compliance_config/{configId} {
+      allow read:   if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
     // ── Everything else: Super Admin only ─────────────────────
     match /{document=**} {
       allow read, write: if isSuperAdmin();

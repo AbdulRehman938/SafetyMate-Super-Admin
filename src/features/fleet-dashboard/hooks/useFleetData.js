@@ -9,8 +9,12 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  where,
+  getDocs,
+  getDoc,
 } from 'firebase/firestore'
-import { db } from '../../../config/firebase.js'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../../../config/firebase.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 
 /**
@@ -83,22 +87,89 @@ export function useFleetData() {
 
   // ── Vehicle CRUD ────────────────────────────────────────────
   const addVehicle = useCallback(async (data) => {
+    // Check for duplicate plate number
+    if (data.plateNumber) {
+      const plateQuery = query(
+        collection(db, 'fleet_vehicles'),
+        where('plateNumber', '==', data.plateNumber.toUpperCase())
+      )
+      const plateSnapshot = await getDocs(plateQuery)
+      if (!plateSnapshot.empty) {
+        throw new Error('A vehicle with this plate number already exists')
+      }
+    }
+
+    // Check for duplicate VIN
+    if (data.vin) {
+      const vinQuery = query(
+        collection(db, 'fleet_vehicles'),
+        where('vin', '==', data.vin.toUpperCase())
+      )
+      const vinSnapshot = await getDocs(vinQuery)
+      if (!vinSnapshot.empty) {
+        throw new Error('A vehicle with this VIN already exists')
+      }
+    }
+
+    let imageUrl = data.image
+    
+    // If image is a File object, upload to Firebase Storage
+    if (data.image instanceof File) {
+      try {
+        const fileName = `vehicle_${Date.now()}_${data.image.name}`
+        const storageRef = ref(storage, `fleet_vehicles/${fileName}`)
+        const snapshot = await uploadBytes(storageRef, data.image)
+        imageUrl = await getDownloadURL(snapshot.ref)
+      } catch (error) {
+        console.error('Failed to upload vehicle image:', error)
+        throw new Error('Failed to upload image')
+      }
+    }
+    
     return addDoc(collection(db, 'fleet_vehicles'), {
       ...data,
+      image: imageUrl,
       healthScore: data.healthScore ?? 100,
       status: data.status ?? 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdBy: authUser?.uid ?? '',
     })
-  }, [authUser])
+  }, [authUser, storage])
 
   const updateVehicle = useCallback(async (id, data) => {
-    return updateDoc(doc(db, 'fleet_vehicles', id), {
+    let imageUrl = data.image
+    
+    // If image is a File object, upload to Firebase Storage
+    if (data.image instanceof File) {
+      try {
+        const fileName = `vehicle_${Date.now()}_${data.image.name}`
+        const storageRef = ref(storage, `fleet_vehicles/${fileName}`)
+        const snapshot = await uploadBytes(storageRef, data.image)
+        imageUrl = await getDownloadURL(snapshot.ref)
+      } catch (error) {
+        console.error('Failed to upload vehicle image:', error)
+        throw new Error('Failed to upload image')
+      }
+    }
+    
+    // Fetch current vehicle to check approval status
+    const vehicleDoc = await getDoc(doc(db, 'fleet_vehicles', id))
+    const currentVehicle = vehicleDoc.data()
+    
+    // If vehicle was approved, reset to pending when edited
+    const updateData = {
       ...data,
+      image: imageUrl,
       updatedAt: serverTimestamp(),
-    })
-  }, [])
+    }
+    
+    if (currentVehicle?.complianceStatus === 'Approved') {
+      updateData.complianceStatus = 'Pending'
+    }
+    
+    return updateDoc(doc(db, 'fleet_vehicles', id), updateData)
+  }, [storage])
 
   const deleteVehicle = useCallback(async (id) => {
     return deleteDoc(doc(db, 'fleet_vehicles', id))
@@ -164,9 +235,10 @@ export function useFleetData() {
         createdBy: authUser?.uid ?? '',
       })
     }
-    // update vehicle record
+    // update vehicle record with inspection data and odometer
     await updateDoc(doc(db, 'fleet_vehicles', vehicleId), {
       lastInspection: serverTimestamp(),
+      mileageKm: data.currentKm,
       status: data.outcome === 'fail' ? 'maintenance' : 'active',
       updatedAt: serverTimestamp(),
     })

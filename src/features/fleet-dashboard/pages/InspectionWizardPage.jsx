@@ -13,7 +13,14 @@ const submitSchema = Yup.object({
     .required('Current kilometre reading is required')
     .min(0, 'Cannot be negative')
     .max(9999999, 'Value too large')
-    .integer('Must be a whole number'),
+    .integer('Must be a whole number')
+    .test('greater-than-current', 'Must be greater than or equal to current vehicle odometer', function(value) {
+      const currentVehicleOdometer = this.options.context?.currentVehicleOdometer
+      if (currentVehicleOdometer && value !== undefined && value !== null) {
+        return value >= currentVehicleOdometer
+      }
+      return true
+    }),
 })
 import { useFleetData } from '../hooks/useFleetData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
@@ -246,7 +253,7 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
   async function handleSubmit() {
     /* Validate odometer with Yup */
     try {
-      await submitSchema.validate({ odometer })
+      await submitSchema.validate({ odometer }, { context: { currentVehicleOdometer: vehicle.mileageKm } })
     } catch (validationErr) {
       setSaveMsg({ type: 'err', text: validationErr.message })
       return
@@ -361,6 +368,11 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
       {/* ── Odometer ── */}
       <div className="wiz-odometer-card">
         <label className="wiz-odometer-label" htmlFor="wiz-odometer">CURRENT KILOMETRES *</label>
+        {vehicle.mileageKm && (
+          <p style={{ margin: '4px 0 8px', fontSize: 11, color: 'rgba(148, 163, 184, 0.6)', fontWeight: 500 }}>
+            Vehicle odometer: {vehicle.mileageKm.toLocaleString()} KM
+          </p>
+        )}
         <div className="wiz-odometer-row">
           <input
             id="wiz-odometer"
@@ -369,11 +381,11 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
             onChange={(e) => setOdometer(e.target.value)}
             onBlur={async () => {
               if (!odometer) return
-              try { await submitSchema.validate({ odometer }) }
+              try { await submitSchema.validate({ odometer }, { context: { currentVehicleOdometer: vehicle.mileageKm } }) }
               catch { /* shown on submit */ }
             }}
             className="wiz-odometer-input"
-            style={odometer && (isNaN(Number(odometer)) || Number(odometer) < 0)
+            style={odometer && (isNaN(Number(odometer)) || Number(odometer) < 0 || (vehicle.mileageKm && Number(odometer) < vehicle.mileageKm))
               ? { color: '#ff8080' } : {}}
           />
           <span className="wiz-odometer-unit">KM</span>
@@ -381,6 +393,11 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
         {odometer && isNaN(Number(odometer)) && (
           <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ff8080', fontWeight: 600 }}>
             Enter a valid number
+          </p>
+        )}
+        {odometer && !isNaN(Number(odometer)) && vehicle.mileageKm && Number(odometer) < vehicle.mileageKm && (
+          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#ff8080', fontWeight: 600 }}>
+            Must be greater than or equal to current vehicle odometer ({vehicle.mileageKm.toLocaleString()} KM)
           </p>
         )}
       </div>

@@ -31,6 +31,8 @@ export function VehicleTwinsPage() {
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editVehicle, setEditVehicle] = useState(null)
+  const [statusResetVehicleId, setStatusResetVehicleId] = useState(null)
   
   // Filtering state
   const [search, setSearch] = useState('')
@@ -48,11 +50,50 @@ export function VehicleTwinsPage() {
   const totalFleet = vehicles.length
   const operationalUnits = vehicles.filter(v => v.status === 'active').length
   const availabilityRate = totalFleet ? Math.round((operationalUnits / totalFleet) * 100) : 0
+
+  // Calculate month-over-month growth
+  const now = new Date()
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  const currentMonthVehicles = vehicles.filter(v => v.createdAt && v.createdAt.toDate() >= currentMonthStart)
+  const lastMonthVehicles = vehicles.filter(v => {
+    if (!v.createdAt) return false
+    const created = v.createdAt.toDate()
+    return created >= lastMonthStart && created < lastMonthEnd
+  })
+
+  const currentMonthCount = currentMonthVehicles.length
+  const lastMonthCount = lastMonthVehicles.length
+  const monthlyGrowth = lastMonthCount > 0 
+    ? ((currentMonthCount - lastMonthCount) / lastMonthCount) * 100 
+    : 0
+  const growthDisplay = monthlyGrowth > 0 
+    ? `+${monthlyGrowth.toFixed(1)}% from last month` 
+    : monthlyGrowth < 0 
+      ? `${monthlyGrowth.toFixed(1)}% from last month` 
+      : 'No change from last month'
+  const growthColor = monthlyGrowth > 0 ? '#16c988' : monthlyGrowth < 0 ? '#ef4444' : 'rgba(148, 163, 184, 0.7)'
+  const growthArrow = monthlyGrowth > 0 ? '↗' : monthlyGrowth < 0 ? '↘' : '→'
   
   // Critical defects: open (non-resolved) critical alerts
   const criticalDefects = alerts.filter(
     (a) => a.severity === 'critical' && a.status !== 'resolved'
   ).length
+
+  // Dynamic critical defects message
+  const criticalMessage = criticalDefects === 0 
+    ? 'No critical issues' 
+    : criticalDefects <= 5 
+      ? `${criticalDefects} critical issue${criticalDefects !== 1 ? 's' : ''} - attention required`
+      : `${criticalDefects} critical issues - intervention required`
+  const criticalColor = criticalDefects === 0 
+    ? '#16c988' 
+    : criticalDefects <= 5 
+      ? '#ffb56e' 
+      : '#ff535f'
+  const criticalIcon = criticalDefects === 0 ? '✓' : criticalDefects <= 5 ? '⚠' : '✳'
 
   // 2. Fetch list of unique types and sites for dropdowns dynamically
   const vehicleTypes = useMemo(() => {
@@ -125,11 +166,27 @@ export function VehicleTwinsPage() {
   async function handleAdd(data) {
     setSaving(true)
     try {
-      await addVehicle(data)
+      if (editVehicle) {
+        // Check if vehicle was approved before edit
+        const wasApproved = editVehicle.complianceStatus === 'Approved'
+        await updateVehicle(editVehicle.id, data)
+        if (wasApproved) {
+          setStatusResetVehicleId(editVehicle.id)
+        }
+      } else {
+        await addVehicle(data)
+      }
     } finally {
       setSaving(false)
       setShowAdd(false)
+      setEditVehicle(null)
     }
+  }
+
+  // Edit vehicle handler
+  function handleEditVehicle(vehicle) {
+    setEditVehicle(vehicle)
+    setShowAdd(true)
   }
 
   if (loading) {
@@ -147,7 +204,9 @@ export function VehicleTwinsPage() {
       <VehicleDetails 
         vehicle={selectedVehicle} 
         alerts={alerts} 
-        onBack={() => setSelectedVehicle(null)} 
+        onBack={() => { setSelectedVehicle(null); setStatusResetVehicleId(null); }} 
+        onEdit={handleEditVehicle}
+        statusReset={statusResetVehicleId === selectedVehicle.id}
       />
     )
   }
@@ -157,8 +216,9 @@ export function VehicleTwinsPage() {
     return (
       <RegisterVehiclePage 
         onSave={handleAdd} 
-        onCancel={() => setShowAdd(false)} 
+        onCancel={() => { setShowAdd(false); setEditVehicle(null); }} 
         loading={saving} 
+        editVehicle={editVehicle}
       />
     )
   }
@@ -246,8 +306,8 @@ export function VehicleTwinsPage() {
               <BarChart2 size={16} />
             </div>
           </div>
-          <p style={{ margin: 'auto 0 0', fontSize: '11px', fontWeight: 700, color: '#16c988', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '12px' }}>↗</span> +2.4% from last month
+          <p style={{ margin: 'auto 0 0', fontSize: '11px', fontWeight: 700, color: growthColor, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '12px' }}>{growthArrow}</span> {growthDisplay}
           </p>
         </div>
 
@@ -313,8 +373,8 @@ export function VehicleTwinsPage() {
               <AlertTriangle size={15} />
             </div>
           </div>
-          <p style={{ margin: 'auto 0 0', fontSize: '11px', fontWeight: 700, color: '#ff535f', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '14px' }}>✳</span> Immediate intervention required
+          <p style={{ margin: 'auto 0 0', fontSize: '11px', fontWeight: 700, color: criticalColor, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '14px' }}>{criticalIcon}</span> {criticalMessage}
           </p>
         </div>
 

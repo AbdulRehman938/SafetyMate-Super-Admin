@@ -34,7 +34,13 @@ import { VehicleTwinsPage }         from '../../features/fleet-dashboard/pages/V
 import { InspectionLogPage }        from '../../features/fleet-dashboard/pages/InspectionLogPage.jsx'
 import { FuelIntelligencePage }     from '../../features/fleet-dashboard/pages/FuelIntelligencePage.jsx'
 import { ProfileSettingsPage }      from '../../features/fleet-dashboard/pages/ProfileSettingsPage.jsx'
-import { FireExtinguisherDashboardPage } from '../../features/client/pages/FireExtinguisherDashboardPage.jsx'
+import { FELayout }             from '../../features/fireExtinguisher-dashboard/FELayout.jsx'
+import { FEDashboardPage }      from '../../features/fireExtinguisher-dashboard/pages/FEDashboardPage.jsx'
+import { FEAssetRegistryPage }  from '../../features/fireExtinguisher-dashboard/pages/FEAssetRegistryPage.jsx'
+import { FERegisterAssetPage }  from '../../features/fireExtinguisher-dashboard/pages/FERegisterAssetPage.jsx'
+import { FEInspectionPage }     from '../../features/fireExtinguisher-dashboard/pages/FEInspectionPage.jsx'
+import { FECompliancePage }     from '../../features/fireExtinguisher-dashboard/pages/FECompliancePage.jsx'
+import { FEProfilePage }        from '../../features/fireExtinguisher-dashboard/pages/FEProfilePage.jsx'
 import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
 import { useAuth } from '../providers/authContext.js'
 
@@ -219,8 +225,13 @@ export function AppRouter() {
     if (role === 'FIRE_EXTINGUISHER') {
       return (
         <Routes>
-          <Route element={<ClientLayout />}>
-            <Route path="/extinguisher/dashboard" element={<FireExtinguisherDashboardPage />} />
+          <Route element={<FELayout />}>
+            <Route path="/extinguisher/dashboard"             element={<FEDashboardPage />} />
+            <Route path="/extinguisher/assets"                element={<FEAssetRegistryPage />} />
+            <Route path="/extinguisher/assets/new"            element={<FERegisterAssetPage />} />
+            <Route path="/extinguisher/assets/:assetId/inspect" element={<FEInspectionPage />} />
+            <Route path="/extinguisher/compliance"            element={<FECompliancePage />} />
+            <Route path="/extinguisher/profile"               element={<FEProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/extinguisher/dashboard" replace />} />
         </Routes>
