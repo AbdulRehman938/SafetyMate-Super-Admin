@@ -22,6 +22,14 @@ service firebase.storage {
       return isAuth() && myRole() == 'FLEET';
     }
 
+    function isFireDetection() {
+      return isAuth() && myRole() == 'FIRE_DETECTION';
+    }
+
+    function isFireExtinguisher() {
+      return isAuth() && myRole() == 'FIRE_EXTINGUISHER';
+    }
+
     match /certificates/{allPaths=**} {
       allow read: if isAuth();
       allow write: if isSuperAdmin() || isTrainingProvider();
@@ -35,6 +43,16 @@ service firebase.storage {
     match /fleet_vehicles/{allPaths=**} {
       allow read: if isAuth();
       allow write: if isSuperAdmin() || isFleet();
+    }
+
+    match /fd_inspections/{allPaths=**} {
+      allow read: if isAuth();
+      allow write: if isSuperAdmin() || isFireDetection();
+    }
+
+    match /panel_inspections/{allPaths=**} {
+      allow read: if isAuth();
+      allow write: if isSuperAdmin() || isFireDetection();
     }
   }
 }

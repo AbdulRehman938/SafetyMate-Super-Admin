@@ -41,6 +41,15 @@ import { FERegisterAssetPage }  from '../../features/fireExtinguisher-dashboard/
 import { FEInspectionPage }     from '../../features/fireExtinguisher-dashboard/pages/FEInspectionPage.jsx'
 import { FECompliancePage }     from '../../features/fireExtinguisher-dashboard/pages/FECompliancePage.jsx'
 import { FEProfilePage }        from '../../features/fireExtinguisher-dashboard/pages/FEProfilePage.jsx'
+import { FDLayout } from '../../features/fireDetection-dashboard/layout/FDLayout.jsx'
+import { FDDashboardPage } from '../../features/fireDetection-dashboard/pages/FDDashboardPage.jsx'
+import { FDProfilePage } from '../../features/fireDetection-dashboard/pages/FDProfilePage.jsx'
+import { AssetRegistryPage } from '../../features/fireDetection-dashboard/pages/AssetRegistryPage.jsx'
+import { InspectionPage } from '../../features/fireDetection-dashboard/pages/InspectionPage.jsx'
+import { PanelRegistryPage } from '../../features/fireDetection-dashboard/pages/PanelRegistryPage.jsx'
+import { RegisterPanelPage } from '../../features/fireDetection-dashboard/pages/RegisterPanelPage.jsx'
+import { PanelInspectionPage } from '../../features/fireDetection-dashboard/pages/PanelInspectionPage.jsx'
+import { ComplianceMonitoringPage } from '../../features/fireDetection-dashboard/pages/ComplianceMonitoringPage.jsx'
 import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
 import { useAuth } from '../providers/authContext.js'
 
@@ -241,8 +250,15 @@ export function AppRouter() {
     if (role === 'FIRE_DETECTION') {
       return (
         <Routes>
-          <Route element={<ClientLayout />}>
-            <Route path="/detection/dashboard" element={<FireDetectionDashboardPage />} />
+          <Route element={<FDLayout />}>
+            <Route path="/detection/dashboard"           element={<FDDashboardPage />} />
+            <Route path="/detection/assets"               element={<AssetRegistryPage />} />
+            <Route path="/detection/inspection"           element={<InspectionPage />} />
+            <Route path="/detection/panels"               element={<PanelRegistryPage />} />
+            <Route path="/detection/panels/new"           element={<RegisterPanelPage />} />
+            <Route path="/detection/panel-inspection"     element={<PanelInspectionPage />} />
+            <Route path="/detection/compliance"            element={<ComplianceMonitoringPage />} />
+            <Route path="/detection/profile"               element={<FDProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/detection/dashboard" replace />} />
         </Routes>

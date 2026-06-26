@@ -140,6 +140,67 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ── Fire Detection Collections ───────────────────────────────
+    match /fd_assets/{assetId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_alerts/{alertId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_activity_log/{logId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /fd_zones/{zoneId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_panels/{panelId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_system_metrics/{metricId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_inspections_drafts/{draftId} {
+      allow read, create, update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_incidents/{incidentId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    match /fd_compliance_notifications/{configId} {
+      allow read:   if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
     // ── Everything else: Super Admin only ─────────────────────
     match /{document=**} {
       allow read, write: if isSuperAdmin();
