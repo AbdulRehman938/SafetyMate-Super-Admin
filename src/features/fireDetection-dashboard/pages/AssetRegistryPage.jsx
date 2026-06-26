@@ -674,7 +674,6 @@ export function AssetRegistryPage() {
               <Activity size={14} style={{ color: '#3a82ff' }} />
               ASSET REGISTRATION
             </div>
-            <span className="fd-reg-badge">NEW ENTRY</span>
           </div>
 
           <form className="fd-reg-form" onSubmit={handleRegister}>

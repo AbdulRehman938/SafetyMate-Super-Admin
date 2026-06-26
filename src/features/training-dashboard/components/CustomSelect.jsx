@@ -31,10 +31,20 @@ export function CustomSelect({
   const [focusedIdx, setFocusedIdx] = useState(-1)
   const [panelStyle, setPanelStyle] = useState({})
   const [isPositioned, setIsPositioned] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 960px)').matches)
 
   const containerRef = useRef(null)
   const searchRef = useRef(null)
   const listRef = useRef(null)
+
+  // ── Responsive mobile detection ────────────────────────────────────
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
+    const apply = () => setIsMobile(mq.matches)
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
 
   const normalised = options.map((o) =>
     typeof o === 'string' ? { value: o, label: o } : o
@@ -61,12 +71,16 @@ export function CustomSelect({
     let left = trigger.left
     const width = Math.max(trigger.width, 220)
 
-    if (top + panelH > vh - 12) top = trigger.top - panelH - 4
+    // On mobile, always position below the trigger
+    if (!isMobile) {
+      if (top + panelH > vh - 12) top = trigger.top - panelH - 4
+    }
+    
     if (left + width > vw - 12) left = vw - width - 12
     if (left < 12) left = 12
 
     setPanelStyle({ position: 'fixed', top: `${top}px`, left: `${left}px`, width: `${width}px`, zIndex: 9999 })
-  }, [])
+  }, [isMobile])
 
   useEffect(() => {
     if (open) {

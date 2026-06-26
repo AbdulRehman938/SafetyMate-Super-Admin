@@ -24,7 +24,7 @@ service cloud.firestore {
       allow read: if isAuth() && request.auth.uid == uid;
       allow read, write: if isSuperAdmin();
       allow read: if isTrainingProvider();
-      allow create: if isAuth() && request.auth.uid == uid;
+      allow create, update: if isAuth() && request.auth.uid == uid;
     }
 
     // ── organizations ─────────────────────────────────────────

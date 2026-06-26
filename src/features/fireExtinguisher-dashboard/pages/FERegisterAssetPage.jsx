@@ -7,6 +7,8 @@ import {
   ArrowLeft, ClipboardList, Calendar, Camera, X,
   CheckCircle, XCircle, Save, Printer, RefreshCw,
 } from 'lucide-react'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { db } from '../../../config/firebase.js'
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import '../fe.css'
@@ -464,6 +466,18 @@ export function FERegisterAssetPage() {
     setSaving(true)
     setToast(null)
     try {
+      // Check if serial number already exists
+      const serialCheck = query(
+        collection(db, 'fe_assets'),
+        where('serialNumber', '==', values.serialNumber.trim().toUpperCase())
+      )
+      const existingSnapshot = await getDocs(serialCheck)
+      if (!existingSnapshot.empty) {
+        setToast({ type: 'err', text: 'An asset with this serial number already exists. Please use a unique serial number.' })
+        setSaving(false)
+        return
+      }
+
       await addAsset({
         assetId:            unitId,
         extinguisherType:   values.extinguisherType,
@@ -517,29 +531,78 @@ export function FERegisterAssetPage() {
   }
 
   function handleGenerateQR() {
-    formik.validateForm().then((errors) => {
-      const requiredFields = ['extinguisherType', 'serialNumber', 'capacityKg', 'facilitySite']
-      const hasErrors = requiredFields.some((field) => errors[field])
-      
-      if (hasErrors) {
-        formik.setTouched({
-          extinguisherType: true,
-          serialNumber: true,
-          capacityKg: true,
-          facilitySite: true
-        })
-        setToast({ type:'err', text:'Please fill all required fields before generating QR code.' })
-        return
-      }
-      
-      setQrGenerated(true)
-      setToast({ type:'ok', text:'QR code generated successfully!' })
+    const requiredFields = ['extinguisherType', 'serialNumber', 'capacityKg', 'facilitySite']
+    const values = formik.values
+    
+    console.log('QR Generation attempt - current values:', values)
+    
+    // Check if all required fields have values
+    const missingFields = requiredFields.filter(field => {
+      const value = values[field]
+      const isEmpty = value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === '')
+      console.log(`Field ${field}: value="${value}", isEmpty=${isEmpty}`)
+      return isEmpty
     })
+    
+    if (missingFields.length > 0) {
+      console.log('Missing fields:', missingFields)
+      // Mark all required fields as touched to show validation errors
+      formik.setTouched({
+        extinguisherType: true,
+        serialNumber: true,
+        capacityKg: true,
+        facilitySite: true
+      })
+      setToast({ type:'err', text:'Please fill all required fields before generating QR code.' })
+      return
+    }
+    
+    console.log('All fields filled, generating QR')
+    setQrGenerated(true)
+    setToast({ type:'ok', text:'QR code generated successfully!' })
   }
 
   function handlePhotoUpload(file) {
+    // Compress image before storing
     const reader = new FileReader()
-    reader.onloadend = () => setPhoto({ name:file.name, dataUrl:reader.result })
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const maxSize = 100 // Max dimension in pixels (extremely aggressive compression)
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width
+            width = maxSize
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height
+            height = maxSize
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Compress to JPEG with 0.1 quality (extremely aggressive compression)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.1)
+        
+        // Check if still too large (approximate check by base64 length)
+        if (compressedDataUrl.length > 500000) {
+          setToast({ type: 'err', text: 'Photo is too large even after compression. Please try a smaller image.' })
+          setPhoto(null)
+        } else {
+          setPhoto({ name: file.name, dataUrl: compressedDataUrl })
+        }
+      }
+      img.src = event.target.result
+    }
     reader.readAsDataURL(file)
   }
 

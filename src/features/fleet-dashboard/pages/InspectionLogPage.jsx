@@ -8,6 +8,7 @@ import {
 import { useFleetData } from '../hooks/useFleetData.js'
 import { InspectionWizardPage } from './InspectionWizardPage.jsx'
 import { timeAgo } from '../utils/fleetHelpers.js'
+import { CustomSelect } from '../../training-dashboard/components/CustomSelect.jsx'
 import '../fleet.css'
 
 /* ─────────────────────────────────────────────────────────────
@@ -285,6 +286,16 @@ export function InspectionLogPage() {
   const [statusFilter,  setStatusFilter] = useState('all')
   const [showFilters,   setShowFilters]  = useState(false)
   const [page,          setPage]         = useState(1)
+  const [isMobile,      setIsMobile]     = useState(() => window.matchMedia('(max-width: 960px)').matches)
+
+  // ── Responsive mobile detection ────────────────────────────────────
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
+    const apply = () => setIsMobile(mq.matches)
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
 
   /* ── derive today's start timestamp for "today" comparisons ── */
   const todayStart = useMemo(() => {
@@ -438,23 +449,25 @@ export function InspectionLogPage() {
         {/* site */}
         <div className="insp-select-wrap">
           <label className="insp-select-label">QUICK FILTER</label>
-          <div className="insp-select-box">
-            <select value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} className="insp-select">
-              <option value="all">All Site Assets</option>
-              {sites.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
+          <CustomSelect
+            value={siteFilter}
+            onChange={(val) => setSiteFilter(val)}
+            options={['all', ...sites]}
+            placeholder="All Site Assets"
+            searchable={false}
+          />
         </div>
 
         {/* type */}
         <div className="insp-select-wrap">
           <label className="insp-select-label">VEHICLE TYPE</label>
-          <div className="insp-select-box">
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="insp-select">
-              <option value="all">All Types</option>
-              {types.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
+          <CustomSelect
+            value={typeFilter}
+            onChange={(val) => setTypeFilter(val)}
+            options={['all', ...types]}
+            placeholder="All Types"
+            searchable={false}
+          />
         </div>
 
         {/* CLEAR */}

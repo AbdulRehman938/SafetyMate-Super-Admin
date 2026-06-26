@@ -17,6 +17,39 @@ export function FleetMap({ vehicles = [], openAlerts = [], onVehicleClick, heigh
   const hasFitBoundsRef = useRef(false)
   const prevGpsCountRef = useRef(0)
   const [zoom, setZoom] = useState(13)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 960px)').matches)
+  const [mapEnabled, setMapEnabled] = useState(!window.matchMedia('(max-width: 960px)').matches)
+
+  // ── Responsive mobile detection ────────────────────────────────────
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
+    const apply = () => {
+      const mobile = mq.matches
+      setIsMobile(mobile)
+      if (mobile) {
+        setMapEnabled(false)
+      } else {
+        setMapEnabled(true)
+      }
+    }
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
+
+  // ── Enable/disable map dragging based on state ─────────────────────
+  useEffect(() => {
+    if (!leafletRef.current) return
+    if (mapEnabled) {
+      leafletRef.current.dragging.enable()
+      leafletRef.current.scrollWheelZoom.enable()
+      leafletRef.current.touchZoom.enable()
+    } else {
+      leafletRef.current.dragging.disable()
+      leafletRef.current.scrollWheelZoom.disable()
+      leafletRef.current.touchZoom.disable()
+    }
+  }, [mapEnabled])
 
   // ── Init Leaflet once ────────────────────────────────────────────
   useEffect(() => {
@@ -208,6 +241,61 @@ export function FleetMap({ vehicles = [], openAlerts = [], onVehicleClick, heigh
 
         {/* Leaflet map canvas */}
         <div ref={mapRef} style={{ height: '100%', width: '100%', background: '#0a0e1a' }} />
+
+        {/* Mobile map overlay - shows when map is disabled on mobile */}
+        {isMobile && !mapEnabled && (
+          <div
+            onClick={() => setMapEnabled(true)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(10, 14, 28, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              cursor: 'pointer',
+              zIndex: 1000,
+              transition: 'opacity 0.3s ease',
+            }}
+          >
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: 'rgba(58, 130, 255, 0.15)',
+              border: '2px solid rgba(58, 130, 255, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5ba8ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                <circle cx="12" cy="9" r="2.5"/>
+              </svg>
+            </div>
+            <p style={{
+              margin: 0,
+              fontSize: '14px',
+              fontWeight: 700,
+              color: '#ffffff',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}>
+              Tap to Enable Map
+            </p>
+            <p style={{
+              margin: 0,
+              fontSize: '11px',
+              color: 'rgba(148, 163, 184, 0.7)',
+              fontWeight: 500,
+            }}>
+              Click once to enable interactions
+            </p>
+          </div>
+        )}
 
         {/* ── Custom zoom controls ── */}
         <div style={{

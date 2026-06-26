@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { 
   Plus, 
   Search, 
@@ -45,6 +45,16 @@ export function VehicleTwinsPage() {
   
   // Pagination state
   const [page, setPage] = useState(1)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 960px)').matches)
+
+  // ── Responsive mobile detection ────────────────────────────────────
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
+    const apply = () => setIsMobile(mq.matches)
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
 
   // 1. Calculate dynamic statistics
   const totalFleet = vehicles.length
@@ -285,7 +295,15 @@ export function VehicleTwinsPage() {
         <div className="fleet-section-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
             <div>
-              <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.5)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <p style={{ 
+                margin: '0 0 6px', 
+                fontSize: '10px', 
+                fontWeight: 800, 
+                color: 'rgba(148, 163, 184, 0.5)', 
+                letterSpacing: '0.08em', 
+                textTransform: 'uppercase',
+                whiteSpace: isMobile ? 'nowrap' : 'normal'
+              }}>
                 TOTAL FLEET UNITS
               </p>
               <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 800, letterSpacing: '-0.03em', color: '#ffffff' }}>
@@ -352,7 +370,15 @@ export function VehicleTwinsPage() {
         <div className="fleet-section-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
             <div>
-              <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.5)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <p style={{ 
+                margin: '0 0 6px', 
+                fontSize: '10px', 
+                fontWeight: 800, 
+                color: 'rgba(148, 163, 184, 0.5)', 
+                letterSpacing: '0.08em', 
+                textTransform: 'uppercase',
+                whiteSpace: isMobile ? 'nowrap' : 'normal'
+              }}>
                 CRITICAL DEFECTS
               </p>
               <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 800, letterSpacing: '-0.03em', color: '#ff535f' }}>
@@ -467,21 +493,30 @@ export function VehicleTwinsPage() {
           style={{
             display: 'flex',
             gap: '12px',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
             padding: '12px 16px',
             background: 'rgba(7, 12, 28, 0.65)',
             border: '1px solid rgba(58, 130, 255, 0.1)',
             borderRadius: '10px',
             marginBottom: '20px',
-            animation: 'fleet-filters-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both'
+            animation: 'fleet-filters-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both',
+            flexDirection: isMobile ? 'column' : 'row',
           }}
         >
-          <div style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ 
+            fontSize: '11px', 
+            fontWeight: 800, 
+            color: 'rgba(148, 163, 184, 0.6)', 
+            textTransform: 'uppercase', 
+            letterSpacing: '0.05em',
+            width: isMobile ? '100%' : 'auto',
+            marginBottom: isMobile ? '8px' : '0'
+          }}>
             Advanced Filters:
           </div>
           
           {/* Engine Type Filter */}
-          <div style={{ minWidth: '180px' }}>
+          <div style={{ minWidth: isMobile ? '100%' : '180px', width: isMobile ? '100%' : 'auto' }}>
             <CustomSelect
               value={engineFilter}
               onChange={(val) => { setEngineFilter(val); setPage(1); }}
@@ -492,7 +527,7 @@ export function VehicleTwinsPage() {
           </div>
 
           {/* Status Filter */}
-          <div style={{ minWidth: '160px' }}>
+          <div style={{ minWidth: isMobile ? '100%' : '160px', width: isMobile ? '100%' : 'auto' }}>
             <CustomSelect
               value={statusFilter}
               onChange={(val) => { setStatusFilter(val); setPage(1); }}
@@ -519,7 +554,7 @@ export function VehicleTwinsPage() {
               setPage(1);
             }}
             style={{
-              marginLeft: 'auto',
+              marginLeft: isMobile ? '0' : 'auto',
               background: 'rgba(255,83,95,0.08)',
               border: '1px solid rgba(255,83,95,0.15)',
               color: '#ff8080',
@@ -528,7 +563,9 @@ export function VehicleTwinsPage() {
               fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
-              transition: 'background 0.2s'
+              transition: 'background 0.2s',
+              width: isMobile ? '100%' : 'auto',
+              marginTop: isMobile ? '8px' : '0'
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,83,95,0.15)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,83,95,0.08)'}
@@ -544,13 +581,13 @@ export function VehicleTwinsPage() {
           <table className="fleet-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(7, 12, 28, 0.25)' }}>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>VEHICLE IDENTIFIER</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>TYPE & MODEL</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>ASSIGNED SITE</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>ODOMETER</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>HEALTH SCORE</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>STATUS</th>
-                <th style={{ textAlign: 'right', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>ACTIONS</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>VEHICLE IDENTIFIER</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>TYPE & MODEL</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ASSIGNED SITE</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ODOMETER</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>HEALTH SCORE</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>STATUS</th>
+                <th style={{ textAlign: 'right', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>

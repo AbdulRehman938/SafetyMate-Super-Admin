@@ -5,6 +5,7 @@ import {
   AlertTriangle, Filter, MapPin, Activity, Calendar, X,
 } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
+import { CustomSelect } from '../../training-dashboard/components/CustomSelect.jsx'
 import '../fd.css'
 
 const PAGE_SIZE = 10
@@ -203,27 +204,27 @@ export function FDDashboardPage() {
             />
           </div>
           
-          <select
-            className="fd-select"
-            value={sectorFilter}
-            onChange={(e) => { setSectorFilter(e.target.value); setPage(1) }}
-          >
-            <option value="all">All Sectors</option>
-            <option value="A">Sector A</option>
-            <option value="B">Sector B</option>
-            <option value="C">Sector C</option>
-          </select>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.7)', letterSpacing: '0.08em' }}>SECTOR</label>
+            <CustomSelect
+              value={sectorFilter}
+              onChange={(val) => { setSectorFilter(val); setPage(1) }}
+              options={['all', 'A', 'B', 'C']}
+              placeholder="All Sectors"
+              searchable={false}
+            />
+          </div>
 
-          <select
-            className="fd-select"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-          >
-            <option value="all">All Statuses</option>
-            <option value="operational">Operational</option>
-            <option value="fault">Fault</option>
-            <option value="pending">Pending</option>
-          </select>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.7)', letterSpacing: '0.08em' }}>STATUS</label>
+            <CustomSelect
+              value={statusFilter}
+              onChange={(val) => { setStatusFilter(val); setPage(1) }}
+              options={['all', 'operational', 'fault', 'pending']}
+              placeholder="All Statuses"
+              searchable={false}
+            />
+          </div>
 
           <button
             type="button"
@@ -424,12 +425,13 @@ export function FDDashboardPage() {
               </div>
               <div className="fd-reg-field">
                 <label className="fd-reg-label">Zone</label>
-                <select className="fd-select" style={{ width:'100%' }}>
-                  <option value="">All Zones</option>
-                  <option value="A">Zone A</option>
-                  <option value="B">Zone B</option>
-                  <option value="C">Zone C</option>
-                </select>
+                <CustomSelect
+                  value=""
+                  onChange={() => {}}
+                  options={['', 'A', 'B', 'C']}
+                  placeholder="All Zones"
+                  searchable={false}
+                />
               </div>
             </div>
             <div className="fd-modal-actions">

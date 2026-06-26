@@ -430,21 +430,23 @@ export function ClientLayout() {
           </div>
 
           {role === 'FLEET' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
-              <div style={{ 
-                fontSize: '11px', 
-                fontWeight: 800, 
-                color: '#3a82ff', 
-                letterSpacing: '0.06em', 
-                background: 'rgba(58, 130, 255, 0.08)',
-                border: '1px solid rgba(58, 130, 255, 0.15)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                textTransform: 'uppercase'
-              }}>
-                SITE SUPERVISOR
+            !isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 800, 
+                  color: '#3a82ff', 
+                  letterSpacing: '0.06em', 
+                  background: 'rgba(58, 130, 255, 0.08)',
+                  border: '1px solid rgba(58, 130, 255, 0.15)',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  textTransform: 'uppercase'
+                }}>
+                  SITE SUPERVISOR
+                </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="topbar-icons client-topbar-icons">
               {/* ── Notification Bell ── */}

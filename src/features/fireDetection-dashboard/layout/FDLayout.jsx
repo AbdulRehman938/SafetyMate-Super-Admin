@@ -152,14 +152,6 @@ export function FDLayout() {
           <span className="fd-topbar-greeting">{getGreeting(displayName)}</span>
           <span className="fd-topbar-sep">|</span>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-            <h1 className="fd-topbar-title">Fire Detection Command Center</h1>
-            <div className="fd-status-pill">
-              <span className="fd-status-dot" />
-              System Status: Operational
-            </div>
-          </div>
-
           {/* Profile quick-access icon */}
           <button
             type="button"

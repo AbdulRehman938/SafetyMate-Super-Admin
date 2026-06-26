@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, RefreshCw, SlidersHorizontal, Search, X, TrendingUp, Truck } from 'lucide-react'
 import { useFleetData } from '../hooks/useFleetData.js'
@@ -41,6 +41,16 @@ export function SiteMapPage() {
   const [editVehicle, setEditVehicle]         = useState(null)
   const [saving, setSaving]                   = useState(false)
   const [statusResetVehicleId, setStatusResetVehicleId] = useState(null)
+  const [isMobile, setIsMobile]               = useState(() => window.matchMedia('(max-width: 960px)').matches)
+
+  // ── Responsive mobile detection ────────────────────────────────────
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
+    const apply = () => setIsMobile(mq.matches)
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
 
   const filteredAlerts = useMemo(() => {
     if (!alertSearch.trim()) return openAlerts
@@ -132,12 +142,18 @@ export function SiteMapPage() {
           [2] Active Fleet + Crew Ready stacked in ONE card
           [3] Critical Alerts — full height, scrollable
           ══════════════════════════════════════════════════════════════ */}
-      <div className="fleet-sitemap-top-row">
+      <div className="fleet-sitemap-top-row" style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? '16px' : '12px',
+      }}>
 
         {/* ── Col 1: Site Readiness Score ── */}
         <div className="fleet-section-card" style={{
           display:'flex', flexDirection:'column', alignItems:'center',
           justifyContent:'center', padding:'18px 12px', textAlign:'center',
+          width: isMobile ? '100%' : 'auto',
+          flex: isMobile ? 'none' : 1,
         }}>
           <p style={{ margin:'0 0 10px', fontSize:'10.5px', fontWeight:700, letterSpacing:'0.09em', textTransform:'uppercase', color:'rgba(148,163,184,0.7)' }}>
             Site Readiness Score
@@ -188,7 +204,13 @@ export function SiteMapPage() {
         </div>
 
         {/* ── Col 3: Critical Alerts — fills remaining width, scrollable ── */}
-        <div className="fleet-section-card fleet-alerts-card" style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div className="fleet-section-card fleet-alerts-card" style={{ 
+          display:'flex', 
+          flexDirection:'column', 
+          overflow:'hidden',
+          width: isMobile ? '100%' : 'auto',
+          flex: isMobile ? 'none' : 2,
+        }}>
 
           {/* Header */}
           <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'12px 14px 10px', borderBottom:'1px solid rgba(255,83,95,0.14)', flexShrink:0 }}>
@@ -250,8 +272,16 @@ export function SiteMapPage() {
       {/* ══ GPS LIVE TRACKING MAP ══ */}
       <div className="fleet-section-card" style={{ marginBottom:'16px', overflow:'hidden' }}>
         {/* Map header */}
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', padding:'14px 20px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-          <div>
+        <div style={{ 
+          display:'flex', 
+          alignItems: isMobile ? 'flex-start' : 'flex-start', 
+          justifyContent:'space-between', 
+          padding:'14px 20px 12px', 
+          borderBottom:'1px solid rgba(255,255,255,0.06)',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '12px' : '0'
+        }}>
+          <div style={{ width: isMobile ? '100%' : 'auto' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'3px' }}>
               <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#3a82ff', flexShrink:0 }} />
               <span style={{ fontSize:'13.5px', fontWeight:700, color:'rgba(235,242,255,0.95)' }}>GPS Live Tracking</span>
@@ -263,7 +293,13 @@ export function SiteMapPage() {
                 : 'all sites'}
             </p>
           </div>
-          <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
+          <div style={{ 
+            display:'flex', 
+            gap:'10px', 
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
+            width: isMobile ? '100%' : 'auto'
+          }}>
             <button
               type="button"
               onClick={() => setMapExpanded((v) => !v)}
@@ -338,9 +374,9 @@ export function SiteMapPage() {
           </h2>
           <button
             type="button"
-            className="fleet-btn fleet-btn--primary"
+            className="fleet-btn fleet-btn--primary "
             onClick={() => navigate('/fleet/dashboard')}
-            style={{ fontSize:'12px', padding:'7px 16px' }}
+            style={{ fontSize:'12px', padding:'7px 16px', whiteSpace: isMobile ? 'nowrap' : 'normal' }}
           >
             <RefreshCw size={12} /> ASSIGN UNIT
           </button>

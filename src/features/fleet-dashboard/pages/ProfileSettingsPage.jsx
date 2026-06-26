@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react'
-import { doc, updateDoc } from 'firebase/firestore'
 import { updatePassword } from 'firebase/auth'
-import { db } from '../../../config/firebase.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { User, Shield, Key, Mail, Phone, Camera, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import '../fleet.css'
 
 export function ProfileSettingsPage() {
-  const { authUser, profile } = useAuth()
+  const { authUser, profile, updateProfile } = useAuth()
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -27,6 +25,16 @@ export function ProfileSettingsPage() {
   const [passLoading, setPassLoading] = useState(false)
   const [passSuccessMsg, setPassSuccessMsg] = useState('')
   const [passErrorMsg, setPassErrorMsg] = useState('')
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 960px)').matches)
+
+  // ── Responsive mobile detection ────────────────────────────────────
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
+    const apply = () => setIsMobile(mq.matches)
+    apply()
+    mq.addEventListener?.('change', apply)
+    return () => mq.removeEventListener?.('change', apply)
+  }, [])
 
   // Seed form from profile — wrapped in timeout to avoid setState-in-effect
   useEffect(() => {
@@ -49,17 +57,15 @@ export function ProfileSettingsPage() {
     setSuccessMsg('')
     setErrorMsg('')
     try {
-      const userRef = doc(db, 'user_profiles', authUser.uid)
-      await updateDoc(userRef, {
+      await updateProfile({
         fullName: formData.fullName,
         phone: formData.phone,
         avatar: formData.avatar,
-        updatedAt: new Date()
       })
-      setSuccessMsg('Profile details updated successfully! Reloading page to apply changes.')
+      setSuccessMsg('Profile details updated successfully!')
       setTimeout(() => {
-        window.location.reload()
-      }, 1500)
+        setSuccessMsg('')
+      }, 3000)
     } catch (err) {
       console.error(err)
       setErrorMsg(err.message || 'Error updating profile. Please try again.')
@@ -71,6 +77,16 @@ export function ProfileSettingsPage() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
     if (!authUser) return
+    
+    // Clear previous messages
+    setPassSuccessMsg('')
+    setPassErrorMsg('')
+    
+    // Don't show error if fields are empty - just do nothing
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      return
+    }
+    
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setPassErrorMsg('New passwords do not match')
       return
@@ -81,8 +97,6 @@ export function ProfileSettingsPage() {
     }
 
     setPassLoading(true)
-    setPassSuccessMsg('')
-    setPassErrorMsg('')
     try {
       await updatePassword(authUser, passwordData.newPassword)
       setPassSuccessMsg('Password updated successfully!')
@@ -98,9 +112,38 @@ export function ProfileSettingsPage() {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
     if (file) {
+      // Compress image before storing
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, avatar: reader.result }))
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const maxSize = 200 // Max dimension in pixels
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > maxSize) {
+              height *= maxSize / width
+              width = maxSize
+            }
+          } else {
+            if (height > maxSize) {
+              width *= maxSize / height
+              height = maxSize
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, width, height)
+
+          // Compress to JPEG with 0.7 quality
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          setFormData((prev) => ({ ...prev, avatar: compressedDataUrl }))
+        }
+        img.src = event.target.result
       }
       reader.readAsDataURL(file)
     }
@@ -119,7 +162,12 @@ export function ProfileSettingsPage() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: isMobile ? '1fr' : '320px 1fr', 
+        gap: '24px', 
+        alignItems: 'start' 
+      }}>
         
         {/* Left Side: Avatar Card */}
         <div className="fleet-section-card" style={{ padding: '24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -170,7 +218,7 @@ export function ProfileSettingsPage() {
             </h3>
 
             <form onSubmit={handleProfileSubmit} noValidate>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.6)', letterSpacing: '0.08em' }}>FULL NAME</label>
                   <input 
@@ -194,7 +242,7 @@ export function ProfileSettingsPage() {
                   <div style={{ position: 'relative' }}>
                     <Phone size={13} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(148,163,184,0.4)' }} />
                     <input 
-                      type="text" 
+                      type="tel" 
                       value={formData.phone} 
                       onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
                       style={{
@@ -208,6 +256,8 @@ export function ProfileSettingsPage() {
                         outline: 'none'
                       }}
                       placeholder="e.g. +27 82 123 4567"
+                      pattern="^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$"
+                      title="Please enter a valid phone number"
                     />
                   </div>
                 </div>
@@ -280,7 +330,7 @@ export function ProfileSettingsPage() {
             </h3>
 
             <form onSubmit={handlePasswordSubmit} noValidate>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '10px', fontWeight: 800, color: 'rgba(148, 163, 184, 0.6)', letterSpacing: '0.08em' }}>NEW PASSWORD</label>
                   <div style={{ position: 'relative' }}>

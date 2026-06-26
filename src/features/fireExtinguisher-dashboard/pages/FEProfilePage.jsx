@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import { ArrowLeft, User, Lock, Camera, CheckCircle, XCircle, Save } from 'lucide-react'
@@ -31,12 +31,51 @@ export function FEProfilePage() {
   const { authUser, profile }   = useAuth()
   const [profileMsg, setProfileMsg] = useState(null)  // { type, text }
   const [passMsg,    setPassMsg]    = useState(null)
+  const [avatar,     setAvatar]     = useState(profile?.avatar || null)
+  const photoRef                  = useRef(null)
 
   const displayName = profile?.fullName || profile?.name || authUser?.email || '—'
   const avi         = initials(displayName)
   const aviBg       = avatarColor(displayName)
   const role        = profile?.role || 'FIRE_EXTINGUISHER'
-  const avatarImg   = profile?.avatar || null
+  const avatarImg   = avatar || profile?.avatar || null
+
+  /* ── Photo upload handler with compression ── */
+  function handlePhotoUpload(file) {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const maxSize = 200 // Max dimension in pixels
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width
+            width = maxSize
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height
+            height = maxSize
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Compress to JPEG with 0.7 quality
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        setAvatar(compressedDataUrl)
+      }
+      img.src = event.target.result
+    }
+    reader.readAsDataURL(file)
+  }
 
   /* ── Profile form ── */
   const profileFormik = useFormik({
@@ -51,11 +90,15 @@ export function FEProfilePage() {
     onSubmit: async (values) => {
       if (!authUser) return
       try {
-        await updateDoc(doc(db, 'user_profiles', authUser.uid), {
+        const updateData = {
           fullName:  values.fullName.trim(),
           phone:     values.phone.trim() || null,
           updatedAt: serverTimestamp(),
-        })
+        }
+        if (avatar) {
+          updateData.avatar = avatar
+        }
+        await updateDoc(doc(db, 'user_profiles', authUser.uid), updateData)
         setProfileMsg({ type: 'ok', text: 'Profile updated successfully.' })
         setTimeout(() => setProfileMsg(null), 4000)
       } catch {
@@ -125,12 +168,16 @@ export function FEProfilePage() {
                 ? <img src={avatarImg} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={(e) => { e.target.style.display='none' }} />
                 : avi}
             </div>
-            {/* avatar edit hint */}
-            <div style={{ position:'absolute', bottom:0, right:0, width:28, height:28, borderRadius:'50%',
+            {/* avatar edit button */}
+            <label style={{ position:'absolute', bottom:0, right:0, width:28, height:28, borderRadius:'50%',
               background:'#3a82ff', display:'flex', alignItems:'center', justifyContent:'center',
-              border:'2px solid #080d1a', cursor:'pointer' }}>
+              border:'2px solid #080d1a', cursor:'pointer', transition:'background 0.15s' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#5ba8ff'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#3a82ff'}>
               <Camera size={13} style={{ color:'#fff' }} />
-            </div>
+              <input ref={photoRef} type="file" accept="image/*" style={{ display:'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value='' }}/>
+            </label>
           </div>
 
           <div>
@@ -139,15 +186,6 @@ export function FEProfilePage() {
               {role === 'FIRE_EXTINGUISHER' ? 'Fire Safety Technician' : role}
             </p>
             <p style={{ margin:0, fontSize:12, color:'rgba(148,163,184,0.5)' }}>{authUser?.email || '—'}</p>
-          </div>
-
-          <div style={{ width:'100%', padding:'14px 0 0', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', fontSize:12 }}>
-              <span style={{ color:'rgba(148,163,184,0.55)', fontWeight:700 }}>UID</span>
-              <span style={{ color:'rgba(235,242,255,0.6)', fontFamily:'monospace', fontSize:11 }}>
-                {authUser?.uid?.slice(0,12)}…
-              </span>
-            </div>
           </div>
         </div>
 

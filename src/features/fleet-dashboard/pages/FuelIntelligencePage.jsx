@@ -9,6 +9,7 @@ import {
 import { useFleetData } from '../hooks/useFleetData.js'
 import { AddFuelLogModal } from '../components/AddFuelLogModal.jsx'
 import { toDate, formatDate, exportToCSV } from '../utils/fleetHelpers.js'
+import { CustomSelect } from '../../training-dashboard/components/CustomSelect.jsx'
 import '../fleet.css'
 
 /* ── Yup schema for inline fuel capture ────────────────────── */
@@ -417,25 +418,22 @@ export function FuelIntelligencePage() {
         <div className="fuel-capture-card fuel-section-card">
           <div className="fuel-card-head">
             <div className="fuel-card-icon"><Fuel size={14} /></div>
-            <span className="fuel-card-title">FUEL<br />CAPTURING</span>
+            <span className="fuel-card-title">FUEL CAPTURING</span>
           </div>
 
           <div className="fuel-form-fields">
             {/* Unit ID select */}
             <div className="fuel-field-group">
-              <label className="fuel-field-label">UNIT ID *</label>
-              <select
-                id="vehicleId" name="vehicleId"
-                className={`fuel-field-input${FE.vehicleId && FT.vehicleId ? ' fuel-field-input--err' : ''}`}
+              <label className="fuel-field-label">UNIT ID</label>
+              <CustomSelect
                 value={FF.vehicleId}
-                onChange={fuelFormik.handleChange}
-                onBlur={fuelFormik.handleBlur}
-              >
-                <option value="">Select unit…</option>
-                {vehicles.map((v) => (
-                  <option key={v.id} value={v.id}>{v.unitId || v.id}</option>
-                ))}
-              </select>
+                onChange={(val) => fuelFormik.setFieldValue('vehicleId', val)}
+                onBlur={() => fuelFormik.setFieldTouched('vehicleId', true)}
+                options={vehicles.map((v) => ({ value: v.id, label: v.unitId || v.id }))}
+                placeholder="Select unit…"
+                searchable={true}
+                error={FE.vehicleId && FT.vehicleId}
+              />
               {FE.vehicleId && FT.vehicleId && <span style={fuelErrStyle}>{FE.vehicleId}</span>}
             </div>
 
@@ -569,7 +567,7 @@ export function FuelIntelligencePage() {
         <div className="fuel-temporal-card fuel-section-card">
           <div className="fuel-temporal-head">
             <div>
-              <p className="fuel-temporal-title">TEMPORAL<br />CONSUMPTION ANALYSIS</p>
+              <p className="fuel-temporal-title">TEMPORAL CONSUMPTION ANALYSIS</p>
               <p className="fuel-temporal-sub">Daily fuel delta across active fleet sectors</p>
             </div>
             <div className="fuel-temporal-legend">
@@ -596,7 +594,7 @@ export function FuelIntelligencePage() {
         <div className="fuel-receipt-card fuel-section-card">
           <div className="fuel-card-head">
             <div className="fuel-card-icon"><Upload size={13} /></div>
-            <span className="fuel-card-title">DIGITAL<br />RECEIPT</span>
+            <span className="fuel-card-title">DIGITAL RECEIPT</span>
           </div>
 
           {receipt ? (
@@ -643,7 +641,7 @@ export function FuelIntelligencePage() {
         {/* Top Fleet Performers */}
         <div className="fuel-performers-card fuel-section-card">
           <div className="fuel-card-head-plain">
-            <span className="fuel-card-title-plain">TOP FLEET<br />PERFORMERS</span>
+            <span className="fuel-card-title-plain">TOP FLEET PERFORMERS</span>
           </div>
 
           {topPerformers.length === 0 ? (

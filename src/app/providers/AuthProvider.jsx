@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from '../../config/firebase.js'
 import { AuthContext } from './authContext.js'
 
@@ -57,6 +57,17 @@ export function AuthProvider({ children }) {
     const isSuperAdmin = role === 'SUPER_ADMIN'
     const organizationId = profile?.organizationId ?? null
 
+    const updateProfile = async (updates) => {
+      if (!authUser) throw new Error('No authenticated user')
+      const userRef = doc(db, 'user_profiles', authUser.uid)
+      await updateDoc(userRef, {
+        ...updates,
+        updatedAt: new Date()
+      })
+      // Update local profile state
+      setProfile(prev => prev ? { ...prev, ...updates } : updates)
+    }
+
     return {
       authReady,
       authUser,
@@ -69,6 +80,7 @@ export function AuthProvider({ children }) {
       error,
       setError,
       signOut: () => signOut(auth),
+      updateProfile,
     }
   }, [authReady, authUser, profile, loadingProfile, profileStatus, error])
 

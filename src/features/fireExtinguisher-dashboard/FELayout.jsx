@@ -148,15 +148,6 @@ export function FELayout() {
 
           <span className="fe-topbar-greeting">{getGreeting(displayName)}</span>
           <span className="fe-topbar-sep">|</span>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-            <h1 className="fe-topbar-title">Fireguard Command Center</h1>
-            <div className="fe-status-pill">
-              <span className="fe-status-dot" />
-              System Status: Operational
-            </div>
-          </div>
-
           {/* Profile quick-access icon */}
           <button
             type="button"
