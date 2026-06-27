@@ -194,7 +194,9 @@ export function ClientLayout() {
         animate={
           isMobile
             ? { x: sidebarOpen ? 0 : '-105%', width: SIDEBAR_W }
-            : { x: 0, width: role === 'FLEET' && sidebarCollapsed ? 80 : SIDEBAR_W }
+            : role === 'FLEET'
+              ? { x: 0, width: sidebarCollapsed ? 80 : SIDEBAR_W }
+              : { x: sidebarOpen ? 0 : '-105%', width: SIDEBAR_W }
         }
         transition={sidebarSpring}
         style={{ overflowX: 'hidden' }}
@@ -392,7 +394,9 @@ export function ClientLayout() {
             ? 0
             : role === 'FLEET' && sidebarCollapsed
               ? 80
-              : SIDEBAR_W
+              : role !== 'FLEET' && !sidebarOpen
+                ? 0
+                : SIDEBAR_W
         }}
         transition={sidebarSpring}
       >
@@ -418,7 +422,11 @@ export function ClientLayout() {
                 type="button"
                 className="sidebar-toggle"
                 aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-                onClick={() => setSidebarOpen((v) => !v)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setSidebarOpen((v) => !v)
+                }}
               >
                 <Menu size={16} />
               </button>

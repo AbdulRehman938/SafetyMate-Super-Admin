@@ -269,7 +269,10 @@ export function AppLayout() {
               type="button"
               className="sidebar-toggle"
               aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-              onClick={() => setSidebarOpen((v) => !v)}
+              onClick={(e) => {
+                console.log('Toggle clicked, current sidebarOpen:', sidebarOpen)
+                setSidebarOpen((v) => !v)
+              }}
             >
               <Menu size={16} />
             </button>
