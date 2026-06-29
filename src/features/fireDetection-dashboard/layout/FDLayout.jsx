@@ -149,6 +149,15 @@ export function FDLayout() {
             <Menu size={16} />
           </button>
 
+          {/* Logo and Brand */}
+          <div className="fd-topbar-brand">
+            <img className="fd-topbar-logo" src="/logo.png" alt="SafetyMate" />
+            <p className="fd-topbar-brand-text">
+              <span className="fd-topbar-brand-safety">Safety</span>
+              <span className="fd-topbar-brand-mate">Mate</span>
+            </p>
+          </div>
+
           <span className="fd-topbar-greeting">{getGreeting(displayName)}</span>
           <span className="fd-topbar-sep">|</span>
 

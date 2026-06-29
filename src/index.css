@@ -696,7 +696,7 @@ b {
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 24px;
   padding: 6px 10px;
 }
@@ -710,15 +710,15 @@ b {
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
 }
 
 .brand {
   margin: 0;
   font-weight: 700;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   letter-spacing: -0.02em;
 }
 

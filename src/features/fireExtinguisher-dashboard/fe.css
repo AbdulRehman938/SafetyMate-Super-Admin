@@ -257,6 +257,35 @@
 }
 .fe-topbar-toggle:hover { background: rgba(255,255,255,0.09); color: #fff; }
 
+.fe-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.fe-topbar-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.fe-topbar-brand-text {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.fe-topbar-brand-safety {
+  color: #ff8a1c;
+}
+
+.fe-topbar-brand-mate {
+  color: #2a7bd6;
+}
+
 .fe-topbar-greeting {
   font-size: 14px;
   font-weight: 800;

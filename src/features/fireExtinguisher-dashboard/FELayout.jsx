@@ -146,6 +146,15 @@ export function FELayout() {
             <Menu size={16} />
           </button>
 
+          {/* Logo and Brand */}
+          <div className="fe-topbar-brand">
+            <img className="fe-topbar-logo" src="/logo.png" alt="SafetyMate" />
+            <p className="fe-topbar-brand-text">
+              <span className="fe-topbar-brand-safety">Safety</span>
+              <span className="fe-topbar-brand-mate">Mate</span>
+            </p>
+          </div>
+
           <span className="fe-topbar-greeting">{getGreeting(displayName)}</span>
           <span className="fe-topbar-sep">|</span>
           {/* Profile quick-access icon */}

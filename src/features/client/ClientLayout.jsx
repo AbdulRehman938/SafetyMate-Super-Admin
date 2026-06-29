@@ -432,6 +432,16 @@ export function ClientLayout() {
                 >
                   <Menu size={16} />
                 </button>
+                
+                {/* Logo and Brand */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <img src="/logo.png" alt="SafetyMate" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    <span style={{ color: '#ff8a1c' }}>Safety</span>
+                    <span style={{ color: '#2a7bd6' }}>Mate</span>
+                  </p>
+                </div>
+
                 <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
                   {getGreeting()}
                 </span>
