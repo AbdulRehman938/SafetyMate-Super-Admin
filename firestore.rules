@@ -41,6 +41,22 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ── files_documents (training request source) ──────────────
+    match /files_documents/{docId} {
+      allow read:   if isAuth() && (isSuperAdmin() || isTrainingProvider());
+      allow create: if isAuth();
+      allow update: if isAuth() && (isSuperAdmin() || isTrainingProvider());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ── training_sessions ─────────────────────────────────────
+    match /training_sessions/{sessionId} {
+      allow read:   if isAuth() && (isSuperAdmin() || isTrainingProvider());
+      allow create,
+            update: if isSuperAdmin() || isTrainingProvider();
+      allow delete: if isSuperAdmin();
+    }
+
     // ── certificates ──────────────────────────────────────────
     match /certificates/{certId} {
       allow read: if isAuth();

@@ -13,6 +13,7 @@ export function TrainingDashboardPage({ view = 'overview' }) {
     employees,
     organizations,
     loading,
+    refetchRequests,
     handleAccept,
     handleReject,
     handleBulkApprove,
@@ -113,11 +114,9 @@ export function TrainingDashboardPage({ view = 'overview' }) {
   const allFilteredIds = filteredRequests.map((r) => r.id)
   const availableCourses = Array.from(new Set(requests.map((r) => r.course).filter(Boolean))).sort()
 
-  // ── Refresh handler ───────────────────────────────────────
-  const handleRefresh = () => {
-    // Firestore already syncs in real-time via onSnapshot
-    // This is just for visual feedback to the user
-    return Promise.resolve()
+  // ── Refresh handler ── calls real server re-fetch ──────────────────────────
+  const handleRefresh = async () => {
+    await refetchRequests()
   }
 
   if (view === 'requests') {

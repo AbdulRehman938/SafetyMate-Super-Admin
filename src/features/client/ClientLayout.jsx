@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import ReactDOM from 'react-dom'
 import {
   AlertTriangle,
   Award,
@@ -17,6 +18,7 @@ import {
   UserCircle2,
   Users,
   Wrench,
+  X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 // eslint-disable-next-line no-unused-vars
@@ -107,8 +109,19 @@ export function ClientLayout() {
   const [pendingPath, setPendingPath] = useState(null)
 
   // Notification panel state
-  const [notifOpen, setNotifOpen] = useState(false)
-  const notifRef = useRef(null)
+  const [notifOpen,      setNotifOpen]      = useState(false)
+  const [notifModalOpen, setNotifModalOpen] = useState(false)
+  const notifRef   = useRef(null)
+  const bellBtnRef = useRef(null)
+  const [bellRect,  setBellRect]  = useState(null)
+  const [isMobileView, setIsMobileView] = useState(() => window.innerWidth <= 768)
+
+  // Track viewport for responsive notification panel
+  useEffect(() => {
+    const handler = () => setIsMobileView(window.innerWidth <= 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   // Real-time notifications (training provider only for now)
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications({
@@ -137,6 +150,7 @@ export function ClientLayout() {
       if (e.key === 'Escape') {
         setSidebarOpen(false)
         setNotifOpen(false)
+        setNotifModalOpen(false)
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -146,7 +160,13 @@ export function ClientLayout() {
   // ── Close notif panel on outside click ───────────────────────
   useEffect(() => {
     function onPointerDown(e) {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
+      // Close if click is outside the bell button AND outside the portal panel
+      const panelEl = document.getElementById('notif-portal-panel')
+      const bellEl  = bellBtnRef.current
+      if (
+        bellEl  && !bellEl.contains(e.target) &&
+        panelEl && !panelEl.contains(e.target)
+      ) {
         setNotifOpen(false)
       }
     }
@@ -458,73 +478,228 @@ export function ClientLayout() {
           ) : (
             <div className="topbar-icons client-topbar-icons">
               {/* ── Notification Bell ── */}
-              <div className="topbar-bell-wrap" ref={notifRef}>
+              <div style={{ position: 'relative', display: 'inline-flex' }}>
                 <button
+                  ref={bellBtnRef}
                   type="button"
                   aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
-                  onClick={() => setNotifOpen((v) => !v)}
-                  className={notifOpen ? 'bell-btn-active' : ''}
+                  onClick={() => {
+                    if (notifOpen) {
+                      setNotifOpen(false)
+                    } else {
+                      const rect = bellBtnRef.current?.getBoundingClientRect()
+                      setBellRect(rect)
+                      setNotifOpen(true)
+                    }
+                  }}
+                  style={{
+                    position: 'relative',
+                    width: 36, height: 36,
+                    borderRadius: 10,
+                    border: notifOpen
+                      ? '1px solid rgba(96,165,250,0.35)'
+                      : '1px solid rgba(255,255,255,0.09)',
+                    background: notifOpen
+                      ? 'rgba(96,165,250,0.12)'
+                      : 'rgba(255,255,255,0.05)',
+                    color: notifOpen ? '#60a5fa' : 'rgba(148,163,184,0.85)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'background 150ms, color 150ms, border-color 150ms',
+                  }}
                 >
-                  <Bell size={15} />
+                  <Bell size={16} />
                   {unreadCount > 0 && (
-                    <span className="bell-badge" aria-label={`${unreadCount} unread`}>
+                    <span style={{
+                      position: 'absolute',
+                      top: -5, right: -5,
+                      minWidth: 18, height: 18,
+                      borderRadius: 999,
+                      background: '#ef4444',
+                      boxShadow: '0 0 0 2px #0a0f1e',
+                      fontSize: 10, fontWeight: 800,
+                      color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px',
+                      lineHeight: 1,
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                    }}>
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </button>
 
-                {notifOpen && (
-                  <div className="topbar-bell-popover client-notif-popover" role="dialog" aria-label="Notifications">
-                    <div className="client-notif-header">
-                      <div className="client-notif-header-left">
-                        <Bell size={14} />
-                        <b>Notifications</b>
+                {/* ── Portal panel — responsive: bottom sheet on mobile, dropdown on desktop ── */}
+                {notifOpen && bellRect && ReactDOM.createPortal(
+                  <>
+                    {/* Mobile backdrop */}
+                    {isMobileView && (
+                      <div
+                        onClick={() => setNotifOpen(false)}
+                        style={{
+                          position: 'fixed', inset: 0,
+                          background: 'rgba(0,0,0,0.5)',
+                          backdropFilter: 'blur(2px)',
+                          zIndex: 9998,
+                        }}
+                      />
+                    )}
+                  <div
+                    id="notif-portal-panel"
+                    style={isMobileView ? {
+                      // ── Bottom sheet (mobile / tablet) ──
+                      position: 'fixed',
+                      bottom: 0, left: 0, right: 0,
+                      width: '100%',
+                      maxHeight: '80vh',
+                      display: 'flex', flexDirection: 'column',
+                      background: '#0d1225',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '20px 20px 0 0',
+                      boxShadow: '0 -12px 48px rgba(0,0,0,0.7)',
+                      zIndex: 9999, overflow: 'hidden',
+                      animation: 'notif-sheet-up 0.28s cubic-bezier(0.16,1,0.3,1) both',
+                    } : {
+                      // ── Dropdown (desktop) ──
+                      position: 'fixed',
+                      top: bellRect.bottom + 10,
+                      right: Math.max(8, window.innerWidth - bellRect.right),
+                      width: Math.min(370, window.innerWidth - 16),
+                      maxHeight: 540,
+                      display: 'flex', flexDirection: 'column',
+                      background: '#0d1225',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 16,
+                      boxShadow: '0 24px 72px rgba(0,0,0,0.65)',
+                      zIndex: 9999, overflow: 'hidden',
+                      animation: 'notif-panel-in 0.2s cubic-bezier(0.16,1,0.3,1) both',
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 16px 12px',
+                      borderBottom: '1px solid rgba(255,255,255,0.07)',
+                      flexShrink: 0,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Bell size={14} style={{ color: '#60a5fa' }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(235,242,255,0.95)' }}>Notifications</span>
                         {unreadCount > 0 && (
-                          <span className="client-notif-badge">{unreadCount} new</span>
+                          <span style={{
+                            background: 'rgba(239,68,68,0.15)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239,68,68,0.25)',
+                            fontSize: 10, fontWeight: 800,
+                            padding: '2px 7px', borderRadius: 999,
+                          }}>
+                            {unreadCount} new
+                          </span>
                         )}
                       </div>
                       {unreadCount > 0 && (
                         <button
                           type="button"
-                          className="client-notif-mark-all"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            markAllRead()
+                          onClick={(e) => { e.stopPropagation(); markAllRead() }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 11, color: '#60a5fa',
+                            background: 'rgba(96,165,250,0.08)',
+                            border: '1px solid rgba(96,165,250,0.2)',
+                            borderRadius: 7, padding: '4px 9px',
+                            cursor: 'pointer', whiteSpace: 'nowrap',
                           }}
-                          title="Mark all as read"
                         >
-                          <Check size={12} />
-                          All read
+                          <Check size={11} /> All read
                         </button>
                       )}
                     </div>
 
-                    <div className="client-notif-list">
+                    {/* List */}
+                    <div style={{
+                      flex: 1, overflowY: 'auto', padding: 10,
+                      display: 'flex', flexDirection: 'column', gap: 4,
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'rgba(255,255,255,0.08) transparent',
+                    }}>
                       {notifications.length === 0 ? (
-                        <div className="client-notif-empty">
-                          <Bell size={22} />
-                          <p>You&rsquo;re all caught up!</p>
-                          <span>No new notifications</span>
+                        <div style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          justifyContent: 'center', gap: 8, padding: '36px 16px',
+                          color: 'rgba(148,163,184,0.5)',
+                        }}>
+                          <Bell size={28} style={{ opacity: 0.35 }} />
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'rgba(148,163,184,0.75)' }}>
+                            You're all caught up!
+                          </p>
+                          <span style={{ fontSize: 11 }}>No new notifications</span>
                         </div>
                       ) : (
                         notifications.slice(0, 10).map((notif) => (
                           <button
                             key={notif.id}
                             type="button"
-                            className={`client-notif-item${notif.read ? ' client-notif-item--read' : ''}`}
                             onClick={() => handleNotifClick(notif)}
+                            style={{
+                              width: '100%',
+                              display: 'flex', alignItems: 'flex-start', gap: 10,
+                              padding: '10px 10px 10px 8px',
+                              borderRadius: 10,
+                              border: notif.read
+                                ? '1px solid rgba(255,255,255,0.04)'
+                                : '1px solid rgba(96,165,250,0.12)',
+                              background: notif.read
+                                ? 'rgba(255,255,255,0.02)'
+                                : 'rgba(96,165,250,0.06)',
+                              cursor: 'pointer', textAlign: 'left',
+                              color: 'rgba(235,242,255,0.9)',
+                              opacity: notif.read ? 0.7 : 1,
+                              transition: 'background 150ms, opacity 150ms',
+                            }}
                           >
-                            <div className="client-notif-dot-wrap">
-                              {!notif.read && <span className="client-notif-dot" />}
+                            {/* Unread dot */}
+                            <div style={{ width: 8, flexShrink: 0, paddingTop: 4, display: 'flex', justifyContent: 'center' }}>
+                              {!notif.read && (
+                                <span style={{
+                                  width: 7, height: 7, borderRadius: '50%',
+                                  background: '#3b82f6',
+                                  boxShadow: '0 0 6px rgba(59,130,246,0.6)',
+                                  display: 'block', flexShrink: 0,
+                                }} />
+                              )}
                             </div>
-                            <div className="client-notif-body">
-                              <p className="client-notif-title">{notif.title}</p>
-                              <p className="client-notif-msg">{notif.message}</p>
-                              <div className="client-notif-footer">
+                            {/* Content */}
+                            <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 2 }}>
+                              <p style={{
+                                margin: 0, fontSize: 12.5, fontWeight: 600,
+                                color: 'rgba(235,242,255,0.95)',
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                              }}>{notif.title}</p>
+                              <p style={{
+                                margin: 0, fontSize: 11.5,
+                                color: 'rgba(148,163,184,0.85)',
+                                lineHeight: 1.45,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}>{notif.message}</p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
                                 {notif.meta && (
-                                  <span className="client-notif-meta">{notif.meta}</span>
+                                  <span style={{
+                                    fontSize: 10,
+                                    background: 'rgba(59,130,246,0.15)',
+                                    color: '#60a5fa',
+                                    border: '1px solid rgba(59,130,246,0.2)',
+                                    borderRadius: 4, padding: '1px 5px', fontWeight: 600,
+                                  }}>{notif.meta}</span>
                                 )}
-                                <span className="client-notif-time">
+                                <span style={{
+                                  fontSize: 10, color: 'rgba(148,163,184,0.45)', marginLeft: 'auto',
+                                }}>
                                   {formatTimeAgo(notif.createdAt)}
                                 </span>
                               </div>
@@ -534,23 +709,33 @@ export function ClientLayout() {
                       )}
                     </div>
 
-                    {notifications.length > 10 && (
-                      <div className="client-notif-footer-row">
+                    {/* View all footer */}
+                    {notifications.length > 0 && (
+                      <div style={{
+                        padding: '8px 10px 10px',
+                        borderTop: '1px solid rgba(255,255,255,0.07)',
+                        flexShrink: 0,
+                      }}>
                         <button
                           type="button"
-                          className="client-notif-view-all"
-                          onClick={() => {
-                            setNotifOpen(false)
-                            const target =
-                              role === 'TRAINING_PROVIDER' ? '/training/requests' : getDashboardPathForRole(role)
-                            guardedNavigate(target)
+                          onClick={() => { setNotifOpen(false); setNotifModalOpen(true) }}
+                          style={{
+                            width: '100%',
+                            background: 'rgba(59,130,246,0.08)',
+                            border: '1px solid rgba(59,130,246,0.18)',
+                            color: '#60a5fa', fontSize: 12.5, fontWeight: 600,
+                            borderRadius: 9, padding: '9px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                           }}
                         >
-                          View all {notifications.length} notifications
+                          <Bell size={13}/>
+                          View all {notifications.length} notification{notifications.length !== 1 ? 's' : ''} →
                         </button>
                       </div>
                     )}
                   </div>
+                  </>,
+                  document.body
                 )}
               </div>
             </div>
@@ -600,6 +785,228 @@ export function ClientLayout() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── All Notifications Modal ── */}
+      {notifModalOpen && ReactDOM.createPortal(
+        <div
+          onClick={() => setNotifModalOpen(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 10000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 520,
+              maxHeight: '60vh',
+              display: 'flex', flexDirection: 'column',
+              background: '#0d1225',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 20,
+              boxShadow: '0 32px 96px rgba(0,0,0,0.7)',
+              overflow: 'hidden',
+              animation: 'notif-panel-in 0.22s cubic-bezier(0.16,1,0.3,1) both',
+            }}
+          >
+            {/* Modal header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '18px 20px 14px',
+              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              flexShrink: 0,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: 'rgba(59,130,246,0.12)',
+                  border: '1px solid rgba(59,130,246,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#60a5fa', flexShrink: 0,
+                }}>
+                  <Bell size={16} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: 'rgba(235,242,255,0.97)' }}>All Notifications</div>
+                  <div style={{ fontSize: 11, color: 'rgba(148,163,184,0.6)', marginTop: 1 }}>
+                    {notifications.length} total · {unreadCount} unread
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => markAllRead()}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      fontSize: 11, color: '#60a5fa',
+                      background: 'rgba(96,165,250,0.08)',
+                      border: '1px solid rgba(96,165,250,0.2)',
+                      borderRadius: 7, padding: '5px 10px',
+                      cursor: 'pointer', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Check size={11} /> Mark all read
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setNotifModalOpen(false)}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(148,163,184,0.8)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal list */}
+            <div style={{
+              flex: 1, overflowY: 'auto', padding: '10px 12px',
+              display: 'flex', flexDirection: 'column', gap: 6,
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(255,255,255,0.08) transparent',
+            }}>
+              {notifications.length === 0 ? (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', gap: 10, padding: '60px 20px',
+                  color: 'rgba(148,163,184,0.5)',
+                }}>
+                  <Bell size={36} style={{ opacity: 0.25 }} />
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'rgba(148,163,184,0.7)' }}>
+                    You're all caught up!
+                  </p>
+                  <span style={{ fontSize: 12 }}>No notifications yet</span>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <button
+                    key={notif.id}
+                    type="button"
+                    onClick={() => { setNotifModalOpen(false); handleNotifClick(notif) }}
+                    style={{
+                      width: '100%',
+                      display: 'flex', alignItems: 'flex-start', gap: 12,
+                      padding: '12px 12px 12px 10px',
+                      borderRadius: 12,
+                      border: notif.read
+                        ? '1px solid rgba(255,255,255,0.04)'
+                        : '1px solid rgba(96,165,250,0.15)',
+                      background: notif.read
+                        ? 'rgba(255,255,255,0.02)'
+                        : 'rgba(96,165,250,0.07)',
+                      cursor: 'pointer', textAlign: 'left',
+                      color: 'rgba(235,242,255,0.9)',
+                      opacity: notif.read ? 0.65 : 1,
+                      transition: 'background 150ms, opacity 150ms',
+                    }}
+                  >
+                    {/* Dot indicator */}
+                    <div style={{ paddingTop: 5, width: 10, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                      {!notif.read ? (
+                        <span style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#3b82f6',
+                          boxShadow: '0 0 6px rgba(59,130,246,0.7)',
+                          display: 'block',
+                        }} />
+                      ) : (
+                        <span style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: 'rgba(148,163,184,0.2)',
+                          display: 'block',
+                        }} />
+                      )}
+                    </div>
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        margin: '0 0 3px', fontSize: 13, fontWeight: notif.read ? 500 : 700,
+                        color: notif.read ? 'rgba(148,163,184,0.8)' : 'rgba(235,242,255,0.97)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>{notif.title}</p>
+                      <p style={{
+                        margin: '0 0 6px', fontSize: 12,
+                        color: 'rgba(148,163,184,0.8)', lineHeight: 1.5,
+                      }}>{notif.message}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {notif.meta && (
+                          <span style={{
+                            fontSize: 10,
+                            background: 'rgba(59,130,246,0.15)',
+                            color: '#60a5fa',
+                            border: '1px solid rgba(59,130,246,0.2)',
+                            borderRadius: 4, padding: '2px 6px', fontWeight: 700,
+                          }}>{notif.meta}</span>
+                        )}
+                        <span style={{
+                          fontSize: 10.5, color: 'rgba(148,163,184,0.4)', marginLeft: 'auto',
+                        }}>{formatTimeAgo(notif.createdAt)}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div style={{
+              padding: '12px 16px 16px',
+              borderTop: '1px solid rgba(255,255,255,0.07)',
+              flexShrink: 0, display: 'flex', gap: 8,
+            }}>
+              {role === 'TRAINING_PROVIDER' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotifModalOpen(false)
+                    guardedNavigate('/training/requests')
+                  }}
+                  style={{
+                    flex: 1,
+                    background: 'rgba(59,130,246,0.1)',
+                    border: '1px solid rgba(59,130,246,0.22)',
+                    color: '#60a5fa', fontSize: 13, fontWeight: 700,
+                    borderRadius: 10, padding: '10px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Go to Requests →
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setNotifModalOpen(false)}
+                style={{
+                  flex: role === 'TRAINING_PROVIDER' ? '0 0 auto' : 1,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(148,163,184,0.8)', fontSize: 13, fontWeight: 600,
+                  borderRadius: 10,
+                  padding: role === 'TRAINING_PROVIDER' ? '10px 16px' : '10px',
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

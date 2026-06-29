@@ -5667,8 +5667,8 @@ audio.evidence-media {
 
 .bell-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: -4px;
+  right: -5px;
   min-width: 16px;
   height: 16px;
   border-radius: 999px;
@@ -5683,10 +5683,36 @@ audio.evidence-media {
   padding: 0 3px;
   line-height: 1;
   pointer-events: none;
+  z-index: 1;
+}
+
+/* Bell button must be position:relative so the badge anchors to the icon */
+.topbar-bell-wrap > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(148, 163, 184, 0.8);
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+  flex-shrink: 0;
+}
+
+.topbar-bell-wrap > button:hover {
+  background: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.2);
 }
 
 .bell-btn-active {
+  background: rgba(96, 165, 250, 0.12) !important;
   color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.25) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -5694,12 +5720,21 @@ audio.evidence-media {
 ───────────────────────────────────────────────────────────────── */
 
 .client-notif-popover {
+  /* floating panel — must be absolutely positioned relative to .topbar-bell-wrap */
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
   width: 360px;
   max-height: 520px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0 !important;
+  background: #0f1528;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.55);
+  z-index: 200;
 }
 
 .client-notif-header {
@@ -6099,6 +6134,28 @@ audio.evidence-media {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notif-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notif-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

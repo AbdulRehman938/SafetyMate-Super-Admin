@@ -336,7 +336,7 @@ export function RequestsPage({
                     </div>
                     <div className="prov-company-info">
                       <span className="prov-company-name">{req.company}</span>
-                      <span className="prov-company-req-id">Req ID: {req.reqId || '#TQ-00000'}</span>
+                      <span className="prov-company-req-id">Req ID: {typeof req.reqId === 'string' ? req.reqId : '#TQ-00000'}</span>
                     </div>
                   </div>
 
@@ -353,7 +353,26 @@ export function RequestsPage({
 
                   {/* Dates */}
                   <div className="prov-dates-cell">
-                    <span className="prov-dates-primary">{req.preferredDate}</span>
+                    <span className="prov-dates-primary">
+                      {(() => {
+                        if (!req.preferredDate) return 'TBD'
+                        if (typeof req.preferredDate?.toDate === 'function') {
+                          return req.preferredDate.toDate().toLocaleDateString()
+                        }
+                        if (typeof req.preferredDate === 'object' && req.preferredDate.seconds !== undefined) {
+                          // Handle Firestore Timestamp object (may be serialized)
+                          return new Date(req.preferredDate.seconds * 1000).toLocaleDateString()
+                        }
+                        if (typeof req.preferredDate === 'string') {
+                          return req.preferredDate
+                        }
+                        if (typeof req.preferredDate === 'number') {
+                          return new Date(req.preferredDate).toLocaleDateString()
+                        }
+                        // Fallback for any other type
+                        return 'TBD'
+                      })()}
+                    </span>
                     <span className="prov-dates-sub">{req.timeDetail || 'TBD'}</span>
                   </div>
 

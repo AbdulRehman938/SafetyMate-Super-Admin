@@ -63,22 +63,57 @@ export function useTrainingData() {
   const [organizations, setOrganizations] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // ── Sync training_requests from Firestore ─────────────────
+  // ── Sync requests from files_documents ONLY ──────────────────────────
   useEffect(() => {
-    const q = query(collection(db, 'training_requests'))
     const unsub = onSnapshot(
-      q,
+      query(collection(db, 'files_documents')),
       (snap) => {
-        setRequests(snap.docs.map(mapTrainingRequest))
+        const toDateStr = (val) => {
+          if (!val) return 'TBD'
+          if (typeof val.toDate === 'function') return val.toDate().toLocaleDateString()
+          const parsed = new Date(val)
+          return isNaN(parsed) ? String(val) : parsed.toLocaleDateString()
+        }
+
+        const mapped = snap.docs
+          .filter((d) => d.data().category === 'TRAINING_REQUEST')
+          .map((d) => {
+            const data = d.data()
+            const mappedReq = {
+              id:            d.id,
+              firestoreId:   d.id,
+              _collection:   'files_documents',
+              company:       data.companyName    || data.company        || data.clientName       || data.organizationName || '—',
+              clientId:      data.organizationId  || data.clientId       || '',
+              reqId:         data.documentId     || data.reqId          || `#${d.id.slice(0, 8).toUpperCase()}`,
+              course:        data.requestedCourse || data.course         || data.courseName       || data.documentType     || data.title    || '—',
+              workers:       !isNaN(parseInt(data.workers, 10)) ? parseInt(data.workers, 10) : (data.workerCount || data.numberOfWorkers || 0),
+              preferredDate: data.preferredDate  || toDateStr(data.requestedDate || data.createdAt),
+              startDate:     data.startDate      || '',
+              endDate:       data.endDate        || '',
+              timeDetail:    data.preferredTime  || data.timeDetail     || data.time             || '',
+              status:        data.status === 'SUBMITTED' ? 'pending' : (data.status || 'pending'),
+              classroom:     data.classroom      || '',
+              instructor:    data.instructor     || '',
+              priority:      data.priority       || 'Active',
+              source:        'files_documents',
+            }
+            console.log('Mapped request:', mappedReq.id, 'status:', mappedReq.status, 'original status:', data.status)
+            return mappedReq
+          })
+
+        console.log('Total mapped requests:', mapped.length)
+        setRequests(mapped)
         setLoading(false)
       },
       (err) => {
-        console.warn('Firestore training_requests unavailable:', err.message)
+        console.warn('Firestore files_documents unavailable:', err.message)
         setLoading(false)
       },
     )
     return () => unsub()
   }, [])
+
 
   // ── Sync training_sessions from Firestore (provider-scheduled) ─────────────────
   useEffect(() => {
@@ -200,10 +235,19 @@ export function useTrainingData() {
     }
   }
 
+  // Helper — resolve which Firestore collection a request lives in
+  function collectionForRequest(id) {
+    const req = requests.find((r) => r.id === id)
+    return req?._collection || 'files_documents'  // default to primary source
+  }
+
   const handleAccept = async (id) => {
+    const col = collectionForRequest(id)
+    console.log('handleAccept called with id:', id, 'collection:', col)
     try {
-      await updateDoc(doc(db, 'training_requests', id), { status: 'approved' })
+      await updateDoc(doc(db, col, id), { status: 'approved' })
       await markRequestNotificationsRead(id)
+      console.log('Successfully approved request:', id)
     } catch (err) {
       console.warn('Could not update status to approved:', err.message)
       throw err
@@ -211,8 +255,9 @@ export function useTrainingData() {
   }
 
   const handleReject = async (id) => {
+    const col = collectionForRequest(id)
     try {
-      await updateDoc(doc(db, 'training_requests', id), { status: 'rejected' })
+      await updateDoc(doc(db, col, id), { status: 'rejected' })
       await markRequestNotificationsRead(id)
     } catch (err) {
       console.warn('Could not update status to rejected:', err.message)
@@ -226,8 +271,9 @@ export function useTrainingData() {
     const errors = []
 
     for (const id of selectedIds) {
+      const col = collectionForRequest(id)
       try {
-        await updateDoc(doc(db, 'training_requests', id), { status: 'approved' })
+        await updateDoc(doc(db, col, id), { status: 'approved' })
         await markRequestNotificationsRead(id)
         successCount++
       } catch (err) {
@@ -246,8 +292,9 @@ export function useTrainingData() {
     const errors = []
 
     for (const id of selectedIds) {
+      const col = collectionForRequest(id)
       try {
-        await updateDoc(doc(db, 'training_requests', id), { status: 'rejected' })
+        await updateDoc(doc(db, col, id), { status: 'rejected' })
         await markRequestNotificationsRead(id)
         successCount++
       } catch (err) {
@@ -296,15 +343,16 @@ export function useTrainingData() {
 
   const handleUpdateDeployment = async (id, updates) => {
     try {
-      // Try to update in training_sessions first (provider-scheduled)
+      // Try training_sessions first (provider-scheduled)
       const sessionRef = doc(db, 'training_sessions', id)
       const sessionSnap = await getDoc(sessionRef)
-      
+
       if (sessionSnap.exists()) {
         await updateDoc(sessionRef, updates)
       } else {
-        // Fall back to training_requests (client requests)
-        await updateDoc(doc(db, 'training_requests', id), updates)
+        // Fall back to whichever collection this request came from
+        const col = collectionForRequest(id)
+        await updateDoc(doc(db, col, id), updates)
       }
     } catch (err) {
       console.error('Failed to update deployment:', err)
@@ -415,6 +463,48 @@ export function useTrainingData() {
     }
   }
 
+  // ── Force re-fetch from server (bypasses onSnapshot cache) ──
+  async function refetchRequests() {
+    try {
+      const { getDocsFromServer } = await import('firebase/firestore')
+      const snap = await getDocsFromServer(query(collection(db, 'files_documents')))
+      const toDateStr = (val) => {
+        if (!val) return 'TBD'
+        if (typeof val.toDate === 'function') return val.toDate().toLocaleDateString()
+        const parsed = new Date(val)
+        return isNaN(parsed) ? String(val) : parsed.toLocaleDateString()
+      }
+      const mapped = snap.docs
+        .filter((d) => d.data().category === 'TRAINING_REQUEST')
+        .map((d) => {
+          const data = d.data()
+          return {
+            id:            d.id,
+            firestoreId:   d.id,
+            _collection:   'files_documents',
+            company:       data.companyName    || data.company        || data.clientName       || data.organizationName || '—',
+            clientId:      data.organizationId  || data.clientId       || '',
+            reqId:         data.documentId     || data.reqId          || `#${d.id.slice(0, 8).toUpperCase()}`,
+            course:        data.requestedCourse || data.course         || data.courseName       || data.documentType     || data.title    || '—',
+            workers:       !isNaN(parseInt(data.workers, 10)) ? parseInt(data.workers, 10) : (data.workerCount || data.numberOfWorkers || 0),
+            preferredDate: data.preferredDate  || toDateStr(data.requestedDate || data.createdAt),
+            startDate:     data.startDate      || '',
+            endDate:       data.endDate        || '',
+            timeDetail:    data.preferredTime  || data.timeDetail     || data.time             || '',
+            status:        data.status === 'SUBMITTED' ? 'pending' : (data.status || 'pending'),
+            classroom:     data.classroom      || '',
+            instructor:    data.instructor     || '',
+            priority:      data.priority       || 'Active',
+            source:        'files_documents',
+          }
+        })
+      setRequests(mapped)
+    } catch (err) {
+      console.warn('Manual refetch failed:', err.message)
+      throw err
+    }
+  }
+
   return {
     requests,
     sessions,
@@ -422,6 +512,7 @@ export function useTrainingData() {
     employees,
     organizations,
     loading,
+    refetchRequests,
     handleAccept,
     handleReject,
     handleBulkApprove,
