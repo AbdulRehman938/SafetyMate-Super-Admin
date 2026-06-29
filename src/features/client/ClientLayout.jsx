@@ -225,8 +225,14 @@ export function ClientLayout() {
           <div className="fleet-sidebar-brand" style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', marginBottom: '16px', overflow: 'hidden' }}>
             {!(role === 'FLEET' && sidebarCollapsed) ? (
               <>
-                <div className="fleet-brand-main" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.08em', color: '#ffffff', lineHeight: 1.2, whiteSpace: 'nowrap' }}>SAFETY MATE</div>
-                <div className="fleet-brand-sub" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: 'rgba(148, 163, 184, 0.5)', marginTop: '4px', whiteSpace: 'nowrap' }}>FLEET DASHBOARD</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <img src="/logo.png" alt="SafetyMate" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    <span style={{ color: '#ff8a1c' }}>Safety</span>
+                    <span style={{ color: '#2a7bd6' }}>Mate</span>
+                  </p>
+                </div>
+                <div className="fleet-brand-sub" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', color: 'rgba(148, 163, 184, 0.5)', whiteSpace: 'nowrap' }}>FLEET DASHBOARD</div>
               </>
             ) : (
               <div className="fleet-brand-main" style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '0.08em', color: '#ffffff', display: 'flex', justifyContent: 'center' }}>SM</div>
@@ -432,16 +438,6 @@ export function ClientLayout() {
                 >
                   <Menu size={16} />
                 </button>
-                
-                {/* Logo and Brand */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <img src="/logo.png" alt="SafetyMate" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                    <span style={{ color: '#ff8a1c' }}>Safety</span>
-                    <span style={{ color: '#2a7bd6' }}>Mate</span>
-                  </p>
-                </div>
-
                 <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
                   {getGreeting()}
                 </span>

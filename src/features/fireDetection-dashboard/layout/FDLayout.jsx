@@ -73,7 +73,13 @@ export function FDLayout() {
 
         {/* Brand */}
         <div className="fd-brand">
-          <p className="fd-brand-name">SAFETY MATE</p>
+          <div className="fd-brand-row">
+            <img className="fd-brand-logo" src="/logo.png" alt="SafetyMate" />
+            <p className="fd-brand-text">
+              <span className="fd-brand-safety">Safety</span>
+              <span className="fd-brand-mate">Mate</span>
+            </p>
+          </div>
           <p className="fd-brand-sub">FIRE DASHBOARD</p>
           <p className="fd-brand-icon">SM</p>
         </div>
@@ -148,15 +154,6 @@ export function FDLayout() {
           >
             <Menu size={16} />
           </button>
-
-          {/* Logo and Brand */}
-          <div className="fd-topbar-brand">
-            <img className="fd-topbar-logo" src="/logo.png" alt="SafetyMate" />
-            <p className="fd-topbar-brand-text">
-              <span className="fd-topbar-brand-safety">Safety</span>
-              <span className="fd-topbar-brand-mate">Mate</span>
-            </p>
-          </div>
 
           <span className="fd-topbar-greeting">{getGreeting(displayName)}</span>
           <span className="fd-topbar-sep">|</span>

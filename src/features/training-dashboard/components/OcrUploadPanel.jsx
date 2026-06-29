@@ -33,11 +33,12 @@ function matchEmployeeByName(name, employees) {
 }
 
 export function OcrUploadPanel({ onConfirm, employees, organizations, trainingRequestId = null }) {
-  const [ocrState, setOcrState] = useState('idle') // idle | processing | review
+  const [ocrState, setOcrState] = useState('idle') // idle | processing | review | manual
   const [dragOver, setDragOver] = useState(false)
   const [extracted, setExtracted] = useState(null)
   const [uploadedFile, setUploadedFile] = useState(null)
   const [ocrError, setOcrError] = useState(null)
+  const [manualData, setManualData] = useState({ name: '', course: '', expiry: '' })
   const inputRef = useRef(null)
 
   async function processOcr(file) {
@@ -68,20 +69,39 @@ export function OcrUploadPanel({ onConfirm, employees, organizations, trainingRe
       let data
       try {
         data = await response.json()
+        console.log('OCR API Response:', data)
       } catch {
-        throw new Error(`OCR API returned invalid JSON (${response.status})`)
+        const text = await response.text()
+        console.error('OCR API non-JSON response:', text)
+        throw new Error(`OCR API returned invalid JSON (${response.status}): ${text}`)
       }
 
       if (!response.ok || data.error) {
-        throw new Error(data.error || `OCR request failed (${response.status})`)
+        console.error('OCR API Error:', data)
+        throw new Error(data.error || data.message || `OCR request failed (${response.status})`)
       }
 
       const ocrName = (data.name || '').trim()
       const ocrCourse = (data.course || '').trim()
       const ocrExpiry = (data.expiry || '').trim()
 
+      // If OCR couldn't extract required fields, show error with options
       if (!ocrName || !ocrCourse || !ocrExpiry) {
-        throw new Error('OCR did not return name, course, and expiry. Please try a clearer scan.')
+        const missingFields = []
+        if (!ocrName) missingFields.push('name')
+        if (!ocrCourse) missingFields.push('course')
+        if (!ocrExpiry) missingFields.push('expiry')
+
+        setOcrError({
+          title: 'OCR Extraction Incomplete',
+          message: `Could not extract: ${missingFields.join(', ')}. The certificate may be unclear or in an unsupported format.`,
+          allowRetry: true,
+          allowManual: true,
+          partialData: { name: ocrName, course: ocrCourse, expiry: ocrExpiry },
+        })
+        setOcrState('idle')
+        setUploadedFile(null)
+        return
       }
 
       const matchedEmp = matchEmployeeByName(ocrName, employees)
@@ -161,11 +181,29 @@ export function OcrUploadPanel({ onConfirm, employees, organizations, trainingRe
     setExtracted(null)
     setUploadedFile(null)
     setOcrError(null)
+    setManualData({ name: '', course: '', expiry: '' })
     if (inputRef.current) inputRef.current.value = ''
   }
 
+  function handleRetry() {
+    setOcrError(null)
+    if (uploadedFile) {
+      processOcr(uploadedFile)
+    }
+  }
+
+  function handleManualEntry() {
+    setOcrError(null)
+    setManualData({
+      name: ocrError?.partialData?.name || '',
+      course: ocrError?.partialData?.course || '',
+      expiry: ocrError?.partialData?.expiry || '',
+    })
+    setOcrState('manual')
+  }
+
   function confirm() {
-    if (!extracted || !uploadedFile) {
+    if (!uploadedFile) {
       setOcrError({
         title: 'Missing File',
         message: 'Certificate file was lost. Please upload again.',
@@ -173,11 +211,81 @@ export function OcrUploadPanel({ onConfirm, employees, organizations, trainingRe
       return
     }
 
-    onConfirm({ ...extracted, file: uploadedFile })
-    setOcrState('idle')
-    setExtracted(null)
-    setUploadedFile(null)
-    if (inputRef.current) inputRef.current.value = ''
+    let finalName, finalCourse, finalExpiry, finalExpiryDisplay
+
+    if (ocrState === 'manual') {
+      // Manual entry mode
+      finalName = manualData.name.trim()
+      finalCourse = manualData.course.trim()
+      const expiryInput = manualData.expiry.trim()
+
+      if (!finalName || !finalCourse || !expiryInput) {
+        setOcrError({
+          title: 'Missing Fields',
+          message: 'Please fill in all required fields: name, course, and expiry date.',
+        })
+        return
+      }
+
+      const parsedDate = parseExpiryDate(expiryInput)
+      if (!parsedDate) {
+        setOcrError({
+          title: 'Invalid Date',
+          message: 'Could not parse expiry date. Expected format YYYY-MM-DD.',
+        })
+        return
+      }
+      if (parsedDate < new Date()) {
+        setOcrError({
+          title: 'Certificate Expired',
+          message: `The certificate expired on ${formatReadableDate(parsedDate)}. Expired certificates cannot be registered.`,
+        })
+        return
+      }
+
+      finalExpiry = parsedDate
+      finalExpiryDisplay = formatReadableDate(parsedDate)
+    } else {
+      // OCR extraction mode
+      if (!extracted) {
+        setOcrError({
+          title: 'Missing Data',
+          message: 'Extracted data was lost. Please upload again.',
+        })
+        return
+      }
+      finalName = extracted.name
+      finalCourse = extracted.course
+      finalExpiry = extracted.rawExpiryDate
+      finalExpiryDisplay = extracted.expiry
+    }
+
+    // Match employee
+    const matchedEmp = matchEmployeeByName(finalName, employees)
+    if (!matchedEmp) {
+      setOcrError({
+        title: 'Candidate Not Found',
+        message: `Could not match "${finalName}" to any workforce member in the database.`,
+      })
+      return
+    }
+
+    const org = organizations.find((o) => o.id === matchedEmp.organizationId)
+    const orgName = org?.name || '—'
+
+    onConfirm({
+      name: matchedEmp.fullName,
+      email: matchedEmp.email || '',
+      uid: matchedEmp.uid,
+      orgId: matchedEmp.organizationId || '',
+      orgName,
+      course: finalCourse,
+      expiry: finalExpiryDisplay,
+      rawExpiryDate: finalExpiry,
+      trainingRequestId,
+      file: uploadedFile,
+    })
+    discard()
   }
 
   return (
@@ -225,6 +333,76 @@ export function OcrUploadPanel({ onConfirm, employees, organizations, trainingRe
                   </button>
                   <button type="button" className="prov-btn-discard" onClick={discard}>
                     Discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : ocrState === 'manual' ? (
+            <div style={{ width: '100%' }}>
+              <div className="prov-ocr-review">
+                <p className="prov-ocr-review-title">📝 Manual Entry — Fill Certificate Details</p>
+                <div className="prov-ocr-fields">
+                  <div className="prov-ocr-field">
+                    <span className="prov-ocr-field-label">Candidate Name</span>
+                    <input
+                      type="text"
+                      value={manualData.name}
+                      onChange={(e) => setManualData({ ...manualData, name: e.target.value })}
+                      placeholder="Enter full name"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: 'rgba(8, 13, 26, 0.5)',
+                        color: '#fff',
+                        fontSize: '13px',
+                        width: '100%',
+                      }}
+                    />
+                  </div>
+                  <div className="prov-ocr-field">
+                    <span className="prov-ocr-field-label">Course Name</span>
+                    <input
+                      type="text"
+                      value={manualData.course}
+                      onChange={(e) => setManualData({ ...manualData, course: e.target.value })}
+                      placeholder="Enter course name"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: 'rgba(8, 13, 26, 0.5)',
+                        color: '#fff',
+                        fontSize: '13px',
+                        width: '100%',
+                      }}
+                    />
+                  </div>
+                  <div className="prov-ocr-field">
+                    <span className="prov-ocr-field-label">Expiry Date (YYYY-MM-DD)</span>
+                    <input
+                      type="text"
+                      value={manualData.expiry}
+                      onChange={(e) => setManualData({ ...manualData, expiry: e.target.value })}
+                      placeholder="e.g., 2025-12-31"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                        background: 'rgba(8, 13, 26, 0.5)',
+                        color: '#fff',
+                        fontSize: '13px',
+                        width: '100%',
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="prov-ocr-actions">
+                  <button type="button" className="prov-btn-confirm" onClick={confirm}>
+                    Confirm & Register
+                  </button>
+                  <button type="button" className="prov-btn-discard" onClick={discard}>
+                    Cancel
                   </button>
                 </div>
               </div>

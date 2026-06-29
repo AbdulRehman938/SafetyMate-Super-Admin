@@ -70,7 +70,13 @@ export function FELayout() {
 
         {/* Brand */}
         <div className="fe-brand">
-          <p className="fe-brand-name">SAFETY MATE</p>
+          <div className="fe-brand-row">
+            <img className="fe-brand-logo" src="/logo.png" alt="SafetyMate" />
+            <p className="fe-brand-text">
+              <span className="fe-brand-safety">Safety</span>
+              <span className="fe-brand-mate">Mate</span>
+            </p>
+          </div>
           <p className="fe-brand-sub">FIRE DASHBOARD</p>
           <p className="fe-brand-icon">SM</p>
         </div>
@@ -145,15 +151,6 @@ export function FELayout() {
           >
             <Menu size={16} />
           </button>
-
-          {/* Logo and Brand */}
-          <div className="fe-topbar-brand">
-            <img className="fe-topbar-logo" src="/logo.png" alt="SafetyMate" />
-            <p className="fe-topbar-brand-text">
-              <span className="fe-topbar-brand-safety">Safety</span>
-              <span className="fe-topbar-brand-mate">Mate</span>
-            </p>
-          </div>
 
           <span className="fe-topbar-greeting">{getGreeting(displayName)}</span>
           <span className="fe-topbar-sep">|</span>
