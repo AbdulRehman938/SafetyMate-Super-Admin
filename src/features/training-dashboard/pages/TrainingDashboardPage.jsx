@@ -8,6 +8,7 @@ import { CertificatesPage } from './CertificatesPage.jsx'
 export function TrainingDashboardPage({ view = 'overview' }) {
   const {
     requests,
+    sessions,
     competencies,
     employees,
     organizations,
@@ -63,13 +64,21 @@ export function TrainingDashboardPage({ view = 'overview' }) {
   }
 
   const handleBulkApproveAction = async () => {
-    await handleBulkApprove(selectedRequests)
+    const result = await handleBulkApprove(selectedRequests)
     setSelectedRequests([])
+    // Optionally show toast notification with result
+    if (result.failureCount > 0) {
+      console.warn(`Bulk approve: ${result.successCount} succeeded, ${result.failureCount} failed`)
+    }
   }
 
   const handleBulkRejectAction = async () => {
-    await handleBulkReject(selectedRequests)
+    const result = await handleBulkReject(selectedRequests)
     setSelectedRequests([])
+    // Optionally show toast notification with result
+    if (result.failureCount > 0) {
+      console.warn(`Bulk reject: ${result.successCount} succeeded, ${result.failureCount} failed`)
+    }
   }
 
   // ── Requests page filtering logic ──────────────────────────
@@ -88,7 +97,7 @@ export function TrainingDashboardPage({ view = 'overview' }) {
     } else if (filterTab === 'Pending') {
       if (r.status !== 'pending') return false
     } else if (filterTab === 'Approved') {
-      if (r.status !== 'approved' && r.status !== 'accepted') return false
+      if (r.status !== 'approved') return false
     } else if (filterTab === 'Completed') {
       if (r.status !== 'completed') return false
     } else if (filterTab === 'Rejected') {
@@ -104,6 +113,13 @@ export function TrainingDashboardPage({ view = 'overview' }) {
   const allFilteredIds = filteredRequests.map((r) => r.id)
   const availableCourses = Array.from(new Set(requests.map((r) => r.course).filter(Boolean))).sort()
 
+  // ── Refresh handler ───────────────────────────────────────
+  const handleRefresh = () => {
+    // Firestore already syncs in real-time via onSnapshot
+    // This is just for visual feedback to the user
+    return Promise.resolve()
+  }
+
   if (view === 'requests') {
     return (
       <RequestsPage
@@ -114,6 +130,7 @@ export function TrainingDashboardPage({ view = 'overview' }) {
         onReject={handleReject}
         onBulkApprove={handleBulkApproveAction}
         onBulkReject={handleBulkRejectAction}
+        onRefresh={handleRefresh}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         showSearch={showSearch}
@@ -139,6 +156,7 @@ export function TrainingDashboardPage({ view = 'overview' }) {
     return (
       <CalendarPage
         requests={requests}
+        sessions={sessions}
         organizations={organizations}
         employees={employees}
         onCreateDeployment={handleCreateDeployment}
@@ -170,6 +188,7 @@ export function TrainingDashboardPage({ view = 'overview' }) {
       onAccept={handleAccept}
       onReject={handleReject}
       onConfirmRegistration={handleConfirmRegistration}
+      onRefresh={handleRefresh}
     />
   )
 }

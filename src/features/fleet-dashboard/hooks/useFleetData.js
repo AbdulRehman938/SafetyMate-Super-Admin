@@ -130,7 +130,9 @@ export function useFleetData() {
       ...data,
       image: imageUrl,
       healthScore: data.healthScore ?? 100,
-      status: data.status ?? 'active',
+      status: data.status ?? 'inactive',
+      readyForAssign: false, // Vehicle not ready for assignment until inspected
+      isAssigned: false, // Vehicle not assigned to any site
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdBy: authUser?.uid ?? '',
@@ -157,15 +159,42 @@ export function useFleetData() {
     const vehicleDoc = await getDoc(doc(db, 'fleet_vehicles', id))
     const currentVehicle = vehicleDoc.data()
     
-    // If vehicle was approved, reset to pending when edited
+    // Build update data - only include image if it was provided
     const updateData = {
       ...data,
-      image: imageUrl,
       updatedAt: serverTimestamp(),
     }
     
+    // Only include image if it was provided (not undefined)
+    if (imageUrl !== undefined) {
+      updateData.image = imageUrl
+    }
+    
+    // If vehicle was approved, reset to pending when edited
     if (currentVehicle?.complianceStatus === 'Approved') {
       updateData.complianceStatus = 'Pending'
+    }
+    
+    // If site is being removed (set to null), set status to inactive
+    if (data.site === null && currentVehicle?.site) {
+      updateData.status = 'inactive'
+      updateData.crewAssigned = false
+      updateData.readyForAssign = false // Needs new inspection after being unassigned
+      updateData.isAssigned = false // No longer assigned
+    }
+    
+    // If site is being set (not null), mark as assigned
+    if (data.site && !currentVehicle?.site) {
+      // Vehicle is being assigned for the first time
+      updateData.isAssigned = true
+      if (currentVehicle?.complianceStatus === 'Approved') {
+        updateData.status = 'active'
+        updateData.crewAssigned = true
+        updateData.readyForAssign = false
+      }
+    } else if (data.site && currentVehicle?.site && data.site !== currentVehicle?.site) {
+      // Vehicle is being reassigned to a different site
+      updateData.isAssigned = true
     }
     
     return updateDoc(doc(db, 'fleet_vehicles', id), updateData)
@@ -173,6 +202,35 @@ export function useFleetData() {
 
   const deleteVehicle = useCallback(async (id) => {
     return deleteDoc(doc(db, 'fleet_vehicles', id))
+  }, [])
+
+  // ── Vehicle Approval/Rejection ─────────────────────────────────────
+  const approveVehicle = useCallback(async (id) => {
+    // Check if vehicle has at least one inspection
+    const vehicleInspections = inspections.filter((i) => i.vehicleId === id)
+    if (vehicleInspections.length === 0) {
+      throw new Error('Vehicle must complete at least one inspection before being approved.')
+    }
+    
+    // Check if vehicle is currently in maintenance
+    const vehicle = vehicles.find((v) => v.id === id)
+    if (vehicle?.status === 'maintenance') {
+      throw new Error('Vehicle is currently under maintenance and cannot be approved. Please complete maintenance and pass inspection first.')
+    }
+    
+    return updateDoc(doc(db, 'fleet_vehicles', id), {
+      complianceStatus: 'Approved',
+      status: 'inactive', // Set to inactive after approval, not active
+      updatedAt: serverTimestamp(),
+    })
+  }, [inspections, vehicles])
+
+  const rejectVehicle = useCallback(async (id) => {
+    return updateDoc(doc(db, 'fleet_vehicles', id), {
+      complianceStatus: 'Rejected',
+      status: 'suspended',
+      updatedAt: serverTimestamp(),
+    })
   }, [])
 
   // ── Inspection CRUD ─────────────────────────────────────────
@@ -218,6 +276,11 @@ export function useFleetData() {
 
   /** Finalise a draft: set status submitted + update vehicle */
   const finaliseInspection = useCallback(async (draftId, vehicleId, data) => {
+    // Get current vehicle status to determine post-inspection status
+    const vehicleDoc = await getDoc(doc(db, 'fleet_vehicles', vehicleId))
+    const currentVehicle = vehicleDoc.data()
+    const wasInMaintenance = currentVehicle?.status === 'maintenance'
+    
     if (draftId) {
       await updateDoc(doc(db, 'fleet_inspections', draftId), {
         ...data,
@@ -235,23 +298,83 @@ export function useFleetData() {
         createdBy: authUser?.uid ?? '',
       })
     }
+    
+    // Determine post-inspection status
+    let newStatus
+    let complianceStatus = currentVehicle?.complianceStatus || 'Pending'
+    let readyForAssign = currentVehicle?.readyForAssign ?? false
+    
+    if (data.outcome === 'fail') {
+      // Failed inspection → maintenance
+      newStatus = 'maintenance'
+      complianceStatus = 'Pending' // Reset to pending when failed
+    } else if (wasInMaintenance) {
+      // Passing inspection after maintenance → inactive (needs re-approval)
+      newStatus = 'inactive'
+      complianceStatus = 'Pending' // Reset to pending, requires re-approval
+    } else if (currentVehicle?.site) {
+      // Passing inspection and already assigned to site → active
+      newStatus = 'active'
+    } else {
+      // Passing inspection but not assigned → inactive
+      newStatus = 'inactive'
+    }
+    
+    // Set readyForAssign to true if inspection passed and vehicle is not assigned
+    // This means vehicle has been inspected and is ready for assignment
+    // Check both isAssigned and site for backward compatibility
+    const isNotAssigned = !currentVehicle?.isAssigned && !currentVehicle?.site
+    if (data.outcome !== 'fail' && isNotAssigned) {
+      readyForAssign = true
+    }
+    
     // update vehicle record with inspection data and odometer
     await updateDoc(doc(db, 'fleet_vehicles', vehicleId), {
       lastInspection: serverTimestamp(),
       mileageKm: data.currentKm,
-      status: data.outcome === 'fail' ? 'maintenance' : 'active',
+      status: newStatus,
+      complianceStatus,
+      readyForAssign,
       updatedAt: serverTimestamp(),
     })
   }, [authUser])
 
   // ── Fuel log CRUD ───────────────────────────────────────────
   const addFuelLog = useCallback(async (data) => {
+    // Find the vehicle to get unitId
+    const vehicle = vehicles.find(v => v.id === data.vehicleId)
+    const unitId = vehicle?.unitId || data.vehicleId
+    
+    let receiptUrl = null
+    
+    // If receipt is a base64 dataUrl, upload to Firebase Storage
+    if (data.receipt && data.receipt.startsWith('data:')) {
+      try {
+        // Convert base64 to blob
+        const response = await fetch(data.receipt)
+        const blob = await response.blob()
+        
+        // Generate filename
+        const fileName = `fuel_receipt_${Date.now()}_${data.vehicleId}`
+        const storageRef = ref(storage, `fuel_receipts/${fileName}`)
+        
+        // Upload to Storage
+        const snapshot = await uploadBytes(storageRef, blob)
+        receiptUrl = await getDownloadURL(snapshot.ref)
+      } catch (error) {
+        console.error('Failed to upload receipt:', error)
+        // Continue without receipt if upload fails
+      }
+    }
+    
     return addDoc(collection(db, 'fleet_fuel_logs'), {
       ...data,
+      receipt: receiptUrl, // Store Storage URL instead of base64
+      unitId: unitId, // Store unitId for proper vehicle identification
       loggedAt: serverTimestamp(),
       createdBy: authUser?.uid ?? '',
     })
-  }, [authUser])
+  }, [authUser, vehicles, storage])
 
   // ── Alert CRUD ──────────────────────────────────────────────
   const resolveAlert = useCallback(async (id) => {
@@ -295,5 +418,6 @@ export function useFleetData() {
     addFuelLog,
     resolveAlert, addAlert,
     refreshAlerts,
+    approveVehicle, rejectVehicle,
   }
 }

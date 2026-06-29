@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   ScanLine, X, ChevronLeft, ChevronRight,
   ClipboardList, Lock, Zap, Fuel, Wrench,
-  AlertTriangle, Camera, Search, SlidersHorizontal,
+  AlertTriangle, Search, SlidersHorizontal,
   CheckCircle, Clock, Play,
 } from 'lucide-react'
 import { useFleetData } from '../hooks/useFleetData.js'
@@ -62,36 +63,10 @@ function CircleGauge({ pct = 0, size = 46, strokeW = 4 }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   QR / VIN Scanner Modal
+   QR Code ID Input Modal
 ───────────────────────────────────────────────────────────── */
 function ScanModal({ vehicles, onClose, onSelect }) {
-  const videoRef  = useRef(null)
-  const streamRef = useRef(null)
-  const [camErr,   setCamErr]   = useState(null)
-  const [query,    setQuery]    = useState('')
-  const [laserY,   setLaserY]   = useState(30)
-  const [scanning, setScanning] = useState(false)
-
-  useEffect(() => {
-    let dead = false
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' } })
-      .then((stream) => {
-        if (dead) { stream.getTracks().forEach((t) => t.stop()); return }
-        streamRef.current = stream
-        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}) }
-      })
-      .catch((e) => { if (!dead) setCamErr(e.message || 'Camera unavailable') })
-    return () => { dead = true; streamRef.current?.getTracks().forEach((t) => t.stop()) }
-  }, [])
-
-  useEffect(() => {
-    if (camErr) return
-    let dir = 1
-    const id = setInterval(() => {
-      setLaserY((y) => { if (y >= 88) dir = -1; if (y <= 12) dir = 1; return y + dir * 1.6 })
-    }, 22)
-    return () => clearInterval(id)
-  }, [camErr])
+  const [query, setQuery] = useState('')
 
   const results = useMemo(() => {
     if (!query.trim()) return []
@@ -99,14 +74,15 @@ function ScanModal({ vehicles, onClose, onSelect }) {
     return vehicles.filter((v) =>
       (v.unitId || '').toLowerCase().includes(q) ||
       (v.vin    || '').toLowerCase().includes(q) ||
-      (v.model  || '').toLowerCase().includes(q)
+      (v.model  || '').toLowerCase().includes(q) ||
+      (v.vehicleId || '').toLowerCase().includes(q)
     ).slice(0, 6)
   }, [vehicles, query])
 
   function handleSearch() {
     if (!query.trim() || results.length === 0) return
-    setScanning(true)
-    setTimeout(() => { setScanning(false); onSelect(results[0]); onClose() }, 900)
+    onSelect(results[0])
+    onClose()
   }
 
   return (
@@ -115,64 +91,56 @@ function ScanModal({ vehicles, onClose, onSelect }) {
         <div className="insp-scan-head">
           <div className="insp-scan-icon-wrap"><ScanLine size={17} /></div>
           <div>
-            <p className="insp-scan-title">QR / VIN Scanner</p>
-            <p className="insp-scan-sub">Point camera at QR code or search manually</p>
+            <p className="insp-scan-title">Inspect with Code ID</p>
+            <p className="insp-scan-sub">Enter QR code ID or search manually</p>
           </div>
           <button type="button" className="insp-scan-close" onClick={onClose}><X size={14} /></button>
         </div>
-        <div className="insp-viewfinder">
-          {camErr ? (
-            <div className="insp-viewfinder-err">
-              <Camera size={36} style={{ opacity: 0.3 }} />
-              <p>{camErr}</p>
-              <span>Use the search below instead</span>
+        
+        <div style={{ padding: '24px' }}>
+          <div className="insp-scan-search-row" style={{ marginBottom: '16px' }}>
+            <div className="insp-scan-search-wrap">
+              <Search size={13} className="insp-scan-search-icon" />
+              <input type="text" className="insp-scan-search-input"
+                placeholder="Enter QR code ID, VIN, or Unit ID…" value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                autoFocus
+              />
             </div>
-          ) : (
-            <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <button type="button" className="insp-scan-btn" onClick={handleSearch} disabled={!query.trim()}>
+              <ScanLine size={13} /> SEARCH
+            </button>
+          </div>
+          
+          {results.length > 0 && (
+            <div className="insp-scan-results">
+              {results.map((v) => (
+                <button key={v.id} type="button" className="insp-scan-result-item"
+                  onClick={() => { onSelect(v); onClose() }}>
+                  <img src={v.image || '/vehicle car placeholder.png'} alt={v.unitId}
+                    onError={(e) => { e.target.src = '/vehicle car placeholder.png' }}
+                    style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                  <span className="insp-scan-result-id">{v.unitId || v.id}</span>
+                  <span className="insp-scan-result-model">{v.model || '—'} · {v.vehicleType || '—'}</span>
+                  <span className="insp-scan-result-badge" style={{
+                    background: v.status === 'maintenance' ? 'rgba(255,83,95,0.12)' : 'rgba(22,201,136,0.12)',
+                    color: v.status === 'maintenance' ? '#ff8080' : '#4deba0',
+                    border: `1px solid ${v.status === 'maintenance' ? 'rgba(255,83,95,0.25)' : 'rgba(22,201,136,0.25)'}`,
+                  }}>
+                    {v.status === 'maintenance' ? 'MAINTENANCE' : 'READY'}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
-          <div className="insp-vf-overlay" />
-          <div className="insp-vf-finder">
-            <span className="insp-vf-corner insp-vf-corner--tl" />
-            <span className="insp-vf-corner insp-vf-corner--tr" />
-            <span className="insp-vf-corner insp-vf-corner--bl" />
-            <span className="insp-vf-corner insp-vf-corner--br" />
-            <div className="insp-vf-laser" style={{ top: `${laserY}%` }} />
-          </div>
+          
+          {query.trim() && results.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(148,163,184,0.5)', fontSize: '13px' }}>
+              No vehicles found matching "{query}"
+            </div>
+          )}
         </div>
-        <div className="insp-scan-search-row">
-          <div className="insp-scan-search-wrap">
-            <Search size={13} className="insp-scan-search-icon" />
-            <input type="text" className="insp-scan-search-input"
-              placeholder="Type VIN, Unit ID or model…" value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
-          </div>
-          <button type="button" className="insp-scan-btn" onClick={handleSearch} disabled={scanning || !query.trim()}>
-            {scanning ? <span className="fleet-spinner" style={{ width: 13, height: 13 }} /> : <ScanLine size={13} />}
-            SCAN
-          </button>
-        </div>
-        {results.length > 0 && (
-          <div className="insp-scan-results">
-            {results.map((v) => (
-              <button key={v.id} type="button" className="insp-scan-result-item"
-                onClick={() => { onSelect(v); onClose() }}>
-                <img src={v.image || '/vehicle car placeholder.png'} alt={v.unitId}
-                  onError={(e) => { e.target.src = '/vehicle car placeholder.png' }}
-                  style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
-                <span className="insp-scan-result-id">{v.unitId || v.id}</span>
-                <span className="insp-scan-result-model">{v.model || '—'} · {v.vehicleType || '—'}</span>
-                <span className="insp-scan-result-badge" style={{
-                  background: v.status === 'maintenance' ? 'rgba(255,83,95,0.12)' : 'rgba(22,201,136,0.12)',
-                  color: v.status === 'maintenance' ? '#ff8080' : '#4deba0',
-                  border: `1px solid ${v.status === 'maintenance' ? 'rgba(255,83,95,0.25)' : 'rgba(22,201,136,0.25)'}`,
-                }}>
-                  {v.status === 'maintenance' ? 'MAINTENANCE' : 'READY'}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
@@ -181,12 +149,13 @@ function ScanModal({ vehicles, onClose, onSelect }) {
 /* ─────────────────────────────────────────────────────────────
    Vehicle Card
 ───────────────────────────────────────────────────────────── */
-function VehicleCard({ vehicle, openAlerts, inspectionMap, onStart }) {
+function VehicleCard({ vehicle, openAlerts, inspectionMap, onViewInspection, onResolveInspection, onStartInspection, onViewHistory }) {
   const critAlerts = openAlerts.filter(
     (a) => a.vehicleId === vehicle.id && a.severity === 'critical' && a.status !== 'resolved'
   )
   const isLocked    = vehicle.status === 'maintenance' || critAlerts.length > 0
   const isCritical  = critAlerts.length > 0
+  const isMaintenance = vehicle.status === 'maintenance'
   const health      = vehicle.healthScore ?? 100
   const fuel        = vehicle.fuelLevel   ?? null
   const healthColor = health >= 80 ? '#4deba0' : health >= 50 ? '#fe8e2a' : '#ff535f'
@@ -194,22 +163,37 @@ function VehicleCard({ vehicle, openAlerts, inspectionMap, onStart }) {
 
   /* inspection status for this vehicle today */
   const todayInsp = inspectionMap[vehicle.id]   // { status, outcome } or undefined
-  const isCleared    = todayInsp?.status === 'submitted'
+  const isCleared    = todayInsp?.status === 'submitted' && todayInsp?.outcome === 'pass'
+  const isFailed     = todayInsp?.status === 'submitted' && todayInsp?.outcome === 'fail'
   const isInProgress = todayInsp?.status === 'draft'
 
   /* badge label */
   let statusLabel = 'READY'
   let statusBg    = 'rgba(22,201,136,0.88)'
   let statusBdr   = '1px solid rgba(22,201,136,0.5)'
-  if (isLocked)      { statusLabel = 'CRITICAL'; statusBg = 'rgba(255,60,60,0.88)'; statusBdr = '1px solid rgba(255,83,95,0.5)' }
+  if (isCritical)   { statusLabel = 'CRITICAL'; statusBg = 'rgba(255,60,60,0.88)'; statusBdr = '1px solid rgba(255,83,95,0.5)' }
+  else if (isMaintenance) { statusLabel = 'MAINTENANCE'; statusBg = 'rgba(254,142,42,0.88)'; statusBdr = '1px solid rgba(254,142,42,0.5)' }
   else if (isCleared)    { statusLabel = 'CLEARED';  statusBg = 'rgba(58,130,255,0.88)'; statusBdr = '1px solid rgba(58,130,255,0.5)' }
+  else if (isFailed)     { statusLabel = 'NOT CLEARED'; statusBg = 'rgba(254,142,42,0.88)'; statusBdr = '1px solid rgba(254,142,42,0.5)' }
   else if (isInProgress) { statusLabel = 'DRAFT';    statusBg = 'rgba(254,142,42,0.88)'; statusBdr = '1px solid rgba(254,142,42,0.5)' }
 
   /* CTA label */
   let ctaLabel = 'Start Inspection'
   let ctaIcon  = <ClipboardList size={14} />
-  if (isCleared)    { ctaLabel = 'View Submitted'; ctaIcon = <CheckCircle size={14} /> }
+  if (isCleared || (isMaintenance && isFailed)) { ctaLabel = 'View Inspection'; ctaIcon = <CheckCircle size={14} /> }
+  if (isFailed && !isMaintenance) { ctaLabel = 'Resolve Inspection'; ctaIcon = <Wrench size={14} /> }
   if (isInProgress) { ctaLabel = 'Continue Inspection'; ctaIcon = <Play size={14} /> }
+
+  const handleStart = () => {
+    const inspection = inspectionMap[vehicle.id]
+    if (isCleared) {
+      onViewInspection(inspection)
+    } else if (isFailed) {
+      onResolveInspection(inspection)
+    } else {
+      onStartInspection(vehicle)
+    }
+  }
 
   return (
     <div className={`insp-card${isLocked ? ' insp-card--locked' : ''}${isCleared ? ' insp-card--cleared' : ''}`}>
@@ -259,14 +243,108 @@ function VehicleCard({ vehicle, openAlerts, inspectionMap, onStart }) {
           </div>
         </div>
 
-        {isLocked ? (
+        {isCritical ? (
           <div className="insp-card-locked-btn"><Lock size={13} /> LOCKED FOR REPAIR</div>
         ) : (
-          <button type="button"
-            className={`insp-card-start-btn${isCleared ? ' insp-card-start-btn--submitted' : isInProgress ? ' insp-card-start-btn--draft' : ''}`}
-            onClick={() => onStart(vehicle)}>
-            {ctaIcon} {ctaLabel}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {(isCleared || isFailed || isMaintenance) && (
+              <button 
+                type="button"
+                className="insp-card-history-btn"
+                onClick={() => onViewHistory(vehicle)}
+              >
+                <ClipboardList size={12} /> History
+              </button>
+            )}
+            <button type="button"
+              className={`insp-card-start-btn${isCleared ? ' insp-card-start-btn--submitted' : isInProgress ? ' insp-card-start-btn--draft' : ''}`}
+              onClick={handleStart}>
+              {ctaIcon} {ctaLabel}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Inspection History View
+───────────────────────────────────────────────────────────── */
+function InspectionHistoryView({ vehicle, inspections, onBack }) {
+  const vehicleInspections = inspections
+    .filter((i) => i.vehicleId === vehicle.id && i.status === 'submitted')
+    .sort((a, b) => {
+      const aDate = a.inspectedAt?.toDate ? a.inspectedAt.toDate() : new Date(a.inspectedAt || 0)
+      const bDate = b.inspectedAt?.toDate ? b.inspectedAt.toDate() : new Date(b.inspectedAt || 0)
+      return bDate - aDate
+    })
+
+  return (
+    <div className="fleet-subpage insp-page">
+      <div className="insp-header">
+        <div className="insp-header-text">
+          <button type="button" className="wiz-back-btn" onClick={onBack} style={{ marginBottom: '12px' }}>
+            <ArrowLeft size={16} /> Back
           </button>
+          <p className="insp-kicker"><Zap size={11} /> SAFETYMATE MODULE</p>
+          <h1 className="insp-title">Inspection History</h1>
+          <p className="insp-subtitle">
+            {vehicle.unitId} • {vehicle.model || 'Unknown Model'}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ padding: '28px' }}>
+        {vehicleInspections.length === 0 ? (
+          <div className="fleet-empty">
+            <div className="fleet-empty-icon">
+              <ClipboardList size={38} style={{ color: 'rgba(148,163,184,0.22)' }} />
+            </div>
+            <p className="fleet-empty-title">No inspection history</p>
+            <p className="fleet-empty-sub">
+              This vehicle has no completed inspections yet.
+            </p>
+          </div>
+        ) : (
+          <div className="insp-history-list">
+            {vehicleInspections.map((inspection) => {
+              const date = inspection.inspectedAt?.toDate ? inspection.inspectedAt.toDate() : new Date(inspection.inspectedAt || 0)
+              const isPass = inspection.outcome === 'pass'
+              const isFail = inspection.outcome === 'fail'
+              
+              return (
+                <div key={inspection.id} className="insp-history-item">
+                  <div className="insp-history-header">
+                    <div className="insp-history-date">
+                      {date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </div>
+                    <div className={`insp-history-badge ${isPass ? 'insp-history-badge--pass' : isFail ? 'insp-history-badge--fail' : ''}`}>
+                      {isPass ? 'CLEARED' : isFail ? 'NOT CLEARED' : 'CONDITIONAL'}
+                    </div>
+                  </div>
+                  <div className="insp-history-details">
+                    <div className="insp-history-detail">
+                      <span className="insp-history-label">Odometer:</span>
+                      <span className="insp-history-value">{inspection.currentKm?.toLocaleString() || '—'} KM</span>
+                    </div>
+                    <div className="insp-history-detail">
+                      <span className="insp-history-label">Inspector:</span>
+                      <span className="insp-history-value">{inspection.inspector || '—'}</span>
+                    </div>
+                    {inspection.notes && (
+                      <div className="insp-history-detail">
+                        <span className="insp-history-label">Defects:</span>
+                        <span className="insp-history-value insp-history-value--defect">
+                          {inspection.notes}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>
@@ -277,16 +355,31 @@ function VehicleCard({ vehicle, openAlerts, inspectionMap, onStart }) {
    InspectionLogPage — main export
 ───────────────────────────────────────────────────────────── */
 export function InspectionLogPage() {
+  const location = useLocation()
   const { vehicles, inspections, loading, openAlerts } = useFleetData()
 
   const [showScanner,   setShowScanner]  = useState(false)
   const [activeVehicle, setActive]       = useState(null)
+  const [viewInspection, setViewInspection] = useState(null)
+  const [resolveInspection, setResolveInspection] = useState(null)
+  const [historyVehicle, setHistoryVehicle] = useState(null)
   const [siteFilter,    setSiteFilter]   = useState('all')
   const [typeFilter,    setTypeFilter]   = useState('all')
   const [statusFilter,  setStatusFilter] = useState('all')
   const [showFilters,   setShowFilters]  = useState(false)
   const [page,          setPage]         = useState(1)
   const [isMobile,      setIsMobile]     = useState(() => window.matchMedia('(max-width: 960px)').matches)
+
+  // Check if a vehicleId was passed in navigation state (from AssignUnitPage)
+  useEffect(() => {
+    const vehicleId = location.state?.vehicleId
+    if (vehicleId && vehicles.length > 0) {
+      const vehicle = vehicles.find(v => v.id === vehicleId)
+      if (vehicle) {
+        setActive(vehicle)
+      }
+    }
+  }, [location.state, vehicles])
 
   // ── Responsive mobile detection ────────────────────────────────────
   useEffect(() => {
@@ -422,7 +515,26 @@ export function InspectionLogPage() {
     <InspectionWizardPage
       vehicle={activeVehicle}
       draftInspection={inspectionMap[activeVehicle.id]?.status === 'draft' ? inspectionMap[activeVehicle.id] : null}
-      onBack={() => setActive(null)}
+      onBack={() => {
+        setActive(null)
+        setViewInspection(null)
+        setResolveInspection(null)
+      }}
+      viewInspection={viewInspection}
+      resolveInspection={resolveInspection}
+      onNewInspection={() => {
+        setViewInspection(null)
+        setActive(activeVehicle)
+      }}
+    />
+  )
+
+  /* ── history view sub-page ── */
+  if (historyVehicle) return (
+    <InspectionHistoryView
+      vehicle={historyVehicle}
+      inspections={inspections}
+      onBack={() => setHistoryVehicle(null)}
     />
   )
 
@@ -440,7 +552,7 @@ export function InspectionLogPage() {
           </p>
         </div>
         <button type="button" className="insp-scan-trigger" onClick={() => setShowScanner(true)}>
-          <ScanLine size={16} /> Scan QR / VIN
+          <ScanLine size={16} /> Inspect with Code ID
         </button>
       </div>
 
@@ -533,7 +645,16 @@ export function InspectionLogPage() {
               vehicle={v}
               openAlerts={openAlerts}
               inspectionMap={inspectionMap}
-              onStart={setActive}
+              onViewInspection={(inspection) => {
+                setActive(v)
+                setViewInspection(inspection)
+              }}
+              onResolveInspection={(inspection) => {
+                setActive(v)
+                setResolveInspection(inspection)
+              }}
+              onStartInspection={(vehicle) => setActive(vehicle)}
+              onViewHistory={(vehicle) => setHistoryVehicle(vehicle)}
             />
           ))}
         </div>

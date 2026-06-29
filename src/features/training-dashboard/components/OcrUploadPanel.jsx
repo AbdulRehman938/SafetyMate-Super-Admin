@@ -1,13 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { CertificateTemplateDownloads } from './CertificateTemplateDownloads.jsx'
+import { parseExpiryDate, formatReadableDate } from '../utils/dateHelpers.js'
 
 const OCR_API_BASE = import.meta.env.VITE_OCR_API_URL || 'http://localhost:5000'
 const OCR_API_URL = `${OCR_API_BASE.replace(/\/$/, '')}/ocr`
-
-function fmtDate(d) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 function isValidFileType(file) {
   return (
@@ -18,16 +15,6 @@ function isValidFileType(file) {
     file.name.endsWith('.jpg') ||
     file.name.endsWith('.jpeg')
   )
-}
-
-function parseExpiryDate(expiryStr) {
-  if (!expiryStr) return null
-  const isoMatch = String(expiryStr).match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
-  if (isoMatch) {
-    return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10))
-  }
-  const parsed = new Date(expiryStr)
-  return isNaN(parsed.getTime()) ? null : parsed
 }
 
 function matchEmployeeByName(name, employees) {
@@ -45,7 +32,7 @@ function matchEmployeeByName(name, employees) {
   )
 }
 
-export function OcrUploadPanel({ onConfirm, employees, organizations }) {
+export function OcrUploadPanel({ onConfirm, employees, organizations, trainingRequestId = null }) {
   const [ocrState, setOcrState] = useState('idle') // idle | processing | review
   const [dragOver, setDragOver] = useState(false)
   const [extracted, setExtracted] = useState(null)
@@ -122,7 +109,7 @@ export function OcrUploadPanel({ onConfirm, employees, organizations }) {
       if (matchedDate < new Date()) {
         setOcrError({
           title: 'Certificate Expired',
-          message: `The certificate expired on ${fmtDate(matchedDate)}. Expired certificates cannot be registered.`,
+          message: `The certificate expired on ${formatReadableDate(matchedDate)}. Expired certificates cannot be registered.`,
         })
         setOcrState('idle')
         setUploadedFile(null)
@@ -139,8 +126,9 @@ export function OcrUploadPanel({ onConfirm, employees, organizations }) {
         orgId: matchedEmp.organizationId || '',
         orgName,
         course: ocrCourse,
-        expiry: fmtDate(matchedDate),
+        expiry: formatReadableDate(matchedDate),
         rawExpiryDate: matchedDate,
+        trainingRequestId,
       })
       setOcrState('review')
     } catch (err) {

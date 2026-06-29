@@ -41,12 +41,16 @@ import { FERegisterAssetPage }  from '../../features/fireExtinguisher-dashboard/
 import { FEInspectionPage }     from '../../features/fireExtinguisher-dashboard/pages/FEInspectionPage.jsx'
 import { FECompliancePage }     from '../../features/fireExtinguisher-dashboard/pages/FECompliancePage.jsx'
 import { FEProfilePage }        from '../../features/fireExtinguisher-dashboard/pages/FEProfilePage.jsx'
+import { FEDetailPage }         from '../../features/fireExtinguisher-dashboard/pages/FEDetailPage.jsx'
 import { FDLayout } from '../../features/fireDetection-dashboard/layout/FDLayout.jsx'
 import { FDDashboardPage } from '../../features/fireDetection-dashboard/pages/FDDashboardPage.jsx'
 import { FDProfilePage } from '../../features/fireDetection-dashboard/pages/FDProfilePage.jsx'
 import { AssetRegistryPage } from '../../features/fireDetection-dashboard/pages/AssetRegistryPage.jsx'
-import { InspectionPage } from '../../features/fireDetection-dashboard/pages/InspectionPage.jsx'
+import { HydrantDetailPage } from '../../features/fireDetection-dashboard/pages/HydrantDetailPage.jsx'
 import { PanelRegistryPage } from '../../features/fireDetection-dashboard/pages/PanelRegistryPage.jsx'
+import { PanelDetailPage } from '../../features/fireDetection-dashboard/pages/PanelDetailPage.jsx'
+import { InspectionPage } from '../../features/fireDetection-dashboard/pages/InspectionPage.jsx'
+import { InspectionHistoryPage } from '../../features/fireDetection-dashboard/pages/InspectionHistoryPage.jsx'
 import { RegisterPanelPage } from '../../features/fireDetection-dashboard/pages/RegisterPanelPage.jsx'
 import { PanelInspectionPage } from '../../features/fireDetection-dashboard/pages/PanelInspectionPage.jsx'
 import { ComplianceMonitoringPage } from '../../features/fireDetection-dashboard/pages/ComplianceMonitoringPage.jsx'
@@ -238,6 +242,7 @@ export function AppRouter() {
             <Route path="/extinguisher/dashboard"             element={<FEDashboardPage />} />
             <Route path="/extinguisher/assets"                element={<FEAssetRegistryPage />} />
             <Route path="/extinguisher/assets/new"            element={<FERegisterAssetPage />} />
+            <Route path="/extinguisher/assets/:id"             element={<FEDetailPage />} />
             <Route path="/extinguisher/assets/:assetId/inspect" element={<FEInspectionPage />} />
             <Route path="/extinguisher/compliance"            element={<FECompliancePage />} />
             <Route path="/extinguisher/profile"               element={<FEProfilePage />} />
@@ -253,8 +258,11 @@ export function AppRouter() {
           <Route element={<FDLayout />}>
             <Route path="/detection/dashboard"           element={<FDDashboardPage />} />
             <Route path="/detection/assets"               element={<AssetRegistryPage />} />
+            <Route path="/detection/assets/:id"           element={<HydrantDetailPage />} />
             <Route path="/detection/inspection"           element={<InspectionPage />} />
+            <Route path="/detection/inspection-history/:id" element={<InspectionHistoryPage />} />
             <Route path="/detection/panels"               element={<PanelRegistryPage />} />
+            <Route path="/detection/panels/:id"           element={<PanelDetailPage />} />
             <Route path="/detection/panels/new"           element={<RegisterPanelPage />} />
             <Route path="/detection/panel-inspection"     element={<PanelInspectionPage />} />
             <Route path="/detection/compliance"            element={<ComplianceMonitoringPage />} />

@@ -191,7 +191,7 @@ export function FDDashboardPage() {
       </div>
 
       {/* ── Filter Section ── */}
-      <div className="fd-card" style={{ marginBottom:24 }}>
+      <div className="fd-card" style={{ marginBottom:24, paddingLeft: 10, paddingRight: 10 }}>
         <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
           <div className="fd-search-wrap" style={{ flex:1, minWidth:200 }}>
             <Search size={13} className="fd-search-icon" />

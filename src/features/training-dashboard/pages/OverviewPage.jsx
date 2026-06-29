@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clock, Search, Check, X } from 'lucide-react'
+import { Clock, Search, Check, X, RotateCw } from 'lucide-react'
 import { CourseIcon } from '../components/CourseIcon.jsx'
 import { OcrUploadPanel } from '../components/OcrUploadPanel.jsx'
 import { ConfirmationModal } from '../components/ConfirmationModal.jsx'
@@ -38,10 +38,12 @@ export function OverviewPage({
   onAccept,
   onReject,
   onConfirmRegistration,
+  onRefresh,
 }) {
   const navigate = useNavigate()
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // ── Confirmation Modal State ─────────────────────────────
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
@@ -50,13 +52,19 @@ export function OverviewPage({
   const [confirmError, setConfirmError] = useState(null)
 
   const totalEnrollments = requests
-    .filter((r) => r.status === 'approved' || r.status === 'accepted')
+    .filter((r) => r.status === 'approved')
     .reduce((acc, r) => acc + (r.workers || 0), 0)
 
   const pendingCount = requests.filter((r) => r.status === 'pending').length
 
   const upcomingCourses = getUpcomingSessions(requests, 48)
   const coursesToday = countCoursesToday(requests)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    if (onRefresh) await onRefresh()
+    setTimeout(() => setIsRefreshing(false), 500)
+  }
 
   function handleOcrConfirm(extracted) {
     if (!extracted?.file) {
@@ -101,7 +109,7 @@ export function OverviewPage({
       }
       return true
     })
-    .slice(0, 5)
+    .slice(0, 2)
 
   return (
     <div className="provider-dash">
@@ -157,6 +165,16 @@ export function OverviewPage({
           <div className="prov-section-head">
             <h2>Active Training Requests</h2>
             <div className="prov-section-head-right">
+              <button
+                type="button"
+                className={`prov-icon-btn ${isRefreshing ? 'prov-icon-btn--spinning' : ''}`}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh"
+                title="Refresh requests"
+              >
+                <RotateCw size={14} className={isRefreshing ? 'prov-refresh-icon' : ''} />
+              </button>
               {showSearch && (
                 <input
                   type="text"
@@ -305,7 +323,7 @@ export function OverviewPage({
       </div>
 
       {/* Bulk Upload OCR Panel */}
-      <OcrUploadPanel onConfirm={handleOcrConfirm} employees={employees} organizations={organizations} />
+      <OcrUploadPanel onConfirm={handleOcrConfirm} employees={employees} organizations={organizations} trainingRequestId={null} />
 
       {/* Recent Competency Updates */}
       <div className="prov-competency-section">

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import {
@@ -225,6 +225,8 @@ export function FuelIntelligencePage() {
   const [showAdd,  setShowAdd]  = useState(false)
   const [view,     setView]     = useState('realtime')  // 'realtime' | 'historical'
   const [receipt,  setReceipt]  = useState(null)        // { name, dataUrl }
+  const [selectedVehicleId, setSelectedVehicleId] = useState('all') // 'all' or vehicle.id
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
   const receiptRef = useRef(null)
 
   /* ── lookup map ── */
@@ -234,13 +236,51 @@ export function FuelIntelligencePage() {
     return m
   }, [vehicles])
 
-  /* ── KPIs ── */
-  const totalLitres = fuelLogs.reduce((s, f) => s + (Number(f.litres) || 0), 0)
-  const totalCost   = fuelLogs.reduce((s, f) => s + (Number(f.totalCost) || 0), 0)
+  /* ── Filter data based on selected vehicle ── */
+  const filteredFuelLogs = useMemo(() => {
+    if (selectedVehicleId === 'all') return fuelLogs
+    return fuelLogs.filter(f => f.vehicleId === selectedVehicleId)
+  }, [fuelLogs, selectedVehicleId])
+
+  /* ── Real-time data (today's logs only) ── */
+  const realtimeFuelLogs = useMemo(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    return filteredFuelLogs.filter(f => {
+      const d = toDate(f.loggedAt)
+      if (!d) return false
+      const logDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+      return logDate.getTime() === today.getTime()
+    })
+  }, [filteredFuelLogs])
+
+  /* ── Historical data (all logs) ── */
+  const historicalFuelLogs = useMemo(() => {
+    return filteredFuelLogs
+  }, [filteredFuelLogs])
+
+  /* ── Use appropriate data based on view ── */
+  const viewFuelLogs = useMemo(() => {
+    return view === 'realtime' ? realtimeFuelLogs : historicalFuelLogs
+  }, [view, realtimeFuelLogs, historicalFuelLogs])
+
+  const filteredAlerts = useMemo(() => {
+    if (selectedVehicleId === 'all') return openAlerts
+    return openAlerts.filter(a => a.vehicleId === selectedVehicleId)
+  }, [openAlerts, selectedVehicleId])
+
+  const filteredVehicles = useMemo(() => {
+    if (selectedVehicleId === 'all') return vehicles
+    return vehicles.filter(v => v.id === selectedVehicleId)
+  }, [vehicles, selectedVehicleId])
+
+  /* ── KPIs based on view data ── */
+  const totalLitres = viewFuelLogs.reduce((s, f) => s + (Number(f.litres) || 0), 0)
+  const totalCost   = viewFuelLogs.reduce((s, f) => s + (Number(f.totalCost) || 0), 0)
 
   /* Efficiency rating: avg km-per-litre from logs that have both odometer + litres */
   const efficiencyRating = useMemo(() => {
-    const valid = fuelLogs.filter((f) => f.odometer && f.litres && f.litres > 0)
+    const valid = viewFuelLogs.filter((f) => f.odometer && f.litres && f.litres > 0)
     if (valid.length < 2) return null
     const sorted = [...valid].sort((a, b) => (a.odometer ?? 0) - (b.odometer ?? 0))
     let totalKm = 0, totalL = 0
@@ -249,10 +289,10 @@ export function FuelIntelligencePage() {
       totalL  += sorted[i].litres
     }
     return totalL > 0 ? totalKm / totalL : null
-  }, [fuelLogs])
+  }, [viewFuelLogs])
 
   /* Consumption % of fleet capacity — 0 when no real data */
-  const fleetCapacity  = vehicles.reduce((s, v) => s + (Number(v.fuelCapacity) || 0), 0)
+  const fleetCapacity  = filteredVehicles.reduce((s, v) => s + (Number(v.fuelCapacity) || 0), 0)
   const consumptionPct = fleetCapacity > 0 && totalLitres > 0
     ? Math.min(100, Math.round((totalLitres / fleetCapacity) * 100))
     : 0
@@ -263,8 +303,8 @@ export function FuelIntelligencePage() {
     : 0
 
   /* Expenditure % — require at least one log with a cost; no fake fallback */
-  const monthlyBudget = vehicles.length > 0
-    ? vehicles.reduce((s, v) => s + (Number(v.fuelCapacity) || 0), 0) * 25  // R25/L estimate when no budget set
+  const monthlyBudget = filteredVehicles.length > 0
+    ? filteredVehicles.reduce((s, v) => s + (Number(v.fuelCapacity) || 0), 0) * 25  // R25/L estimate when no budget set
     : 0
   const expenditurePct = monthlyBudget > 0 && totalCost > 0
     ? Math.min(100, Math.round((totalCost / monthlyBudget) * 100))
@@ -272,21 +312,21 @@ export function FuelIntelligencePage() {
 
   /* ── Anomalies from open alerts ── */
   const anomalies = useMemo(() => {
-    return openAlerts
+    return filteredAlerts
       .filter((a) => a.status !== 'resolved')
       .sort((a, b) => {
         const order = { critical: 0, warning: 1, info: 2 }
         return (order[a.severity] ?? 3) - (order[b.severity] ?? 3)
       })
       .slice(0, 5)
-  }, [openAlerts])
+  }, [filteredAlerts])
 
   const criticalCount = anomalies.filter((a) => a.severity === 'critical').length
 
   /* ── Top performers: vehicles with best km/L ── */
   const topPerformers = useMemo(() => {
     const byVehicle = {}
-    fuelLogs.forEach((f) => {
+    viewFuelLogs.forEach((f) => {
       if (!f.vehicleId || !f.litres || f.litres <= 0) return
       if (!byVehicle[f.vehicleId]) byVehicle[f.vehicleId] = { litres: 0, fills: 0, odometer: [] }
       byVehicle[f.vehicleId].litres += Number(f.litres)
@@ -306,7 +346,7 @@ export function FuelIntelligencePage() {
       .filter((p) => p.vehicle)
       .sort((a, b) => (b.kmL ?? 0) - (a.kmL ?? 0))
       .slice(0, 3)
-  }, [fuelLogs, vehicleById])
+  }, [viewFuelLogs, vehicleById])
 
   /* ── Temporal chart sector labels — real department names from vehicles ── */
   const sectorLabels = useMemo(() => {
@@ -319,13 +359,13 @@ export function FuelIntelligencePage() {
     return [null, null]
   }, [vehicles])
   const recentTransactions = useMemo(
-    () => [...fuelLogs].slice(0, 10),
-    [fuelLogs]
+    () => [...viewFuelLogs].slice(0, 10),
+    [viewFuelLogs]
   )
 
   /* ── Inline fuel capture form (Formik + Yup) ── */
   const fuelFormik = useFormik({
-    initialValues: { vehicleId: '', odometer: '', litres: '', station: '' },
+    initialValues: { vehicleId: selectedVehicleId === 'all' ? '' : selectedVehicleId, odometer: '', litres: '', station: '' },
     validationSchema: fuelCaptureSchema,
     validateOnBlur: true,
     validateOnChange: false,
@@ -345,6 +385,13 @@ export function FuelIntelligencePage() {
   const FE = fuelFormik.errors
   const FT = fuelFormik.touched
   const fuelErrStyle = { fontSize: 10.5, color: '#ff8080', fontWeight: 600, marginTop: 2 }
+
+  // Update form vehicleId when filter changes
+  useEffect(() => {
+    if (selectedVehicleId !== 'all') {
+      fuelFormik.setFieldValue('vehicleId', selectedVehicleId)
+    }
+  }, [selectedVehicleId])
 
   function handleReceiptUpload(file) {
     const reader = new FileReader()
@@ -407,6 +454,31 @@ export function FuelIntelligencePage() {
             HISTORICAL
           </button>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '10.5px', color: 'rgba(148,163,184,0.5)', fontWeight: 600, letterSpacing: '0.05em' }}>
+            {view === 'realtime' ? 'Today\'s Activity' : 'All Time Data'}
+            {selectedVehicleId !== 'all' && ` • ${vehicleById[selectedVehicleId]?.unitId || 'Selected Vehicle'}`}
+          </div>
+          {view === 'historical' && (
+            <button
+              type="button"
+              onClick={() => setShowHistoryModal(true)}
+              style={{
+                fontSize: '10.5px',
+                fontWeight: 700,
+                color: '#3a82ff',
+                background: 'rgba(58,130,255,0.08)',
+                border: '1px solid rgba(58,130,255,0.2)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                cursor: 'pointer',
+                letterSpacing: '0.05em'
+              }}
+            >
+              VIEW ALL RECORDS
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ════════════════════════════════════════
@@ -422,19 +494,24 @@ export function FuelIntelligencePage() {
           </div>
 
           <div className="fuel-form-fields">
-            {/* Unit ID select */}
+            {/* Unit ID select - also acts as page filter */}
             <div className="fuel-field-group">
-              <label className="fuel-field-label">UNIT ID</label>
+              <label className="fuel-field-label">UNIT ID (FILTER)</label>
               <CustomSelect
-                value={FF.vehicleId}
-                onChange={(val) => fuelFormik.setFieldValue('vehicleId', val)}
-                onBlur={() => fuelFormik.setFieldTouched('vehicleId', true)}
-                options={vehicles.map((v) => ({ value: v.id, label: v.unitId || v.id }))}
+                value={selectedVehicleId}
+                onChange={(val) => {
+                  setSelectedVehicleId(val)
+                  if (val !== 'all') {
+                    fuelFormik.setFieldValue('vehicleId', val)
+                  }
+                }}
+                options={[
+                  { value: 'all', label: 'All Vehicles' },
+                  ...vehicles.map((v) => ({ value: v.id, label: v.unitId || v.id }))
+                ]}
                 placeholder="Select unit…"
                 searchable={true}
-                error={FE.vehicleId && FT.vehicleId}
               />
-              {FE.vehicleId && FT.vehicleId && <span style={fuelErrStyle}>{FE.vehicleId}</span>}
             </div>
 
             {/* Odometer + Litres */}
@@ -580,13 +657,15 @@ export function FuelIntelligencePage() {
             </div>
           </div>
 
-          {fuelLogs.length === 0 ? (
+          {viewFuelLogs.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'rgba(148,163,184,0.35)', fontSize: 13, padding: '32px 0' }}>
-              No fuel data yet — log your first fill to see trends.
+              {view === 'realtime' 
+                ? 'No fuel activity today — log a fill to see real-time data.' 
+                : 'No fuel data yet — log your first fill to see historical trends.'}
             </div>
           ) : (
-            <WeeklyChart fuelLogs={fuelLogs} />
+            <WeeklyChart fuelLogs={viewFuelLogs} />
           )}
         </div>
 
@@ -630,7 +709,7 @@ export function FuelIntelligencePage() {
         </div>
 
         {/* Hotspot Matrix */}
-        <HotspotMatrix fuelLogs={fuelLogs} vehicles={vehicles} />
+        <HotspotMatrix fuelLogs={viewFuelLogs} vehicles={filteredVehicles} />
       </div>
 
       {/* ════════════════════════════════════════
@@ -680,7 +759,7 @@ export function FuelIntelligencePage() {
           <div className="fuel-card-head">
             <span className="fuel-card-title-plain">RECENT FUEL TRANSACTIONS</span>
             <button type="button" className="fuel-icon-btn" aria-label="More options"
-              onClick={() => exportToCSV(fuelLogs.map((f) => {
+              onClick={() => exportToCSV(filteredFuelLogs.map((f) => {
                 const v = vehicleById[f.vehicleId]
                 return {
                   'Vehicle': v?.unitId || f.vehicleId || '—',
@@ -753,6 +832,150 @@ export function FuelIntelligencePage() {
           onSave={async (data) => { await addFuelLog(data); setShowAdd(false) }}
           loading={false}
         />
+      )}
+
+      {/* ── Historical Records Modal ── */}
+      {showHistoryModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            background: '#0b0f1d',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '900px',
+            width: '90%',
+            maxHeight: '80vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>
+                  Historical Fuel Records
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'rgba(148, 163, 184, 0.7)' }}>
+                  {selectedVehicleId === 'all' ? 'All Vehicles' : `Unit ${vehicleById[selectedVehicleId]?.unitId || 'Selected Vehicle'}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                style={{ background: 'none', border: 'none', color: 'rgba(148, 163, 184, 0.7)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(7, 12, 28, 0.25)' }}>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>DATE</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>VEHICLE</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>STATION</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>LITRES</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>ODOMETER</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>COST</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em' }}>RECEIPT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFuelLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(148,163,184,0.5)', fontSize: '13px' }}>
+                        No historical records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredFuelLogs.map((log) => {
+                      const v = vehicleById[log.vehicleId]
+                      return (
+                        <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '14px 16px', fontSize: '12.5px', color: 'rgba(235, 242, 255, 0.95)', fontWeight: 600 }}>
+                            {formatDate(log.loggedAt)}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12.5px', color: '#ffffff', fontWeight: 700 }}>
+                            {v?.unitId || log.unitId || log.vehicleId || '—'}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12.5px', color: 'rgba(235, 242, 255, 0.85)', fontWeight: 500 }}>
+                            {log.station || '—'}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12.5px', color: 'rgba(235, 242, 255, 0.95)', fontWeight: 600 }}>
+                            {log.litres != null ? `${Number(log.litres).toFixed(1)} L` : '—'}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12.5px', color: 'rgba(235, 242, 255, 0.85)', fontWeight: 500 }}>
+                            {log.odometer != null ? `${Number(log.odometer).toLocaleString()} km` : '—'}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12.5px', color: 'rgba(235, 242, 255, 0.85)', fontWeight: 500 }}>
+                            {log.totalCost != null ? `$${Number(log.totalCost).toFixed(2)}` : '—'}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {log.receipt ? (
+                              <a
+                                href={log.receipt}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: '11px',
+                                  color: '#3a82ff',
+                                  fontWeight: 700,
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Upload size={12} /> View
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: 'rgba(148,163,184,0.4)', fontStyle: 'italic' }}>
+                                No receipt
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11.5px', color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>
+                Total: {filteredFuelLogs.length} record{filteredFuelLogs.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                style={{
+                  background: 'rgba(58, 130, 255, 0.08)',
+                  border: '1px solid rgba(58, 130, 255, 0.2)',
+                  color: '#3a82ff',
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

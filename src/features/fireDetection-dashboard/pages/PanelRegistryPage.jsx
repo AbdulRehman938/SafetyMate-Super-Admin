@@ -282,6 +282,7 @@ export function PanelRegistryPage() {
           currentPanels.map(panel => (
             <div
               key={panel.id}
+              onClick={() => navigate(`/detection/panels/${panel.id}`)}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1.2fr 1.2fr 1fr 1fr 0.8fr',
@@ -347,7 +348,10 @@ export function PanelRegistryPage() {
                 {panel.status === 'degraded' ? (
                   <button
                     type="button"
-                    onClick={() => navigate(`/detection/panel-inspection?panelId=${panel.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/detection/panel-inspection?panelId=${panel.id}`)
+                    }}
                     style={{
                       padding: '6px 12px',
                       borderRadius: 6,
@@ -365,7 +369,10 @@ export function PanelRegistryPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => navigate(`/detection/panel-inspection?id=${panel.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/detection/panel-inspection?id=${panel.id}`)
+                    }}
                     style={{
                       padding: '6px 12px',
                       borderRadius: 6,

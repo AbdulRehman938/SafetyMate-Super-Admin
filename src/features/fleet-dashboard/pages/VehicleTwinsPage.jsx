@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   Truck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check,
+  X
 } from 'lucide-react'
 import { useFleetData } from '../hooks/useFleetData.js'
 import { RegisterVehiclePage } from './RegisterVehiclePage.jsx'
@@ -23,8 +25,11 @@ export function VehicleTwinsPage() {
   const {
     vehicles,
     alerts,
+    inspections,
     loading,
     addVehicle,
+    approveVehicle,
+    rejectVehicle,
   } = useFleetData()
 
   // Selection & UI controls state
@@ -33,6 +38,7 @@ export function VehicleTwinsPage() {
   const [saving, setSaving] = useState(false)
   const [editVehicle, setEditVehicle] = useState(null)
   const [statusResetVehicleId, setStatusResetVehicleId] = useState(null)
+  const [errorModal, setErrorModal] = useState(null) // { title, message }
   
   // Filtering state
   const [search, setSearch] = useState('')
@@ -156,9 +162,9 @@ export function VehicleTwinsPage() {
       list = list.filter(v => (v.engineType || '').toLowerCase().includes(engineFilter.toLowerCase()))
     }
 
-    // Advanced: Status filter
+    // Advanced: Compliance filter
     if (statusFilter) {
-      list = list.filter(v => v.status === statusFilter)
+      list = list.filter(v => v.complianceStatus?.toLowerCase() === statusFilter.toLowerCase())
     }
 
     return list
@@ -213,7 +219,8 @@ export function VehicleTwinsPage() {
     return (
       <VehicleDetails 
         vehicle={selectedVehicle} 
-        alerts={alerts} 
+        alerts={alerts}
+        inspections={inspections}
         onBack={() => { setSelectedVehicle(null); setStatusResetVehicleId(null); }} 
         onEdit={handleEditVehicle}
         statusReset={statusResetVehicleId === selectedVehicle.id}
@@ -526,17 +533,16 @@ export function VehicleTwinsPage() {
             />
           </div>
 
-          {/* Status Filter */}
+          {/* Compliance Filter */}
           <div style={{ minWidth: isMobile ? '100%' : '160px', width: isMobile ? '100%' : 'auto' }}>
             <CustomSelect
               value={statusFilter}
               onChange={(val) => { setStatusFilter(val); setPage(1); }}
               options={[
-                { value: 'active', label: 'Active' },
-                { value: 'maintenance', label: 'In Maintenance' },
-                { value: 'suspended', label: 'Suspended' }
+                { value: 'approved', label: 'Approved' },
+                { value: 'pending', label: 'Pending' }
               ]}
-              placeholder="Vehicle Status"
+              placeholder="Compliance Status"
               searchable={false}
             />
           </div>
@@ -586,14 +592,15 @@ export function VehicleTwinsPage() {
                 <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ASSIGNED SITE</th>
                 <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ODOMETER</th>
                 <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>HEALTH SCORE</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>STATUS</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>COMPLIANCE</th>
+                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ASSIGNMENT</th>
                 <th style={{ textAlign: 'right', padding: '14px 20px', fontSize: '10.5px', color: 'rgba(148,163,184,0.6)', fontWeight: 800, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {paginatedVehicles.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px 0', color: 'rgba(148,163,184,0.5)', fontSize: '13.5px' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '36px 0', color: 'rgba(148,163,184,0.5)', fontSize: '13.5px' }}>
                     No vehicle twins found matching the filters.
                   </td>
                 </tr>
@@ -606,25 +613,21 @@ export function VehicleTwinsPage() {
                   if (health < 60) healthColor = '#ff535f' // low
                   else if (health < 85) healthColor = '#fe8e2a' // mid
 
-                  // Status pill style variables
-                  let statusBg = 'rgba(22, 201, 136, 0.08)'
-                  let statusText = '#4deba0'
-                  let statusDot = '#16c988'
-                  let statusBorder = '1px solid rgba(22, 201, 136, 0.2)'
-                  let statusLabel = 'ACTIVE'
+                  // Compliance pill style variables
+                  let statusBg = 'rgba(148, 163, 184, 0.08)'
+                  let statusText = 'rgba(148, 163, 184, 0.7)'
+                  let statusDot = 'rgba(148, 163, 184, 0.5)'
+                  let statusBorder = '1px solid rgba(148, 163, 184, 0.2)'
+                  let statusLabel = 'PENDING'
 
-                  if (v.status === 'maintenance') {
-                    statusBg = 'rgba(254, 142, 42, 0.08)'
-                    statusText = '#ffb56e'
-                    statusDot = '#fe8e2a'
-                    statusBorder = '1px solid rgba(254, 142, 42, 0.2)'
-                    statusLabel = 'IN MAINTENANCE'
-                  } else if (v.status === 'suspended' || v.status === 'offline') {
-                    statusBg = 'rgba(255, 83, 95, 0.08)'
-                    statusText = '#ff8080'
-                    statusDot = '#ff535f'
-                    statusBorder = '1px solid rgba(255, 83, 95, 0.2)'
-                    statusLabel = 'SUSPENDED'
+                  const isApproved = v.complianceStatus?.toLowerCase() === 'approved'
+                  
+                  if (isApproved) {
+                    statusBg = 'rgba(22, 201, 136, 0.08)'
+                    statusText = '#4deba0'
+                    statusDot = '#16c988'
+                    statusBorder = '1px solid rgba(22, 201, 136, 0.2)'
+                    statusLabel = 'APPROVED'
                   }
 
                   const formattedMileage = v.mileageKm != null ? v.mileageKm.toLocaleString() + ' KM' : '—'
@@ -716,27 +719,145 @@ export function VehicleTwinsPage() {
                         </span>
                       </td>
 
+                      {/* ASSIGNMENT STATUS */}
+                      <td style={{ padding: '14px 20px', verticalAlign: 'middle' }}>
+                        {v.status === 'suspended' ? (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(255, 83, 95, 0.08)',
+                            color: '#ff8080',
+                            border: '1px solid rgba(255, 83, 95, 0.2)',
+                            fontSize: '9.5px',
+                            fontWeight: 800,
+                            letterSpacing: '0.05em'
+                          }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#ff535f' }} />
+                            DISCONTINUED
+                          </span>
+                        ) : v.isAssigned === true || (v.isAssigned === undefined && v.site) ? (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(22, 201, 136, 0.08)',
+                            color: '#4deba0',
+                            border: '1px solid rgba(22, 201, 136, 0.2)',
+                            fontSize: '9.5px',
+                            fontWeight: 800,
+                            letterSpacing: '0.05em'
+                          }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#16c988' }} />
+                            ASSIGNED
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(148, 163, 184, 0.08)',
+                            color: 'rgba(148, 163, 184, 0.7)',
+                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                            fontSize: '9.5px',
+                            fontWeight: 800,
+                            letterSpacing: '0.05em'
+                          }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'rgba(148, 163, 184, 0.5)' }} />
+                            UNASSIGNED
+                          </span>
+                        )}
+                      </td>
+
                       {/* ACTIONS */}
                       <td style={{ padding: '14px 20px', textAlign: 'right', verticalAlign: 'middle' }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedVehicle(v)
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'rgba(148, 163, 184, 0.4)',
-                            cursor: 'pointer',
-                            padding: '4px',
-                            transition: 'color 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(148, 163, 184, 0.4)'}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
+                        {!isApproved ? (
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                try {
+                                  await approveVehicle(v.id)
+                                } catch (err) {
+                                  setErrorModal({
+                                    title: 'Approval Failed',
+                                    message: err.message || 'Vehicle requires at least one inspection before approval.'
+                                  })
+                                }
+                              }}
+                              style={{
+                                background: 'rgba(22, 201, 136, 0.1)',
+                                border: '1px solid rgba(22, 201, 136, 0.3)',
+                                color: '#4deba0',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(22, 201, 136, 0.2)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(22, 201, 136, 0.1)'}
+                            >
+                              <Check size={12} /> Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                rejectVehicle(v.id)
+                              }}
+                              style={{
+                                background: 'rgba(255, 83, 95, 0.1)',
+                                border: '1px solid rgba(255, 83, 95, 0.3)',
+                                color: '#ff8080',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 83, 95, 0.2)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 83, 95, 0.1)'}
+                            >
+                              <X size={12} /> Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedVehicle(v)
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'rgba(148, 163, 184, 0.4)',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              transition: 'color 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(148, 163, 184, 0.4)'}
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )
@@ -824,6 +945,78 @@ export function VehicleTwinsPage() {
               }}
             >
               <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
+          }}
+          onClick={() => setErrorModal(null)}
+        >
+          <div 
+            style={{
+              background: '#1a1d26',
+              border: '1px solid rgba(255, 83, 95, 0.3)',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
+                borderRadius: '50%', 
+                background: 'rgba(255, 83, 95, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <AlertTriangle size={20} style={{ color: '#ff535f' }} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#fff' }}>
+                {errorModal.title}
+              </h3>
+            </div>
+            <p style={{ margin: '0 0 20px', fontSize: '14px', color: 'rgba(148, 163, 184, 0.9)', lineHeight: 1.5 }}>
+              {errorModal.message}
+            </p>
+            <button
+              type="button"
+              onClick={() => setErrorModal(null)}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                background: '#3a82ff',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#3a82ff'}
+            >
+              OK
             </button>
           </div>
         </div>

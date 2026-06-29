@@ -19,6 +19,7 @@ export function InspectionPage() {
   const [selectedAssetId, setSelectedAssetId] = useState(assetIdFromUrl || null)
   const [assetDropdownOpen, setAssetDropdownOpen] = useState(false)
   const [inspectionLaunched, setInspectionLaunched] = useState(!!assetIdFromUrl)
+  const [assetSearchTerm, setAssetSearchTerm] = useState('')
   const assetDropdownRef = useRef(null)
 
   // Inspection form state
@@ -50,6 +51,9 @@ export function InspectionPage() {
     type: 'success', // success, error, warning
     onConfirm: null
   })
+
+  // Inline error state
+  const [formErrors, setFormErrors] = useState({})
 
   const selectedAsset = assets.find((a) => a.id === selectedAssetId)
 
@@ -203,6 +207,58 @@ export function InspectionPage() {
 
   const handleSubmitInspection = async () => {
     if (!selectedAssetId || !selectedAsset) return
+
+    // Validation
+    const errors = {}
+
+    // Check Static Pressure
+    if (!staticPressure || staticPressure.trim() === '') {
+      errors.staticPressure = 'Static Pressure is required'
+    }
+
+    // Check Flow Rate
+    if (!flowRate || flowRate.trim() === '') {
+      errors.flowRate = 'Flow Rate Test is required'
+    }
+
+    // Check all Integrity Checklist items
+    if (checklist.valveCondition === null) {
+      errors.valveCondition = 'Valve Condition must be marked as Pass or Fail'
+    }
+    if (checklist.hoseCoupling === null) {
+      errors.hoseCoupling = 'Hose & Coupling must be marked as Pass or Fail'
+    }
+    if (checklist.leakDetection === null) {
+      errors.leakDetection = 'Leak Detection must be marked as Pass or Fail'
+    }
+    if (checklist.paintCoating === null) {
+      errors.paintCoating = 'Paint & Coating must be marked as Pass or Fail'
+    }
+
+    // Check Photo Evidence
+    if (!photos.before?.file && !photos.before?.preview) {
+      errors.beforePhoto = 'Before Protocol photo is required'
+    }
+    if (!photos.after?.file && !photos.after?.preview) {
+      errors.afterPhoto = 'After Protocol photo is required'
+    }
+
+    // Check Defect Reporting
+    if (defectReported && (!defectDescription || defectDescription.trim() === '')) {
+      errors.defectDescription = 'Defect description is required when Critical Defect is selected'
+    }
+
+    // Check Digital Signature
+    if (!signatureData) {
+      errors.signature = 'Digital signature is required'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      return
+    }
+
+    setFormErrors({})
     setSubmitting(true)
 
     try {
@@ -222,7 +278,9 @@ export function InspectionPage() {
         lastInspectionPressure: parseFloat(staticPressure) || selectedAsset.pressure,
         lastInspectionFlowRate: parseFloat(flowRate) || selectedAsset.flowRate,
         inspectionStatus: 'completed',
+        status: 'operational', // Update main status from pending to operational
         inspectionChecklist: checklist,
+        lastDefectDescription: defectDescription || '',
         inspectionPhotos: {
           before: beforePhotoUrl,
           after: afterPhotoUrl
@@ -252,7 +310,10 @@ export function InspectionPage() {
         photos: { before: null, after: null }
       })
 
-      showModal('Success', 'Inspection report submitted successfully!', 'success')
+      showModal('Success', 'Inspection report submitted successfully!', 'success', () => {
+        // Redirect to dashboard after successful submission
+        navigate('/detection/dashboard')
+      })
       // Reset form
       setStaticPressure('')
       setFlowRate('')
@@ -306,26 +367,52 @@ export function InspectionPage() {
               className={`fd-custom-select-trigger ${assetDropdownOpen ? 'open' : ''}`}
               onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
             >
-              <span>{selectedAsset?.assetId || 'Select Asset'}</span>
+              <span>{selectedAsset?.assignedUnitId || 'Select Asset'}</span>
               <ChevronDown size={14} className={`fd-custom-select-chevron ${assetDropdownOpen ? 'open' : ''}`} />
             </div>
             {assetDropdownOpen && (
-              <div className="fd-custom-select-dropdown" style={{ maxHeight: 200, overflowY: 'auto' }}>
+              <div className="fd-custom-select-dropdown" style={{ maxHeight: 300, overflowY: 'auto' }}>
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <input
+                    type="text"
+                    placeholder="Search Unit ID..."
+                    value={assetSearchTerm}
+                    onChange={(e) => setAssetSearchTerm(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 6,
+                      color: '#fff',
+                      fontSize: 13,
+                      outline: 'none'
+                    }}
+                  />
+                </div>
                 {assets.length === 0 ? (
                   <div className="fd-custom-select-option" style={{ padding: '12px', color: 'rgba(148,163,184,0.5)', cursor: 'default' }}>
                     No assets registered
                   </div>
                 ) : (
-                  assets.map((a) => (
+                  assets
+                    .filter((a) => 
+                      a.assignedUnitId?.toLowerCase().includes(assetSearchTerm.toLowerCase()) ||
+                      a.assetId?.toLowerCase().includes(assetSearchTerm.toLowerCase()) ||
+                      a.type?.toLowerCase().includes(assetSearchTerm.toLowerCase())
+                    )
+                    .map((a) => (
                     <div
                       key={a.id}
                       className={`fd-custom-select-option ${selectedAssetId === a.id ? 'selected' : ''}`}
                       onClick={() => {
                         setSelectedAssetId(a.id)
                         setAssetDropdownOpen(false)
+                        setAssetSearchTerm('')
                       }}
                     >
-                      {a.assetId} ({a.type})
+                      {a.assignedUnitId} ({a.type})
                     </div>
                   ))
                 )}
@@ -393,7 +480,7 @@ export function InspectionPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(148,163,184,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Static Pressure
+                  Static Pressure <span style={{ color: '#ff535f' }}>*</span>
                   <span style={{ color: '#3a82ff' }}>BAR</span>
                 </div>
                 <div style={{ fontSize: 40, fontWeight: 900, color: 'rgba(235,242,255,0.97)', lineHeight: 1, marginBottom: 12 }}>
@@ -417,12 +504,22 @@ export function InspectionPage() {
                   <input
                     type="number"
                     step="0.1"
-                    style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: 'rgba(235,242,255,0.9)', fontSize: 13 }}
+                    style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: formErrors.staticPressure ? '1px solid #ff535f' : '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: 'rgba(235,242,255,0.9)', fontSize: 13 }}
                     placeholder="Enter pressure"
                     value={staticPressure}
-                    onChange={(e) => setStaticPressure(e.target.value)}
+                    onChange={(e) => {
+                      setStaticPressure(e.target.value)
+                      if (formErrors.staticPressure) {
+                        setFormErrors(prev => ({ ...prev, staticPressure: null }))
+                      }
+                    }}
                   />
                 </div>
+                {formErrors.staticPressure && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                    {formErrors.staticPressure}
+                  </div>
+                )}
                 <div style={{ marginTop: 12, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ width: '85%', height: '100%', background: 'linear-gradient(90deg, #16c988, #3a82ff)', borderRadius: 3 }} />
                 </div>
@@ -435,7 +532,7 @@ export function InspectionPage() {
 
               <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(148,163,184,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Flow Rate Test
+                  Flow Rate Test <span style={{ color: '#ff535f' }}>*</span>
                   <span style={{ color: '#3a82ff' }}>GPM</span>
                 </div>
                 <div style={{ fontSize: 40, fontWeight: 900, color: 'rgba(235,242,255,0.97)', lineHeight: 1, marginBottom: 12 }}>
@@ -455,12 +552,22 @@ export function InspectionPage() {
                 <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                   <input
                     type="number"
-                    style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: 'rgba(235,242,255,0.9)', fontSize: 13 }}
+                    style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: formErrors.flowRate ? '1px solid #ff535f' : '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: 'rgba(235,242,255,0.9)', fontSize: 13 }}
                     placeholder="Enter flow rate"
                     value={flowRate}
-                    onChange={(e) => setFlowRate(e.target.value)}
+                    onChange={(e) => {
+                      setFlowRate(e.target.value)
+                      if (formErrors.flowRate) {
+                        setFormErrors(prev => ({ ...prev, flowRate: null }))
+                      }
+                    }}
                   />
                 </div>
+                {formErrors.flowRate && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                    {formErrors.flowRate}
+                  </div>
+                )}
                 <div style={{ marginTop: 12, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ width: '92%', height: '100%', background: 'linear-gradient(90deg, #fe8e2a, #ff535f)', borderRadius: 3 }} />
                 </div>
@@ -510,7 +617,7 @@ export function InspectionPage() {
                 minHeight: 100,
                 padding: '12px 14px',
                 background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: formErrors.defectDescription ? '1px solid #ff535f' : '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8,
                 color: 'rgba(235,242,255,0.9)',
                 fontSize: 13,
@@ -518,8 +625,23 @@ export function InspectionPage() {
               }}
               placeholder="Describe defects, maintenance requirements, or operational hazards..."
               value={defectDescription}
-              onChange={(e) => setDefectDescription(e.target.value)}
+              onChange={(e) => {
+                setDefectDescription(e.target.value)
+                // Auto-switch to Critical Defect if user types in the textarea
+                if (e.target.value.trim() && !defectReported) {
+                  setDefectReported(true)
+                }
+                // Clear error when user types
+                if (formErrors.defectDescription) {
+                  setFormErrors(prev => ({ ...prev, defectDescription: null }))
+                }
+              }}
             />
+            {formErrors.defectDescription && (
+              <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                {formErrors.defectDescription}
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
               <button
@@ -596,7 +718,7 @@ export function InspectionPage() {
           {/* Integrity Checklist */}
           <div className="fd-card" style={{ padding: '20px 22px' }}>
             <h3 style={{ margin: '0 0 18px', fontSize: 15, fontWeight: 800, color: 'rgba(235,242,255,0.92)' }}>
-              Integrity Checklist
+              Integrity Checklist <span style={{ color: '#ff535f' }}>*</span>
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -606,46 +728,63 @@ export function InspectionPage() {
                 { key: 'leakDetection', label: 'Leak Detection' },
                 { key: 'paintCoating', label: 'Paint & Coating' }
               ].map((item) => (
-                <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(235,242,255,0.85)' }}>
-                    {item.label}
-                  </span>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleChecklistToggle(item.key, true)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 5,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        border: checklist[item.key] === true ? '1px solid rgba(22,201,136,0.4)' : '1px solid rgba(255,255,255,0.1)',
-                        background: checklist[item.key] === true ? 'rgba(22,201,136,0.12)' : 'rgba(255,255,255,0.04)',
-                        color: checklist[item.key] === true ? '#4deba0' : 'rgba(148,163,184,0.6)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      PASS
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleChecklistToggle(item.key, false)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 5,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        border: checklist[item.key] === false ? '1px solid rgba(255,83,95,0.4)' : '1px solid rgba(255,255,255,0.1)',
-                        background: checklist[item.key] === false ? 'rgba(255,83,95,0.12)' : 'rgba(255,255,255,0.04)',
-                        color: checklist[item.key] === false ? '#ff535f' : 'rgba(148,163,184,0.6)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      FAIL
-                    </button>
+                <div key={item.key}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: formErrors[item.key] ? 'rgba(255,83,95,0.08)' : 'rgba(255,255,255,0.02)', borderRadius: 8, border: formErrors[item.key] ? '1px solid rgba(255,83,95,0.3)' : '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(235,242,255,0.85)' }}>
+                      {item.label}
+                    </span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleChecklistToggle(item.key, true)
+                          if (formErrors[item.key]) {
+                            setFormErrors(prev => ({ ...prev, [item.key]: null }))
+                          }
+                        }}
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: 5,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          border: checklist[item.key] === true ? '1px solid rgba(22,201,136,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                          background: checklist[item.key] === true ? 'rgba(22,201,136,0.12)' : 'rgba(255,255,255,0.04)',
+                          color: checklist[item.key] === true ? '#4deba0' : 'rgba(148,163,184,0.6)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        PASS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleChecklistToggle(item.key, false)
+                          if (formErrors[item.key]) {
+                            setFormErrors(prev => ({ ...prev, [item.key]: null }))
+                          }
+                        }}
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: 5,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          border: checklist[item.key] === false ? '1px solid rgba(255,83,95,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                          background: checklist[item.key] === false ? 'rgba(255,83,95,0.12)' : 'rgba(255,255,255,0.04)',
+                          color: checklist[item.key] === false ? '#ff535f' : 'rgba(148,163,184,0.6)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        FAIL
+                      </button>
+                    </div>
                   </div>
+                  {formErrors[item.key] && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#ff535f', fontWeight: 600, paddingLeft: 4 }}>
+                      {formErrors[item.key]}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -654,31 +793,55 @@ export function InspectionPage() {
           {/* Photo Evidence */}
           <div className="fd-card" style={{ padding: '20px 22px' }}>
             <h3 style={{ margin: '0 0 18px', fontSize: 15, fontWeight: 800, color: 'rgba(235,242,255,0.92)' }}>
-              Photo Evidence
+              Photo Evidence <span style={{ color: '#ff535f' }}>*</span>
             </h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px dashed rgba(255,255,255,0.15)', aspectRatio: '1', background: 'rgba(255,255,255,0.02)' }}>
-                {photos.before?.preview ? (
-                  <img src={photos.before.preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Before" />
-                ) : (
-                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', cursor: 'pointer', color: 'rgba(148,163,184,0.5)', gap: 6 }}>
-                    <Camera size={32} style={{ opacity: 0.6 }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Before Protocol</span>
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handlePhotoUpload('before', e)} />
-                  </label>
+              <div>
+                <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: formErrors.beforePhoto ? '1px solid #ff535f' : '1px dashed rgba(255,255,255,0.15)', aspectRatio: '1', background: 'rgba(255,255,255,0.02)' }}>
+                  {photos.before?.preview ? (
+                    <img src={photos.before.preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Before" />
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', cursor: 'pointer', color: 'rgba(148,163,184,0.5)', gap: 6 }}>
+                      <Camera size={32} style={{ opacity: 0.6 }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Before Protocol</span>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                        handlePhotoUpload('before', e)
+                        if (formErrors.beforePhoto) {
+                          setFormErrors(prev => ({ ...prev, beforePhoto: null }))
+                        }
+                      }} />
+                    </label>
+                  )}
+                </div>
+                {formErrors.beforePhoto && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                    {formErrors.beforePhoto}
+                  </div>
                 )}
               </div>
 
-              <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px dashed rgba(255,255,255,0.15)', aspectRatio: '1', background: 'rgba(255,255,255,0.02)' }}>
-                {photos.after?.preview ? (
-                  <img src={photos.after.preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="After" />
-                ) : (
-                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', cursor: 'pointer', color: 'rgba(148,163,184,0.5)', gap: 6 }}>
-                    <Camera size={32} style={{ opacity: 0.6 }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>After Protocol</span>
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handlePhotoUpload('after', e)} />
-                  </label>
+              <div>
+                <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: formErrors.afterPhoto ? '1px solid #ff535f' : '1px dashed rgba(255,255,255,0.15)', aspectRatio: '1', background: 'rgba(255,255,255,0.02)' }}>
+                  {photos.after?.preview ? (
+                    <img src={photos.after.preview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="After" />
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', cursor: 'pointer', color: 'rgba(148,163,184,0.5)', gap: 6 }}>
+                      <Camera size={32} style={{ opacity: 0.6 }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>After Protocol</span>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                        handlePhotoUpload('after', e)
+                        if (formErrors.afterPhoto) {
+                          setFormErrors(prev => ({ ...prev, afterPhoto: null }))
+                        }
+                      }} />
+                    </label>
+                  )}
+                </div>
+                {formErrors.afterPhoto && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                    {formErrors.afterPhoto}
+                  </div>
                 )}
               </div>
             </div>
@@ -727,7 +890,7 @@ export function InspectionPage() {
                 style={{ 
                   width: '100%', 
                   height: '80%', 
-                  border: '1px dashed rgba(255,255,255,0.2)', 
+                  border: formErrors.signature ? '1px solid #ff535f' : '1px dashed rgba(255,255,255,0.2)', 
                   borderRadius: 8, 
                   background: 'rgba(255, 255, 255, 0.8)',
                   cursor: 'crosshair',
@@ -761,6 +924,11 @@ export function InspectionPage() {
                 </div>
               )}
             </div>
+            {formErrors.signature && (
+              <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                {formErrors.signature}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 400 }}>
               <button
                 type="button"
@@ -781,7 +949,7 @@ export function InspectionPage() {
                 disabled={submitting || !signatureData}
               >
                 <Shield size={16} style={{ marginRight: 8 }} />
-                Submit Final Protocol Report
+                {submitting ? 'Submitting...' : 'Submit Final Protocol Report'}
               </button>
             </div>
           </div>

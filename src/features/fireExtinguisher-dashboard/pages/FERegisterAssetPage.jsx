@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import QRCode from 'qrcode'
@@ -7,7 +7,7 @@ import {
   ArrowLeft, ClipboardList, Calendar, Camera, X,
   CheckCircle, XCircle, Save, Printer, RefreshCw,
 } from 'lucide-react'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore'
 import { db } from '../../../config/firebase.js'
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
@@ -34,13 +34,9 @@ function genUnitId() {
      url  — deep-link for future mobile app
 ───────────────────────────────────────────────────────────── */
 function buildQrPayload(unitId, values) {
-  return JSON.stringify({
-    id:   unitId,
-    type: values?.extinguisherType || 'Pending',
-    sn:   values?.serialNumber     || 'Pending',
-    site: values?.facilitySite     || 'Pending',
-    url:  `https://safetymate.app/asset/${unitId}`,
-  })
+  /* Android intent deep-link — opens the SafetyMate mobile app directly.
+     Falls back to web URL on devices without the app installed. */
+  return `intent://forms/fire-extinguisher-inspection#Intent;scheme=safetymate;package=com.upward.safetymate;S.assetId=${encodeURIComponent(unitId)};S.type=${encodeURIComponent(values?.extinguisherType || '')};S.sn=${encodeURIComponent(values?.serialNumber || '')};S.site=${encodeURIComponent(values?.facilitySite || '')};end`
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -137,7 +133,17 @@ const schema = Yup.object({
       if (!val || !lastInspection) return true
       return new Date(val) > new Date(lastInspection)
     }),
-  shelfExpiry: Yup.string().nullable(),
+  shelfExpiry: Yup.string().nullable()
+    .test('after-last-inspection', 'Shelf expiry must not be before last inspection', function (val) {
+      const { lastInspection } = this.parent
+      if (!val || !lastInspection) return true
+      return new Date(val) >= new Date(lastInspection)
+    })
+    .test('after-next-due', 'Shelf expiry must not be before next due date', function (val) {
+      const { nextDueDate } = this.parent
+      if (!val || !nextDueDate) return true
+      return new Date(val) >= new Date(nextDueDate)
+    }),
 })
 
 /* ─────────────────────────────────────────────────────────────
@@ -427,19 +433,69 @@ function printTag(unitId, canvasEl) {
 ───────────────────────────────────────────────────────────── */
 export function FERegisterAssetPage() {
   const navigate = useNavigate()
-  const { addAsset, addActivityEntry } = useFireExtData()
+  const [searchParams] = useSearchParams()
+  const draftId = searchParams.get('draft')
+  const { addAsset, updateAsset, addActivityEntry } = useFireExtData()
   const { profile } = useAuth()
 
-  const [photo,   setPhoto]   = useState(null)
-  const [saving,  setSaving]  = useState(false)
-  const [toast,   setToast]   = useState(null)
-  const [unitId]              = useState(() => genUnitId())
+  const [photo,       setPhoto]       = useState(null)
+  const [saving,      setSaving]      = useState(false)
+  const [toast,       setToast]       = useState(null)
+  const [draftLoading, setDraftLoading] = useState(!!draftId)
+  const [unitId,      setUnitId]      = useState(() => draftId ? '' : genUnitId())
   const [qrGenerated, setQrGenerated] = useState(false)
-  const photoRef              = useRef(null)
-  const qrCanvasRef           = useRef(null)  // ref to the canvas inside QRCanvas
+  const photoRef    = useRef(null)
+  const qrCanvasRef = useRef(null)
 
   /* pass canvas ref down through a callback */
   const captureQrCanvas = useCallback((el) => { qrCanvasRef.current = el }, [])
+
+  /* ── Load draft data if ?draft=ID ── */
+  useEffect(() => {
+    if (!draftId) return
+    setDraftLoading(true)
+    getDoc(doc(db, 'fe_assets', draftId))
+      .then((snap) => {
+        if (!snap.exists()) {
+          setToast({ type: 'err', text: 'Draft not found. Starting a new registration.' })
+          setUnitId(genUnitId())
+          setDraftLoading(false)
+          return
+        }
+        const d = snap.data()
+        setUnitId(d.assetId || genUnitId())
+
+        // Helper to convert Firestore Timestamp or ISO string to YYYY-MM-DD
+        const toIso = (val) => {
+          if (!val) return ''
+          const ms = val?.toMillis ? val.toMillis() : new Date(val).getTime()
+          return new Date(ms).toISOString().split('T')[0]
+        }
+
+        formik.setValues({
+          extinguisherType:  d.extinguisherType  || '',
+          serialNumber:      d.serialNumber      || '',
+          capacityKg:        d.capacityKg != null ? String(d.capacityKg) : '',
+          facilitySite:      d.facilitySite      || '',
+          floorZone:         d.floorZone         || '',
+          roomPillar:        d.roomPillar        || '',
+          installationDate:  toIso(d.installationDate),
+          lastInspection:    toIso(d.lastInspection),
+          nextDueDate:       toIso(d.nextInspectionDate),
+          shelfExpiry:       toIso(d.certExpiry),
+        }, false)
+
+        if (d.photo) setPhoto({ dataUrl: d.photo, name: 'saved' })
+        setQrGenerated(true)
+        setDraftLoading(false)
+      })
+      .catch((err) => {
+        console.error('Failed to load draft:', err)
+        setToast({ type: 'err', text: 'Could not load draft. Starting fresh.' })
+        setUnitId(genUnitId())
+        setDraftLoading(false)
+      })
+  }, [draftId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const formik = useFormik({
     initialValues: {
@@ -450,10 +506,8 @@ export function FERegisterAssetPage() {
     validateOnBlur:   true,
     validateOnChange: true,
     onSubmit: async (values) => { 
-      if (!qrGenerated) {
-        setToast({ type:'err', text:'Please generate QR code before registering the asset.' })
-        return
-      }
+      // Auto-generate QR preview if not yet shown (does not block saving)
+      if (!qrGenerated) setQrGenerated(true)
       await doSave(values, 'active') 
     },
   })
@@ -466,53 +520,85 @@ export function FERegisterAssetPage() {
     setSaving(true)
     setToast(null)
     try {
-      // Check if serial number already exists
-      const serialCheck = query(
-        collection(db, 'fe_assets'),
-        where('serialNumber', '==', values.serialNumber.trim().toUpperCase())
-      )
-      const existingSnapshot = await getDocs(serialCheck)
-      if (!existingSnapshot.empty) {
-        setToast({ type: 'err', text: 'An asset with this serial number already exists. Please use a unique serial number.' })
-        setSaving(false)
-        return
-      }
-
-      await addAsset({
-        assetId:            unitId,
-        extinguisherType:   values.extinguisherType,
-        serialNumber:       values.serialNumber.trim().toUpperCase(),
-        capacityKg:         Number(values.capacityKg),
-        facilitySite:       values.facilitySite,
-        floorZone:          values.floorZone?.trim() || null,
-        roomPillar:         values.roomPillar?.trim() || null,
-        installationDate:   toDateObj(values.installationDate),
-        lastInspection:     toDateObj(values.lastInspection),
-        nextInspectionDate: toDateObj(values.nextDueDate),
-        certExpiry:         toDateObj(values.shelfExpiry),
-        photo:              photo?.dataUrl || null,
-        status,
-        zone:               values.floorZone?.trim() || values.facilitySite || null,
-        qrPayload:          buildQrPayload(unitId, values),
-      })
-      await addActivityEntry({
-        technicianName: profile?.fullName || profile?.name || profile?.email || 'Technician',
-        assetId:        unitId,
-        action:         status === 'draft' ? 'Draft Saved' : 'Asset Registered',
-        statusUpdate:   status === 'draft' ? 'Pending'     : 'Passed',
-      })
-
-      if (status === 'active') {
-        /* auto-print tag after successful registration */
-        printTag(unitId, qrCanvasRef.current)
-        navigate('/extinguisher/assets')
+      if (draftId) {
+        // ── Updating existing draft ──
+        await updateAsset(draftId, {
+          extinguisherType:   values.extinguisherType,
+          serialNumber:       values.serialNumber.trim().toUpperCase(),
+          capacityKg:         Number(values.capacityKg),
+          facilitySite:       values.facilitySite,
+          floorZone:          values.floorZone?.trim() || null,
+          roomPillar:         values.roomPillar?.trim() || null,
+          installationDate:   toDateObj(values.installationDate),
+          lastInspection:     toDateObj(values.lastInspection),
+          nextInspectionDate: toDateObj(values.nextDueDate),
+          certExpiry:         toDateObj(values.shelfExpiry),
+          photo:              photo?.dataUrl || null,
+          status,
+          zone:               values.floorZone?.trim() || values.facilitySite || null,
+          qrPayload:          buildQrPayload(unitId, values),
+        })
+        await addActivityEntry({
+          technicianName: profile?.fullName || profile?.name || profile?.email || 'Technician',
+          assetId:        unitId,
+          action:         status === 'draft' ? 'Draft Updated' : 'Asset Registered (from Draft)',
+          statusUpdate:   status === 'draft' ? 'Pending'      : 'Passed',
+        })
+        if (status === 'active') {
+          printTag(unitId, qrCanvasRef.current)
+          navigate('/extinguisher/assets')
+        } else {
+          setToast({ type: 'ok', text: `Draft updated — Unit ID: ${unitId}` })
+          setTimeout(() => navigate('/extinguisher/assets'), 1800)
+        }
       } else {
-        setToast({ type:'ok', text:`Draft saved — Unit ID: ${unitId}` })
-        setTimeout(() => navigate('/extinguisher/assets'), 1800)
+        // ── Creating new asset ──
+        // Check if serial number already exists
+        const serialCheck = query(
+          collection(db, 'fe_assets'),
+          where('serialNumber', '==', values.serialNumber.trim().toUpperCase())
+        )
+        const existingSnapshot = await getDocs(serialCheck)
+        if (!existingSnapshot.empty) {
+          setToast({ type: 'err', text: 'An asset with this serial number already exists. Please use a unique serial number.' })
+          setSaving(false)
+          return
+        }
+
+        await addAsset({
+          assetId:            unitId,
+          extinguisherType:   values.extinguisherType,
+          serialNumber:       values.serialNumber.trim().toUpperCase(),
+          capacityKg:         Number(values.capacityKg),
+          facilitySite:       values.facilitySite,
+          floorZone:          values.floorZone?.trim() || null,
+          roomPillar:         values.roomPillar?.trim() || null,
+          installationDate:   toDateObj(values.installationDate),
+          lastInspection:     toDateObj(values.lastInspection),
+          nextInspectionDate: toDateObj(values.nextDueDate),
+          certExpiry:         toDateObj(values.shelfExpiry),
+          photo:              photo?.dataUrl || null,
+          status,
+          zone:               values.floorZone?.trim() || values.facilitySite || null,
+          qrPayload:          buildQrPayload(unitId, values),
+        })
+        await addActivityEntry({
+          technicianName: profile?.fullName || profile?.name || profile?.email || 'Technician',
+          assetId:        unitId,
+          action:         status === 'draft' ? 'Draft Saved' : 'Asset Registered',
+          statusUpdate:   status === 'draft' ? 'Pending'     : 'Passed',
+        })
+        if (status === 'active') {
+          printTag(unitId, qrCanvasRef.current)
+          navigate('/extinguisher/assets')
+        } else {
+          setToast({ type: 'ok', text: `Draft saved — Unit ID: ${unitId}` })
+          setTimeout(() => navigate('/extinguisher/assets'), 1800)
+        }
       }
     } catch (err) {
       console.error('Save failed:', err)
-      setToast({ type:'err', text:`Failed to save: ${err.message || 'Please try again.'}` })
+      setToast({ type: 'err', text: `Failed to save: ${err.message || 'Please try again.'}` })
     } finally {
       setSaving(false)
     }
@@ -616,6 +702,13 @@ export function FERegisterAssetPage() {
     'Loading Dock','Server Room','Workshop',
   ]
 
+  if (draftLoading) return (
+    <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'55vh', gap:12, color:'rgba(148,163,184,0.8)' }}>
+      <span className="fe-spinner fe-spinner--lg"/>
+      <span style={{ fontSize:14, fontWeight:600 }}>Loading draft registration…</span>
+    </div>
+  )
+
   return (
     <div className="fe-subpage fe-reg-page">
 
@@ -625,10 +718,11 @@ export function FERegisterAssetPage() {
       </button>
 
       <div style={{ marginBottom:24 }}>
-        <h1 className="fe-reg-title">Register New Asset</h1>
+        <h1 className="fe-reg-title">{draftId ? 'Continue Registration' : 'Register New Asset'}</h1>
         <p className="fe-reg-subtitle">
-          Onboard mission-critical fire safety equipment. Precision entry ensures
-          compliance and rapid emergency response.
+          {draftId
+            ? 'Resume your saved draft. Complete all required fields and register the asset.'
+            : 'Onboard mission-critical fire safety equipment. Precision entry ensures compliance and rapid emergency response.'}
         </p>
       </div>
 
@@ -708,8 +802,25 @@ export function FERegisterAssetPage() {
                 <Field label="NEXT DUE DATE" error={fe.nextDueDate} touched={ft.nextDueDate}>
                   <DateInput id="nextDueDate" name="nextDueDate" value={fv.nextDueDate} onChange={formik.handleChange} onBlur={formik.handleBlur} error={fe.nextDueDate} touched={ft.nextDueDate} minDate={fv.lastInspection}/>
                 </Field>
-                <Field label="SHELF EXPIRY">
-                  <DateInput id="shelfExpiry" name="shelfExpiry" value={fv.shelfExpiry} onChange={formik.handleChange} onBlur={formik.handleBlur} minDate={new Date().toISOString().split('T')[0]}/>
+                <Field label="SHELF EXPIRY" error={fe.shelfExpiry} touched={ft.shelfExpiry}>
+                  <DateInput
+                    id="shelfExpiry"
+                    name="shelfExpiry"
+                    value={fv.shelfExpiry}
+                    onChange={(e) => {
+                      formik.handleChange(e)
+                      formik.setFieldTouched('shelfExpiry', true, false)
+                    }}
+                    onBlur={formik.handleBlur}
+                    error={fe.shelfExpiry}
+                    touched={ft.shelfExpiry}
+                    minDate={(() => {
+                      // Must be >= the later of lastInspection and nextDueDate
+                      const dates = [fv.lastInspection, fv.nextDueDate].filter(Boolean)
+                      if (dates.length === 0) return new Date().toISOString().split('T')[0]
+                      return dates.reduce((latest, d) => d > latest ? d : latest)
+                    })()}
+                  />
                 </Field>
               </div>
             </div>
@@ -802,7 +913,7 @@ export function FERegisterAssetPage() {
           <button type="button" className="fe-btn fe-btn--primary fe-reg-cta-btn"
             onClick={() => formik.handleSubmit()} disabled={saving}>
             {saving ? <span className="fe-spinner" style={{ width:15, height:15 }}/> : <Printer size={15}/>}
-            Register &amp; Print Tag
+            {draftId ? 'Complete & Register Asset' : 'Register & Print Tag'}
           </button>
           <button type="button" className="fe-reg-draft-btn" onClick={handleSaveDraft} disabled={saving}>
             <Save size={13}/> Save Draft &amp; Exit

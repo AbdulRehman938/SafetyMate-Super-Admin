@@ -156,6 +156,36 @@ export function FECompliancePage() {
     }
   }
 
+  async function handleTestNotification() {
+    setSaving(true)
+    setToast(null)
+    try {
+      const response = await fetch('/api/notifications/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: 'test@example.com', // Replace with actual test email
+          subject: 'TEST: SafetyMate Notification System',
+          html: '<p>This is a test email from the SafetyMate notification system.</p><p>If you received this, email notifications are working correctly.</p>',
+          text: 'This is a test email from the SafetyMate notification system.',
+        }),
+      })
+
+      if (response.ok) {
+        setToast({ type: 'ok', text: 'Test notification sent successfully.' })
+      } else {
+        const error = await response.json()
+        setToast({ type: 'err', text: `Failed to send test: ${error.error}` })
+      }
+    } catch (err) {
+      setToast({ type: 'err', text: 'Failed to send test notification.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function handleCopyTemplate() {
     navigator.clipboard.writeText(templateContent).then(() => {
       setToast({ type: 'ok', text: 'Template copied to clipboard.' })
@@ -193,16 +223,28 @@ export function FECompliancePage() {
             Orchestrate automated communications across multiple high-availability channels.
           </p>
         </div>
-        <button
-          type="button"
-          className="fe-btn fe-btn--primary"
-          onClick={handleSave}
-          disabled={saving}
-          style={{ flexShrink:0 }}
-        >
-          {saving ? <span className="fe-spinner" style={{ width:14, height:14 }}/> : <Save size={14}/>}
-          Apply Changes
-        </button>
+        <div style={{ display:'flex', gap:8 }}>
+          <button
+            type="button"
+            className="fe-btn fe-btn--ghost"
+            onClick={handleTestNotification}
+            disabled={saving}
+            style={{ flexShrink:0 }}
+          >
+            {saving ? <span className="fe-spinner" style={{ width:14, height:14 }}/> : <Mail size={14}/>}
+            Test Email
+          </button>
+          <button
+            type="button"
+            className="fe-btn fe-btn--primary"
+            onClick={handleSave}
+            disabled={saving}
+            style={{ flexShrink:0 }}
+          >
+            {saving ? <span className="fe-spinner" style={{ width:14, height:14 }}/> : <Save size={14}/>}
+            Apply Changes
+          </button>
+        </div>
       </div>
 
       {/* ── Toast ── */}

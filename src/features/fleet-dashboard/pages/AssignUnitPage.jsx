@@ -1,4 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { serverTimestamp } from 'firebase/firestore'
 import {
   Search, Activity, AlertTriangle, CheckCircle,
   Info, ArrowLeft, ChevronDown, Check, X,
@@ -183,6 +185,7 @@ function FleetDropdown({ label, value, onChange, options = [], placeholder = 'Se
    Main AssignUnitPage
 ───────────────────────────────────────────────────────────────── */
 export function AssignUnitPage({ onBack, onConfirmed }) {
+  const navigate = useNavigate()
   const { vehicles, inspections, openAlerts, loading, updateVehicle } = useFleetData()
 
   const [search, setSearch]       = useState('')
@@ -192,6 +195,8 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
   const [duration, setDuration]     = useState('Temporary')
   const [saving, setSaving]         = useState(false)
   const [saved, setSaved]           = useState(false)
+  const [page, setPage]             = useState(1)
+  const pageSize = 8
 
   // Unique sites derived from Firestore vehicles
   const siteOptions = useMemo(() =>
@@ -204,17 +209,43 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
     return Array.from(new Set([...fromDB, ...PRESET_DEPARTMENTS])).sort()
   }, [vehicles])
 
+  // Filter vehicles: only show inactive, approved, and ready for assignment
+  const eligibleVehicles = useMemo(() => {
+    const filtered = vehicles.filter((v) => {
+      const status = v.status?.toLowerCase()
+      const compliance = v.complianceStatus?.toLowerCase()
+      // Check readyForAssign - if undefined or false (old vehicles), check if they have an inspection
+      const isReady = v.readyForAssign === true || 
+                      (v.readyForAssign === undefined && v.lastInspection) ||
+                      (v.readyForAssign === false && v.lastInspection) // Temporary backward compatibility
+      const isEligible = status === 'inactive' && compliance === 'approved' && isReady
+      
+      return isEligible
+    })
+    console.log('Total vehicles:', vehicles.length, 'Eligible vehicles:', filtered.length)
+    return filtered
+  }, [vehicles])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return vehicles
-    return vehicles.filter((v) =>
+    if (!q) return eligibleVehicles
+    return eligibleVehicles.filter((v) =>
       (v.unitId      || '').toLowerCase().includes(q) ||
       (v.vehicleType || '').toLowerCase().includes(q) ||
       (v.driverName  || '').toLowerCase().includes(q) ||
       (v.site        || '').toLowerCase().includes(q) ||
       (v.category    || '').toLowerCase().includes(q),
     )
-  }, [vehicles, search])
+  }, [eligibleVehicles, search])
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize)
+  
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1)
+  }, [search])
 
   // Auto-select single result — wrapped in timeout to avoid setState-in-effect rule
   useEffect(() => {
@@ -224,11 +255,11 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
     }
   }, [filtered, selectedId])
 
-  const selected = vehicles.find((v) => v.id === selectedId) ?? null
+  const selected = eligibleVehicles.find((v) => v.id === selectedId) ?? null
 
   const secondaryCards = search.trim()
-    ? filtered.filter((v) => v.id !== selectedId).slice(0, 4)
-    : vehicles.filter((v) => v.id !== selectedId).slice(0, 4)
+    ? paginated.filter((v) => v.id !== selectedId).slice(0, 4)
+    : paginated.filter((v) => v.id !== selectedId).slice(0, 4)
 
   const telemetry = selected ? {
     fuelEfficiency: selected.fuelEfficiency ?? '—',
@@ -246,13 +277,87 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
 
   const activeAlerts = openAlerts.filter((a) => a.vehicleId === selectedId)
 
+  // Check if vehicle has at least one inspection
+  const hasInspection = useMemo(() => {
+    if (!selected) return false
+    return inspections.some((i) => i.vehicleId === selected.id)
+  }, [inspections, selected])
+
+  // Check if vehicle needs inspection before assignment
+  // Rules:
+  // 1. If vehicle has no inspection records → needs inspection
+  // 2. If vehicle is assigned to a site (deployed) AND last inspection was before lastAssignedAt → needs reinspection
+  // 3. If vehicle is deployed but has no lastAssignedAt field (old data) → check if inspection is recent (within last 24 hours)
+  // 4. Otherwise (not deployed, or deployed with recent inspection) → no inspection needed
+  const needsInspection = useMemo(() => {
+    if (!selected) return false
+    
+    // Rule 1: No inspection records at all
+    if (!hasInspection) return true
+    
+    // Rule 2 & 3: Vehicle is deployed (has site)
+    if (selected.site) {
+      const vehicleInspections = inspections
+        .filter((i) => i.vehicleId === selected.id)
+        .sort((a, b) => (b.inspectedAt?.toMillis?.() ?? 0) - (a.inspectedAt?.toMillis?.() ?? 0))
+      
+      if (vehicleInspections.length === 0) return true
+      
+      const lastInspection = vehicleInspections[0]
+      const lastInspectionTime = lastInspection.inspectedAt?.toMillis?.() ?? 0
+      
+      // Check if lastAssignedAt exists
+      const lastAssignedTime = selected.lastAssignedAt?.toMillis?.()
+      
+      if (lastAssignedTime) {
+        // Rule 2: Compare inspection time with assignment time
+        return lastInspectionTime < lastAssignedTime
+      } else {
+        // Rule 3: No lastAssignedAt field (old data) - check if inspection is recent (within 24 hours)
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000)
+        return lastInspectionTime < oneDayAgo
+      }
+    }
+    
+    // Rule 4: Not deployed and has inspection - no inspection needed
+    return false
+  }, [selected, hasInspection, inspections])
+
+  function handleStartInspection() {
+    if (!selected) return
+    navigate('/fleet/inspections', { state: { vehicleId: selected.id } })
+  }
+
   async function handleConfirm() {
     if (!selected || !targetSite) return
+    
+    // Require department
+    if (!department) {
+      alert('Department is required for vehicle assignment.')
+      return
+    }
+    
+    // Prevent assignment if vehicle is in maintenance
+    if (selected.status === 'maintenance') {
+      alert('Vehicle is currently under maintenance and cannot be assigned to a site. Please complete maintenance first.')
+      return
+    }
+    
+    // Require inspection if needed
+    if (needsInspection) {
+      alert('Vehicle must complete an inspection before being assigned to a site.')
+      return
+    }
+    
     setSaving(true)
     try {
       await updateVehicle(selected.id, {
-        site: targetSite, department: department || null,
-        deploymentType: duration, status: 'active',
+        site: targetSite, 
+        department: department,
+        deploymentType: duration, 
+        status: 'active', // Set to active when assigned to site
+        lastAssignedAt: serverTimestamp(), // Track when vehicle was assigned
+        crewAssigned: true, // Mark vehicle as having crew assigned
       })
       setSaved(true)
       // Navigate to Site Map after short confirmation flash
@@ -338,7 +443,7 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
                     style={{ padding:'28px 20px', textAlign:'center', color:'rgba(148,163,184,0.55)', fontSize:'13.5px' }}>
                     <p style={{ margin:0, fontWeight:600 }}>Select a vehicle below to begin assignment</p>
                     <p style={{ margin:'6px 0 0', fontSize:'12px', color:'rgba(148,163,184,0.4)' }}>
-                      {vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} registered
+                      {eligibleVehicles.length} eligible vehicle{eligibleVehicles.length !== 1 ? 's' : ''} available
                     </p>
                   </motion.div>
                 )}
@@ -356,6 +461,31 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
                       alerts={openAlerts.filter((a) => a.vehicleId === v.id)}
                     />
                   ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="fleet-assign-pagination">
+                  <button
+                    type="button"
+                    className="fleet-assign-page-btn"
+                    disabled={page === 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <span className="fleet-assign-page-info">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="fleet-assign-page-btn"
+                    disabled={page === totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
                 </div>
               )}
 
@@ -457,9 +587,84 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
               </motion.div>
             )}
 
+            {/* Maintenance warning */}
+            {selected && selected.status === 'maintenance' && (
+              <div style={{ 
+                padding:'12px 14px', 
+                background:'rgba(255,83,95,0.08)', 
+                border:'1px solid rgba(255,83,95,0.25)', 
+                borderRadius:'8px', 
+                marginBottom:'16px',
+                display:'flex',
+                gap:'8px',
+                alignItems:'flex-start'
+              }}>
+                <AlertTriangle size={14} style={{ color:'#ff8080', flexShrink:0, marginTop:'1px' }} />
+                <div>
+                  <p style={{ margin:0, fontSize:'12px', fontWeight:700, color:'#ff8080' }}>
+                    Vehicle Under Maintenance
+                  </p>
+                  <p style={{ margin:'4px 0 0', fontSize:'11px', color:'rgba(255,128,128,0.85)', lineHeight:1.4 }}>
+                    This vehicle is currently under maintenance and cannot be assigned to a site. Please complete maintenance first.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Inspection requirement warning */}
+            {selected && needsInspection && (
+              <div style={{ 
+                padding:'12px 14px', 
+                background:'rgba(255,83,95,0.08)', 
+                border:'1px solid rgba(255,83,95,0.25)', 
+                borderRadius:'8px', 
+                marginBottom:'16px',
+                display:'flex',
+                flexDirection:'column',
+                gap:'10px'
+              }}>
+                <div style={{ display:'flex', gap:'8px', alignItems:'flex-start' }}>
+                  <AlertTriangle size={14} style={{ color:'#ff8080', flexShrink:0, marginTop:'1px' }} />
+                  <div>
+                    <p style={{ margin:0, fontSize:'12px', fontWeight:700, color:'#ff8080' }}>
+                      {!hasInspection ? 'Inspection Required' : 'Reinspection Required'}
+                    </p>
+                    <p style={{ margin:'4px 0 0', fontSize:'11px', color:'rgba(255,128,128,0.85)', lineHeight:1.4 }}>
+                      {!hasInspection 
+                        ? 'This vehicle must complete at least one inspection before it can be assigned to a site.'
+                        : 'This vehicle is returning from deployment and must complete a reinspection before being reassigned.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartInspection}
+                  style={{
+                    alignSelf: 'flex-start',
+                    background: 'rgba(22, 201, 136, 0.15)',
+                    border: '1px solid rgba(22, 201, 136, 0.35)',
+                    color: '#4deba0',
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(22, 201, 136, 0.25)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(22, 201, 136, 0.15)'}
+                >
+                  <CheckCircle size={12} /> Start Inspection
+                </button>
+              </div>
+            )}
+
             {/* Confirm */}
             <button type="button" className="fleet-confirm-assign-btn"
-              disabled={!selected || !targetSite || saving || saved}
+              disabled={!selected || !targetSite || saving || saved || needsInspection || selected?.status === 'maintenance'}
               onClick={handleConfirm}>
               {saved
                 ? '✓  Assignment Confirmed'

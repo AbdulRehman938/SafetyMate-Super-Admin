@@ -47,7 +47,7 @@ export function FleetDashboardPage() {
   const [showFilterMenu, setShowFilterMenu]   = useState(false)
   const [alertSearch, setAlertSearch]         = useState('')
 
-  const totalCrew = vehicles.filter((v) => v.crewAssigned).length
+  const totalCrew = vehicles.filter((v) => v.site).length
 
   // ── Lock the parent .page-content scroll so fleet-dash fills it exactly ──
   useEffect(() => {

@@ -9,7 +9,7 @@ import { RegisterVehiclePage } from './RegisterVehiclePage.jsx'
 import { cap } from '../utils/fleetHelpers.js'
 import '../fleet.css'
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 
 // Service health colour + label based on remaining service km or next service date
 function serviceHealth(vehicle) {
@@ -86,7 +86,7 @@ export function SiteMapPage() {
     setShowAdd(true)
   }
 
-  const totalCrew = vehicles.filter((v) => v.crewAssigned).length
+  const totalCrew = vehicles.filter((v) => v.site).length
 
   // Vehicles allocated to site — filtered
   const allocated = useMemo(() => {
@@ -117,6 +117,7 @@ export function SiteMapPage() {
       <VehicleDetails
         vehicle={selectedVehicle}
         alerts={openAlerts}
+        inspections={inspections}
         onBack={() => { setSelectedVehicle(null); setStatusResetVehicleId(null); }}
         viewOnly={true}
         backText="Back to Site Map"

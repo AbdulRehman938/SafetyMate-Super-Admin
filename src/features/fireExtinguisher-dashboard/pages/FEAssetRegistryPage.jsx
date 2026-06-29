@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Search, ClipboardList, CheckCircle, AlertTriangle,
-  ChevronLeft, ChevronRight, Download,
+  ChevronLeft, ChevronRight, Download, PenLine,
 } from 'lucide-react'
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { formatDate, exportToCSV } from '../utils/feHelpers.js'
@@ -153,10 +153,13 @@ export function FEAssetRegistryPage() {
                 </thead>
                 <tbody>
                   {paginated.map((a) => (
-                    <tr key={a.id}>
+                    <tr key={a.id}
+                      onClick={() => navigate(`/extinguisher/assets/${a.id}`)}
+                      style={{ cursor: 'pointer' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(58,130,255,0.08)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                       <td>
-                        <span style={{ fontFamily:'monospace', fontSize:12.5, fontWeight:700, color:'#5ba8ff', cursor:'pointer' }}
-                          onClick={() => navigate(`/extinguisher/assets/${a.id}/inspect`)}>
+                        <span style={{ fontFamily:'monospace', fontSize:12.5, fontWeight:700, color:'#5ba8ff' }}>
                           {a.assetId || a.id}
                         </span>
                       </td>
@@ -178,11 +181,28 @@ export function FEAssetRegistryPage() {
                         </span>
                       </td>
                       <td style={{ textAlign:'right' }}>
-                        <button type="button" className="fe-btn fe-btn--ghost"
-                          style={{ padding:'5px 12px', fontSize:11.5 }}
-                          onClick={() => navigate(`/extinguisher/assets/${a.id}/inspect`)}>
-                          <ClipboardList size={12}/> Inspect
-                        </button>
+                        {a.status === 'draft' ? (
+                          <button type="button"
+                            style={{
+                              padding: '5px 12px', fontSize: 11.5,
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              background: 'rgba(254,142,42,0.1)',
+                              border: '1px solid rgba(254,142,42,0.3)',
+                              borderRadius: 7,
+                              color: '#fe8e2a',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/extinguisher/assets/new?draft=${a.id}`) }}>
+                            <PenLine size={12}/> Continue
+                          </button>
+                        ) : (
+                          <button type="button" className="fe-btn fe-btn--ghost"
+                            style={{ padding:'5px 12px', fontSize:11.5 }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/extinguisher/assets/${a.id}/inspect?new=1`) }}>
+                            <ClipboardList size={12}/> Inspect
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

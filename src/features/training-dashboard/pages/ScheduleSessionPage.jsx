@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, Clock, MapPin, User, ShieldAlert, Check, X, Search } from 'lucide-react'
 import { CustomSelect } from '../components/CustomSelect.jsx'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
+import { TimeRangePicker } from '../components/TimeRangePicker.jsx'
 
 function getTodayStr() {
   return new Date().toISOString().split('T')[0]
@@ -48,44 +49,42 @@ function getEmployeeName(emp) {
 export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employees = [] }) {
   const todayStr = getTodayStr()
 
-  const [course, setCourse] = useState('Advanced Fire Safety')
+  const [course, setCourse] = useState('')
   const [instructor, setInstructor] = useState('')
   const [company, setCompany] = useState('')
-  const [location, setLocation] = useState('Training Lab A - Tech Park')
-  const [maxParticipants, setMaxParticipants] = useState(25)
-  const [startDate, setStartDate] = useState(todayStr)
-  const [endDate, setEndDate] = useState(todayStr)
-  const [timeSlot, setTimeSlot] = useState('08:00 AM - 12:00 PM')
-  const [priority, setPriority] = useState('Active')
-  const [resources, setResources] = useState({ ...DEFAULT_RESOURCES })
+  const [location, setLocation] = useState('')
+  const [maxParticipants, setMaxParticipants] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [timeSlot, setTimeSlot] = useState('')
+  const [priority, setPriority] = useState('')
+  const [resources, setResources] = useState({
+    projector: false,
+    safetyGear: false,
+    vrHeadsets: false,
+    hazmatSuits: false,
+  })
 
   const instructorsList = employees.length > 0
     ? employees.map((emp) => getEmployeeName(emp))
     : ['No instructors available']
 
-  useEffect(() => {
-    if (organizations && organizations.length > 0 && !company) {
-      setCompany(organizations[0].id)
-    }
-  }, [organizations, company])
-
-  useEffect(() => {
-    if (employees.length > 0 && !instructor) {
-      setInstructor(getEmployeeName(employees[0]))
-    }
-  }, [employees, instructor])
-
   const resetForm = () => {
-    setCourse('Advanced Fire Safety')
-    setInstructor(employees.length > 0 ? getEmployeeName(employees[0]) : '')
-    setCompany(organizations && organizations.length > 0 ? organizations[0].id : '')
-    setLocation('Training Lab A - Tech Park')
-    setMaxParticipants(25)
-    setStartDate(getTodayStr())
-    setEndDate(getTodayStr())
-    setTimeSlot('08:00 AM - 12:00 PM')
-    setPriority('Active')
-    setResources({ ...DEFAULT_RESOURCES })
+    setCourse('')
+    setInstructor('')
+    setCompany('')
+    setLocation('')
+    setMaxParticipants('')
+    setStartDate('')
+    setEndDate('')
+    setTimeSlot('')
+    setPriority('')
+    setResources({
+      projector: false,
+      safetyGear: false,
+      vrHeadsets: false,
+      hazmatSuits: false,
+    })
   }
 
   const handleCancel = () => {
@@ -187,6 +186,7 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                 options={coursesList}
                 searchable
                 searchPlaceholder="Search course..."
+                allowCustom
               />
             </div>
             <div className="sched-field">
@@ -201,6 +201,9 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                     }))
                   : [{ value: '', label: 'No organizations available' }]
                 }
+                searchable
+                searchPlaceholder="Search company..."
+                allowCustom
               />
             </div>
           </div>
@@ -221,6 +224,7 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                   disabled={employees.length === 0}
                   searchable
                   searchPlaceholder="Search instructor..."
+                  allowCustom
                 />
               </div>
               <div className="sched-availability">
@@ -240,11 +244,29 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                   value={location}
                   onChange={setLocation}
                   options={locationsList.map((loc) => ({ value: loc, label: loc }))}
+                  allowCustom
                 />
               </div>
               <div className="sched-field">
                 <label className="sched-label">Max Participants</label>
-                <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(parseInt(e.target.value) || 0)} min="1" className="sched-input sched-input--number" />
+                <input 
+                  type="number" 
+                  value={maxParticipants} 
+                  onChange={(e) => {
+                    const value = e.target.value
+                    if (value === '') {
+                      setMaxParticipants('')
+                    } else {
+                      const num = parseInt(value)
+                      if (num > 0) {
+                        setMaxParticipants(num)
+                      }
+                    }
+                  }} 
+                  min="1" 
+                  className="sched-input sched-input--number sched-input--no-spinners" 
+                  placeholder="Enter number"
+                />
               </div>
             </div>
           </div>
@@ -274,16 +296,10 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                 />
               </div>
               <div className="sched-field">
-                <label className="sched-label">Time Slot</label>
-                <CustomSelect
+                <TimeRangePicker
                   value={timeSlot}
                   onChange={setTimeSlot}
-                  options={[
-                    { value: '08:00 AM - 12:00 PM', label: '08:00 AM – 12:00 PM' },
-                    { value: '09:00 AM - 05:00 PM', label: '09:00 AM – 05:00 PM' },
-                    { value: '01:00 PM - 05:00 PM', label: '01:00 PM – 05:00 PM' },
-                  ]}
-                  searchable={false}
+                  label="Time Slot"
                 />
               </div>
             </div>
@@ -301,9 +317,10 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                 value={priority}
                 onChange={setPriority}
                 options={[
-                  { value: 'Active', label: 'Active' },
-                  { value: 'Completed', label: 'Completed' },
-                  { value: 'High Priority', label: 'High Priority' },
+                  { value: 'Low', label: 'Low' },
+                  { value: 'Medium', label: 'Medium' },
+                  { value: 'High', label: 'High' },
+                  { value: 'Critical', label: 'Critical' },
                 ]}
                 searchable={false}
               />

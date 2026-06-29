@@ -54,6 +54,7 @@ function getMonthAbbr(d) {
 
 export function CalendarPage({
   requests,
+  sessions,
   organizations,
   employees = [],
   onCreateDeployment,
@@ -84,6 +85,12 @@ export function CalendarPage({
   const [highlightedSessionId, setHighlightedSessionId] = useState(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
+  // ── Day Courses Modal State ─────────────────────────────
+  const [dayCoursesModalOpen, setDayCoursesModalOpen] = useState(false)
+  const [selectedDayCourses, setSelectedDayCourses] = useState([])
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [dayCoursesSearch, setDayCoursesSearch] = useState('')
+
   // ── Swipe state for touch navigation ────────────────────
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
@@ -93,6 +100,22 @@ export function CalendarPage({
     const timer = setTimeout(() => setHighlightedSessionId(null), 5000)
     return () => clearTimeout(timer)
   }, [highlightedSessionId])
+
+  // Disable body scroll when any modal is open
+  useEffect(() => {
+    const isAnyModalOpen = eventDetailOpen || dayCoursesModalOpen
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.paddingRight = '0px'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
+    }
+  }, [eventDetailOpen, dayCoursesModalOpen])
 
   // ── Navigation Boundaries (Past 2 Months Limit) ──────────
   const today = new Date()
@@ -146,26 +169,49 @@ export function CalendarPage({
     return dates
   }
 
-  // ── Process Requests into Calendar Events ─────────────────
-  const calendarEvents = requests
-    .filter((r) => r.status === 'approved' || r.status === 'accepted' || r.status === 'completed')
-    .map((r) => {
-      let classroom = r.classroom || 'TBD'
-      let instructor = r.instructor || 'TBD'
-      let priority = r.priority || 'Active'
+  // ── Process Requests and Sessions into Calendar Events ─────────────────
+  const calendarEvents = [
+    // Include approved client requests
+    ...requests
+      .filter((r) => r.status === 'approved' || r.status === 'completed')
+      .map((r) => {
+        let classroom = r.classroom || 'TBD'
+        let instructor = r.instructor || 'TBD'
+        let priority = r.priority || 'Active'
 
-      if (r.status === 'completed') {
-        priority = 'Completed'
-      }
+        if (r.status === 'completed') {
+          priority = 'Completed'
+        }
 
-      return {
-        ...r,
-        classroom,
-        instructor,
-        priority,
-        dates: getDatesForRequest(r),
-      }
-    })
+        return {
+          ...r,
+          classroom,
+          instructor,
+          priority,
+          dates: getDatesForRequest(r),
+        }
+      }),
+    // Include provider-scheduled sessions
+    ...sessions
+      .filter((s) => s.status === 'approved' || s.status === 'completed')
+      .map((s) => {
+        let classroom = s.classroom || 'TBD'
+        let instructor = s.instructor || 'TBD'
+        let priority = s.priority || 'Active'
+
+        if (s.status === 'completed') {
+          priority = 'Completed'
+        }
+
+        return {
+          ...s,
+          classroom,
+          instructor,
+          priority,
+          dates: getDatesForRequest(s),
+        }
+      })
+  ]
 
   // ── Apply Calendar Filters ──────────────────────────────
   const filteredEvents = calendarEvents.filter((e) => {
@@ -285,12 +331,19 @@ export function CalendarPage({
     return { eventBg, eventBorder, eventText }
   }
 
+  const handleDayCoursesClick = (day, events) => {
+    setSelectedDate(new Date(activeYear, activeMonth, day))
+    setSelectedDayCourses(events)
+    setDayCoursesSearch('')
+    setDayCoursesModalOpen(true)
+  }
+
   const handleEventUpdate = async (id, updates) => {
     await onUpdateDeployment(id, updates)
   }
 
   const handleEventComplete = async (id) => {
-    await onUpdateDeployment(id, { status: 'completed', priority: 'Completed' })
+    await onUpdateDeployment(id, { status: 'completed', priority: 'Completed', completedAt: new Date().toISOString() })
   }
 
   const handleEventDelete = async (id) => {
@@ -341,21 +394,34 @@ export function CalendarPage({
                 >
                   <div className="prov-cal-day-num">{String(day).padStart(2, '0')}</div>
                   <div className="prov-cal-day-events">
-                    {dayEvents.map((event) => {
-                      const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
-                      return (
+                    {dayEvents.length === 0 ? (
+                      <span className="prov-cal-day-empty">—</span>
+                    ) : (
+                      <>
                         <div
-                          key={event.id}
-                          className={`prov-cal-event${event.id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
-                          onClick={() => { setSelectedEvent(event); setEventDetailOpen(true) }}
-                          style={{ background: eventBg, border: `1px solid ${eventBorder}`, color: eventText }}
-                          title={`${event.course} - ${event.classroom}`}
+                          className={`prov-cal-event${dayEvents[0].id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
+                          onClick={() => { setSelectedEvent(dayEvents[0]); setEventDetailOpen(true) }}
+                          style={{
+                            background: getEventStyles(dayEvents[0].priority).eventBg,
+                            border: `1px solid ${getEventStyles(dayEvents[0].priority).eventBorder}`,
+                            color: getEventStyles(dayEvents[0].priority).eventText
+                          }}
+                          title={`${dayEvents[0].course} - ${dayEvents[0].classroom}`}
                         >
-                          <span className="prov-cal-event-name">{event.course}</span>
-                          <span className="prov-cal-event-meta">{event.classroom} · {event.instructor}</span>
+                          <span className="prov-cal-event-name">{dayEvents[0].course}</span>
+                          <span className="prov-cal-event-meta">{dayEvents[0].classroom} · {dayEvents[0].instructor}</span>
                         </div>
-                      )
-                    })}
+                        {dayEvents.length > 1 && (
+                          <button
+                            type="button"
+                            className="prov-cal-event-more"
+                            onClick={() => handleDayCoursesClick(day, dayEvents)}
+                          >
+                            +{dayEvents.length - 1} more
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               )
@@ -827,6 +893,97 @@ export function CalendarPage({
         onComplete={handleEventComplete}
         onDelete={handleEventDelete}
       />
+
+      {/* Day Courses Modal */}
+      {dayCoursesModalOpen && (
+        <div className="prov-modal-overlay" onClick={() => setDayCoursesModalOpen(false)}>
+          <div className="prov-modal-content prov-modal-content--large" onClick={(e) => e.stopPropagation()}>
+            <div className="prov-modal-header">
+              <h3 className="prov-modal-title">
+                Courses for {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </h3>
+              <button
+                type="button"
+                className="prov-modal-close"
+                onClick={() => setDayCoursesModalOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="prov-modal-body">
+              <div className="prov-day-courses-search">
+                <input
+                  type="text"
+                  placeholder="Search courses..."
+                  className="prov-search-input"
+                  value={dayCoursesSearch}
+                  onChange={(e) => setDayCoursesSearch(e.target.value)}
+                />
+              </div>
+              <div className="prov-day-courses-list">
+                {selectedDayCourses
+                  .filter((event) => {
+                    if (!dayCoursesSearch) return true
+                    const q = dayCoursesSearch.toLowerCase()
+                    return (
+                      event.course?.toLowerCase().includes(q) ||
+                      event.classroom?.toLowerCase().includes(q) ||
+                      event.instructor?.toLowerCase().includes(q) ||
+                      event.company?.toLowerCase().includes(q)
+                    )
+                  })
+                  .map((event) => {
+                    const { eventBg, eventBorder, eventText } = getEventStyles(event.priority)
+                    return (
+                      <div
+                        key={event.id}
+                        className={`prov-day-course-card${event.id === highlightedSessionId ? ' prov-cal-event--highlighted' : ''}`}
+                        style={{ background: eventBg, border: `1px solid ${eventBorder}`, color: eventText }}
+                        onClick={() => {
+                          setSelectedEvent(event)
+                          setEventDetailOpen(true)
+                          setDayCoursesModalOpen(false)
+                        }}
+                      >
+                        <div className="prov-day-course-main">
+                          <h4 className="prov-day-course-name">{event.course}</h4>
+                          <div className="prov-day-course-meta">
+                            <span>🏢 {event.company}</span>
+                            <span>📍 {event.classroom}</span>
+                            <span>👤 {event.instructor}</span>
+                          </div>
+                        </div>
+                        {event.timeDetail && (
+                          <div className="prov-day-course-time">
+                            <Clock size={12} />
+                            <span>{event.timeDetail}</span>
+                          </div>
+                        )}
+                        <div className="prov-day-course-priority">
+                          {event.priority}
+                        </div>
+                      </div>
+                    )
+                  })}
+                {selectedDayCourses.filter((event) => {
+                  if (!dayCoursesSearch) return true
+                  const q = dayCoursesSearch.toLowerCase()
+                  return (
+                    event.course?.toLowerCase().includes(q) ||
+                    event.classroom?.toLowerCase().includes(q) ||
+                    event.instructor?.toLowerCase().includes(q) ||
+                    event.company?.toLowerCase().includes(q)
+                  )
+                }).length === 0 && (
+                  <div className="prov-empty-state">
+                    <p className="prov-empty-sub">No courses match your search.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

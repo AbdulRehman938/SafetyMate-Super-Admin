@@ -21,13 +21,15 @@ export function PanelInspectionPage() {
   const [selectedPanelId, setSelectedPanelId] = useState(panelIdFromUrl || null)
   const [panelDropdownOpen, setPanelDropdownOpen] = useState(false)
   const [inspectionLaunched, setInspectionLaunched] = useState(!!panelIdFromUrl)
+  const [panelSearchTerm, setPanelSearchTerm] = useState('')
   const panelDropdownRef = useRef(null)
 
   // Inspection form state
   const [checklist, setChecklist] = useState({
     smokeDetector: null,
     manualCallPoint: null,
-    sirenTest: null
+    sirenTest: null,
+    sirenAudible: null
   })
   const [faultDescription, setFaultDescription] = useState('')
   const [faultSeverity, setFaultSeverity] = useState(null)
@@ -39,6 +41,7 @@ export function PanelInspectionPage() {
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [alarmTriggered, setAlarmTriggered] = useState(false)
   const [modal, setModal] = useState({ show: false, title: '', message: '', type: 'info' })
+  const [formErrors, setFormErrors] = useState({})
   const signatureCanvasRef = useRef(null)
   const signatureRef = useRef(null)
 
@@ -200,6 +203,47 @@ export function PanelInspectionPage() {
 
   const handleSubmitInspection = async () => {
     if (!selectedPanelId || !selectedPanel) return
+
+    // Validation
+    const errors = {}
+
+    // Check all Tactical Checklist items
+    if (checklist.smokeDetector === null) {
+      errors.smokeDetector = 'Smoke/Heat Detector Response must be marked as Pass or Fail'
+    }
+    if (checklist.manualCallPoint === null) {
+      errors.manualCallPoint = 'Manual Call Point Integrity must be marked as Pass or Fail'
+    }
+    if (checklist.sirenTest === null) {
+      errors.sirenTest = 'Siren Audibility & Strobe Test must be marked as Pass or Fail'
+    }
+
+    // Check Siren Audibility Test
+    if (checklist.sirenAudible === null) {
+      errors.sirenAudible = 'Siren Audibility must be marked as Audible or Silent/Faint'
+    }
+
+    // Check Fault Logging & Evidence
+    if (faultDescription && faultDescription.trim() !== '') {
+      if (!photoEvidence && !photoFile) {
+        errors.photoEvidence = 'Photo documentation is required when fault description is provided'
+      }
+      if (!faultSeverity) {
+        errors.faultSeverity = 'Fault severity is required when fault description is provided'
+      }
+    }
+
+    // Check Digital Signature
+    if (!digitalSignature) {
+      errors.signature = 'Digital signature is required'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      return
+    }
+
+    setFormErrors({})
     setSubmitting(true)
 
     try {
@@ -215,6 +259,7 @@ export function PanelInspectionPage() {
       await updatePanel(selectedPanelId, {
         lastInspectionDate: new Date().toISOString().split('T')[0],
         inspectionStatus: 'completed',
+        status: 'nominal',
         inspectionChecklist: checklist,
         faultDescription,
         faultSeverity,
@@ -288,24 +333,53 @@ export function PanelInspectionPage() {
               <ChevronDown size={14} className={`fd-custom-select-chevron ${panelDropdownOpen ? 'open' : ''}`} />
             </div>
             {panelDropdownOpen && (
-              <div className="fd-custom-select-dropdown" style={{ maxHeight: 200, overflowY: 'auto' }}>
+              <div className="fd-custom-select-dropdown" style={{ maxHeight: 300, overflowY: 'auto' }}>
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <input
+                    type="text"
+                    placeholder="Search panel ID, zone, or type..."
+                    value={panelSearchTerm}
+                    onChange={(e) => setPanelSearchTerm(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 6,
+                      color: 'rgba(235,242,255,0.9)',
+                      fontSize: 13,
+                      outline: 'none'
+                    }}
+                  />
+                </div>
                 {panels.length === 0 ? (
                   <div className="fd-custom-select-option" style={{ padding: '12px', color: 'rgba(148,163,184,0.5)', cursor: 'default' }}>
                     No panels registered
                   </div>
                 ) : (
-                  panels.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`fd-custom-select-option ${selectedPanelId === p.id ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSelectedPanelId(p.id)
-                        setPanelDropdownOpen(false)
-                      }}
-                    >
-                      {p.panelId || p.id} {p.zone ? `(${p.zone})` : ''}
-                    </div>
-                  ))
+                  panels
+                    .filter((p) => {
+                      const searchLower = panelSearchTerm.toLowerCase()
+                      return (
+                        (p.panelId || p.id || '').toLowerCase().includes(searchLower) ||
+                        (p.zone || '').toLowerCase().includes(searchLower) ||
+                        (p.type || '').toLowerCase().includes(searchLower)
+                      )
+                    })
+                    .map((p) => (
+                      <div
+                        key={p.id}
+                        className={`fd-custom-select-option ${selectedPanelId === p.id ? 'selected' : ''}`}
+                        onClick={() => {
+                          setSelectedPanelId(p.id)
+                          setPanelDropdownOpen(false)
+                          setPanelSearchTerm('')
+                        }}
+                      >
+                        {p.panelId || p.id} {p.zone ? `(${p.zone})` : ''}
+                      </div>
+                    ))
                 )}
               </div>
             )}
@@ -377,49 +451,60 @@ export function PanelInspectionPage() {
                 { key: 'manualCallPoint', label: 'Manual Call Point (MCP) Integrity', desc: 'Check glass/plastic seals and button tension.', icon: <AlertCircle size={20} style={{ color: '#ff535f' }} /> },
                 { key: 'sirenTest', label: 'Siren Audibility & Strobe Test', desc: 'Verify >75dB at 3m and clear strobe visibility.', icon: <Bell size={20} style={{ color: '#3a82ff' }} /> }
               ].map((item) => (
-                <div
-                  key={item.key}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px 18px',
-                    background: 'rgba(255,255,255,0.03)',
-                    borderRadius: 10,
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    gap: 16
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                    <div style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {item.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(235,242,255,0.9)' }}>
-                        {item.label}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'rgba(148,163,184,0.6)', marginTop: 2 }}>
-                        {item.desc}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleChecklistToggle(item.key, checklist[item.key] === null ? true : !checklist[item.key])}
+                <div key={item.key}>
+                  <div
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      border: `2px solid ${checklist[item.key] === true ? '#16c988' : checklist[item.key] === false ? '#ff535f' : 'rgba(255,255,255,0.1)'}`,
-                      background: checklist[item.key] === true ? 'rgba(22,201,136,0.2)' : checklist[item.key] === false ? 'rgba(255,83,95,0.2)' : 'rgba(255,255,255,0.05)',
                       display: 'flex',
+                      justifyContent: 'space-between',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer'
+                      padding: '16px 18px',
+                      background: formErrors[item.key] ? 'rgba(255,83,95,0.08)' : 'rgba(255,255,255,0.03)',
+                      borderRadius: 10,
+                      border: formErrors[item.key] ? '1px solid rgba(255,83,95,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                      gap: 16
                     }}
                   >
-                    {checklist[item.key] === true ? <Check size={14} style={{ color: '#16c988' }} /> : checklist[item.key] === false ? <X size={14} style={{ color: '#ff535f' }} /> : null}
-                  </button>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <div style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {item.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(235,242,255,0.9)' }}>
+                          {item.label}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(148,163,184,0.6)', marginTop: 2 }}>
+                          {item.desc}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleChecklistToggle(item.key, checklist[item.key] === null ? true : !checklist[item.key])
+                        if (formErrors[item.key]) {
+                          setFormErrors(prev => ({ ...prev, [item.key]: null }))
+                        }
+                      }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: `2px solid ${checklist[item.key] === true ? '#16c988' : checklist[item.key] === false ? '#ff535f' : 'rgba(255,255,255,0.1)'}`,
+                        background: checklist[item.key] === true ? 'rgba(22,201,136,0.2)' : checklist[item.key] === false ? 'rgba(255,83,95,0.2)' : 'rgba(255,255,255,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {checklist[item.key] === true ? <Check size={14} style={{ color: '#16c988' }} /> : checklist[item.key] === false ? <X size={14} style={{ color: '#ff535f' }} /> : null}
+                    </button>
+                  </div>
+                  {formErrors[item.key] && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#ff535f', fontWeight: 600, paddingLeft: 4 }}>
+                      {formErrors[item.key]}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -460,7 +545,18 @@ export function PanelInspectionPage() {
                 <label style={{ fontSize: 11, fontWeight: 800, color: 'rgba(148,163,184,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   PHOTO DOCUMENTATION
                 </label>
-                <div style={{ flex: 1, minHeight: 100, background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ 
+                  flex: 1, 
+                  minHeight: 100, 
+                  background: 'rgba(255,255,255,0.03)', 
+                  border: formErrors.photoEvidence ? '1px solid #ff535f' : '1px dashed rgba(255,255,255,0.1)', 
+                  borderRadius: 8, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  overflow: 'hidden', 
+                  position: 'relative' 
+                }}>
                   {photoEvidence ? (
                     <>
                       <img src={photoEvidence} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Evidence" />
@@ -476,10 +572,20 @@ export function PanelInspectionPage() {
                     <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: 'rgba(148,163,184,0.6)', cursor: 'pointer' }}>
                       <Camera size={28} />
                       <span style={{ fontSize: 11, fontWeight: 700 }}>CAPTURE</span>
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                        handlePhotoUpload(e)
+                        if (formErrors.photoEvidence) {
+                          setFormErrors(prev => ({ ...prev, photoEvidence: null }))
+                        }
+                      }} />
                     </label>
                   )}
                 </div>
+                {formErrors.photoEvidence && (
+                  <div style={{ marginTop: 4, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                    {formErrors.photoEvidence}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -496,7 +602,12 @@ export function PanelInspectionPage() {
                   <button
                     key={severity.label}
                     type="button"
-                    onClick={() => setFaultSeverity(severity.label)}
+                    onClick={() => {
+                      setFaultSeverity(severity.label)
+                      if (formErrors.faultSeverity) {
+                        setFormErrors(prev => ({ ...prev, faultSeverity: null }))
+                      }
+                    }}
                     style={{
                       flex: 1,
                       padding: '8px 16px',
@@ -515,6 +626,11 @@ export function PanelInspectionPage() {
                   </button>
                 ))}
               </div>
+              {formErrors.faultSeverity && (
+                <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                  {formErrors.faultSeverity}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -562,7 +678,12 @@ export function PanelInspectionPage() {
             <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'center' }}>
               <button
                 type="button"
-                onClick={() => handleChecklistToggle('sirenAudible', true)}
+                onClick={() => {
+                  handleChecklistToggle('sirenAudible', true)
+                  if (formErrors.sirenAudible) {
+                    setFormErrors(prev => ({ ...prev, sirenAudible: null }))
+                  }
+                }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -571,7 +692,7 @@ export function PanelInspectionPage() {
                   padding: '12px 20px',
                   borderRadius: 8,
                   background: 'rgba(255,255,255,0.03)',
-                  border: checklist.sirenAudible === true ? '1px solid rgba(22,201,136,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                  border: formErrors.sirenAudible ? '1px solid #ff535f' : checklist.sirenAudible === true ? '1px solid rgba(22,201,136,0.3)' : '1px solid rgba(255,255,255,0.05)',
                   cursor: 'pointer'
                 }}
               >
@@ -584,7 +705,12 @@ export function PanelInspectionPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleChecklistToggle('sirenAudible', false)}
+                onClick={() => {
+                  handleChecklistToggle('sirenAudible', false)
+                  if (formErrors.sirenAudible) {
+                    setFormErrors(prev => ({ ...prev, sirenAudible: null }))
+                  }
+                }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -593,7 +719,7 @@ export function PanelInspectionPage() {
                   padding: '12px 20px',
                   borderRadius: 8,
                   background: 'rgba(255,255,255,0.03)',
-                  border: checklist.sirenAudible === false ? '1px solid rgba(255,83,95,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                  border: formErrors.sirenAudible ? '1px solid #ff535f' : checklist.sirenAudible === false ? '1px solid rgba(255,83,95,0.3)' : '1px solid rgba(255,255,255,0.05)',
                   cursor: 'pointer'
                 }}
               >
@@ -605,6 +731,11 @@ export function PanelInspectionPage() {
                 </span>
               </button>
             </div>
+            {formErrors.sirenAudible && (
+              <div style={{ marginTop: 12, fontSize: 11, color: '#ff535f', fontWeight: 600, textAlign: 'center' }}>
+                {formErrors.sirenAudible}
+              </div>
+            )}
           </div>
 
           {/* Mission Sign-off */}
@@ -620,7 +751,7 @@ export function PanelInspectionPage() {
               <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(148,163,184,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
                 DIGITAL SIGNATURE
               </div>
-              <div style={{ position: 'relative', width: '100%', aspectRatio: '2/1', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 8, background: 'rgba(255,255,255,0.02)', overflow: 'hidden' }}>
+              <div style={{ position: 'relative', width: '100%', aspectRatio: '2/1', border: formErrors.signature ? '1px solid #ff535f' : '1px dashed rgba(255,255,255,0.15)', borderRadius: 8, background: 'rgba(255,255,255,0.02)', overflow: 'hidden' }}>
                 <canvas
                   ref={signatureCanvasRef}
                   onMouseDown={handleSignatureStart}
@@ -656,6 +787,11 @@ export function PanelInspectionPage() {
                   </button>
                 )}
               </div>
+              {formErrors.signature && (
+                <div style={{ marginTop: 8, fontSize: 11, color: '#ff535f', fontWeight: 600 }}>
+                  {formErrors.signature}
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: 20 }}>

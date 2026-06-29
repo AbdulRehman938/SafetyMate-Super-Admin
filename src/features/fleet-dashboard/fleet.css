@@ -1746,6 +1746,39 @@
   line-height: 1.5;
 }
 
+/* ── Pagination ── */
+.fleet-assign-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+.fleet-assign-page-btn {
+  padding: 8px 16px;
+  background: rgba(58,130,255,0.08);
+  border: 1px solid rgba(58,130,255,0.25);
+  border-radius: 8px;
+  color: #8ab8ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.fleet-assign-page-btn:hover:not(:disabled) {
+  background: rgba(58,130,255,0.15);
+  border-color: rgba(58,130,255,0.4);
+}
+.fleet-assign-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.fleet-assign-page-info {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(148,163,184,0.7);
+}
+
 /* ── Fleet Register Bottom Bar — flex child, always in view ── */
 .fleet-register-bottom-bar {
   flex-shrink: 0;
@@ -2431,6 +2464,29 @@
 }
 .insp-card-badge--status { right: 10px; }
 
+/* history button */
+.insp-card-history-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(58, 130, 255, 0.12);
+  border: 1px solid rgba(58, 130, 255, 0.3);
+  border-radius: 8px;
+  color: #3a82ff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.insp-card-history-btn:hover {
+  background: rgba(58, 130, 255, 0.2);
+  border-color: rgba(58, 130, 255, 0.5);
+}
+
 /* body */
 .insp-card-body {
   padding: 16px 18px 18px;
@@ -2615,6 +2671,87 @@
   gap: 16px;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+/* ── Inspection History List ────────────────────────────────── */
+.insp-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insp-history-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insp-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.insp-history-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.9);
+  letter-spacing: 0.03em;
+}
+
+.insp-history-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.insp-history-badge--pass {
+  background: rgba(22, 201, 136, 0.15);
+  border: 1px solid rgba(22, 201, 136, 0.4);
+  color: #4deba0;
+}
+
+.insp-history-badge--fail {
+  background: rgba(254, 142, 42, 0.15);
+  border: 1px solid rgba(254, 142, 42, 0.4);
+  color: #fe8e2a;
+}
+
+.insp-history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insp-history-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.insp-history-label {
+  color: rgba(148, 163, 184, 0.6);
+  font-weight: 600;
+  min-width: 70px;
+}
+
+.insp-history-value {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.insp-history-value--defect {
+  color: #fe8e2a;
+  font-weight: 600;
 }
 
 .insp-scan-head {
@@ -3661,59 +3798,84 @@
 /* ── ROW 1: Capture | Donuts | Anomalies ────────────────────── */
 .fuel-row1 {
   display: grid;
-  grid-template-columns: 220px 1fr 280px;
-  gap: 16px;
-  margin-bottom: 16px;
+  grid-template-columns: 320px 1fr 280px;
+  gap: 20px;
+  margin-bottom: 20px;
   align-items: start;
 }
 
 /* Fuel capture card */
 .fuel-capture-card { display: flex; flex-direction: column; }
-.fuel-form-fields { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 12px; }
-.fuel-field-group { display: flex; flex-direction: column; gap: 4px; }
+.fuel-form-fields { 
+  padding: 20px 24px 24px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+}
+.fuel-field-group { display: flex; flex-direction: column; gap: 6px; }
 .fuel-field-label {
-  font-size: 8px;
-  font-weight: 800;
-  color: rgba(148, 163, 184, 0.45);
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(148, 163, 184, 0.55);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.fuel-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fuel-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .fuel-field-input {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  color: rgba(235, 242, 255, 0.85);
-  font-size: 12.5px;
-  padding: 8px 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(235, 242, 255, 0.9);
+  font-size: 14px;
+  padding: 12px 14px;
   outline: none;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
-.fuel-field-input:focus { border-color: rgba(58, 130, 255, 0.45); }
-.fuel-field-input--err { border-color: rgba(255, 83, 95, 0.5) !important; }
+.fuel-field-input:focus { 
+  border-color: rgba(58, 130, 255, 0.5); 
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(58, 130, 255, 0.1);
+}
+.fuel-field-input--err { 
+  border-color: rgba(255, 83, 95, 0.6) !important; 
+  background: rgba(255, 83, 95, 0.05) !important;
+}
 .fuel-field-input option { background: #0b0f1f; }
 .fuel-submit-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
-  padding: 11px;
-  background: linear-gradient(135deg, #2a7bd6, #1a55a8);
-  border: 1px solid rgba(58, 130, 255, 0.35);
-  border-radius: 9px;
+  padding: 14px;
+  background: linear-gradient(135deg, #3a82ff, #2563eb);
+  border: 1px solid rgba(58, 130, 255, 0.4);
+  border-radius: 10px;
   color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  transition: filter 0.15s;
-  margin-top: 4px;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+  box-shadow: 0 4px 12px rgba(58, 130, 255, 0.2);
 }
-.fuel-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.fuel-submit-btn:not(:disabled):hover { filter: brightness(1.1); }
+.fuel-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(58, 130, 255, 0.3);
+  background: linear-gradient(135deg, #4a92ff, #3573eb);
+}
+.fuel-submit-btn:active {
+  transform: translateY(0);
+}
+.fuel-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
 
 /* KPI donut cards row */
 .fuel-kpi-donuts {

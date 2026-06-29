@@ -49,6 +49,7 @@ function mapTrainingRequest(d) {
     classroom: data.classroom || '',
     instructor: data.instructor || '',
     priority: data.priority || 'Active',
+    source: data.source || 'client_request',
   }
 }
 
@@ -56,6 +57,7 @@ export function useTrainingData() {
   const { authUser } = useAuth()
   const confirmingRegistrationRef = useRef(false)
   const [requests, setRequests] = useState([])
+  const [sessions, setSessions] = useState([])
   const [competencies, setCompetencies] = useState([])
   const [employees, setEmployees] = useState([])
   const [organizations, setOrganizations] = useState([])
@@ -73,6 +75,38 @@ export function useTrainingData() {
       (err) => {
         console.warn('Firestore training_requests unavailable:', err.message)
         setLoading(false)
+      },
+    )
+    return () => unsub()
+  }, [])
+
+  // ── Sync training_sessions from Firestore (provider-scheduled) ─────────────────
+  useEffect(() => {
+    const q = query(collection(db, 'training_sessions'))
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setSessions(snap.docs.map((d) => {
+          const data = d.data()
+          return {
+            id: d.id,
+            company: data.company || data.clientName || '—',
+            clientId: data.clientId || '',
+            course: data.course || data.courseName || '—',
+            workers: data.workers || data.workerCount || 0,
+            preferredDate: data.preferredDate || data.dates || 'TBD',
+            startDate: data.startDate || '',
+            endDate: data.endDate || '',
+            timeDetail: data.timeDetail || data.time || '',
+            status: data.status || 'approved',
+            classroom: data.classroom || '',
+            instructor: data.instructor || '',
+            priority: data.priority || 'Active',
+          }
+        }))
+      },
+      (err) => {
+        console.warn('Firestore training_sessions unavailable:', err.message)
       },
     )
     return () => unsub()
@@ -187,28 +221,48 @@ export function useTrainingData() {
   }
 
   const handleBulkApprove = async (selectedIds) => {
+    let successCount = 0
+    let failureCount = 0
+    const errors = []
+
     for (const id of selectedIds) {
       try {
         await updateDoc(doc(db, 'training_requests', id), { status: 'approved' })
+        await markRequestNotificationsRead(id)
+        successCount++
       } catch (err) {
+        failureCount++
+        errors.push({ id, error: err.message })
         console.warn('Bulk approve error for ' + id + ':', err.message)
       }
     }
+
+    return { successCount, failureCount, errors }
   }
 
   const handleBulkReject = async (selectedIds) => {
+    let successCount = 0
+    let failureCount = 0
+    const errors = []
+
     for (const id of selectedIds) {
       try {
         await updateDoc(doc(db, 'training_requests', id), { status: 'rejected' })
+        await markRequestNotificationsRead(id)
+        successCount++
       } catch (err) {
+        failureCount++
+        errors.push({ id, error: err.message })
         console.warn('Bulk reject error for ' + id + ':', err.message)
       }
     }
+
+    return { successCount, failureCount, errors }
   }
 
   const handleCreateDeployment = async (deployment) => {
     try {
-      const docRef = await addDoc(collection(db, 'training_requests'), {
+      const docRef = await addDoc(collection(db, 'training_sessions'), {
         company: deployment.company,
         clientId: deployment.clientId || '',
         course: deployment.course,
@@ -242,7 +296,16 @@ export function useTrainingData() {
 
   const handleUpdateDeployment = async (id, updates) => {
     try {
-      await updateDoc(doc(db, 'training_requests', id), updates)
+      // Try to update in training_sessions first (provider-scheduled)
+      const sessionRef = doc(db, 'training_sessions', id)
+      const sessionSnap = await getDoc(sessionRef)
+      
+      if (sessionSnap.exists()) {
+        await updateDoc(sessionRef, updates)
+      } else {
+        // Fall back to training_requests (client requests)
+        await updateDoc(doc(db, 'training_requests', id), updates)
+      }
     } catch (err) {
       console.error('Failed to update deployment:', err)
       throw err
@@ -299,6 +362,7 @@ export function useTrainingData() {
           source: 'ocr_bulk_upload',
           registeredBy: authUser?.uid || '',
           updatedAt: serverTimestamp(),
+          ...(registration.trainingRequestId ? { trainingRequestId: registration.trainingRequestId } : {}),
           ...(isNewCertificate ? { createdAt: serverTimestamp() } : {}),
         },
         { merge: true },
@@ -353,6 +417,7 @@ export function useTrainingData() {
 
   return {
     requests,
+    sessions,
     competencies,
     employees,
     organizations,

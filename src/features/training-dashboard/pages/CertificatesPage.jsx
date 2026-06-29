@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { IssueCertificatePage } from './IssueCertificatePage.jsx'
 import { useToast } from '../../../shared/toast/toastContext.js'
+import { parseExpiryDate, formatExpiryDate, getCertStatus, getDaysRemaining, getRenewalDate } from '../utils/dateHelpers.js'
 
 // ── Filter bottom-sheet portal ────────────────────────────────────
 function CertFilterSheet({ open, onClose, children }) {
@@ -109,38 +110,9 @@ function getAvatarColor(name) {
   return colors[Math.abs(hash) % colors.length]
 }
 
-function parseExpiryDate(expiryStr) {
-  if (!expiryStr || expiryStr === '—') return null
-  const isoMatch = expiryStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (isoMatch) return new Date(`${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}T00:00:00`)
-  const parsed = new Date(expiryStr)
-  return isNaN(parsed.getTime()) ? null : parsed
-}
-
-function formatExpiryDate(date) {
-  if (!date) return '—'
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 function getIssuingBody(course) {
   const match = ISSUING_BODY_MAP.find((entry) => entry.match.test(course || ''))
   return match?.body || 'SafetyMate Certified'
-}
-
-function getCertStatus(expiryDate) {
-  if (!expiryDate) return 'COMPLIANT'
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const threshold = new Date(now)
-  threshold.setDate(threshold.getDate() + 30)
-  const exp = new Date(expiryDate)
-  exp.setHours(0, 0, 0, 0)
-  if (exp < now) return 'EXPIRED'
-  if (exp <= threshold) return 'EXPIRING SOON'
-  return 'COMPLIANT'
 }
 
 function enrichCertificate(cert) {

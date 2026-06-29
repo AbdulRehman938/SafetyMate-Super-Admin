@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "@tanstack/react-query": "^5.95.2",
     "firebase": "^12.11.0",
-    "firebase-admin": "^14.0.0",
+    "firebase-admin": "^14.1.0",
     "formik": "^2.4.9",
     "framer-motion": "^12.38.0",
+    "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.0.1",
     "qrcode": "1.5.4",
@@ -23,6 +25,7 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.0",
+    "twilio": "^6.0.2",
     "yup": "^1.7.1"
   },
   "devDependencies": {

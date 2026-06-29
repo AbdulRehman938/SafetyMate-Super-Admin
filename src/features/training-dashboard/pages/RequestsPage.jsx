@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { SlidersHorizontal, Search, Check, X, Eye } from 'lucide-react'
+import { SlidersHorizontal, Search, Check, X, Eye, RotateCw } from 'lucide-react'
 import { CourseIcon } from '../components/CourseIcon.jsx'
 
 /* ── Mobile filter bottom sheet rendered via portal ──────────────── */
@@ -50,6 +50,7 @@ export function RequestsPage({
   onReject,
   onBulkApprove,
   onBulkReject,
+  onRefresh,
   searchQuery,
   setSearchQuery,
   showSearch,
@@ -72,6 +73,7 @@ export function RequestsPage({
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [viewingCertRequest, setViewingCertRequest] = useState(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const PAGE_SIZE = 8
 
   useEffect(() => {
@@ -83,6 +85,12 @@ export function RequestsPage({
   const handleResetFilters = () => {
     setMinWorkers('')
     setSelectedCourseFilter('All')
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    if (onRefresh) await onRefresh()
+    setTimeout(() => setIsRefreshing(false), 500)
   }
 
   const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE))
@@ -115,6 +123,16 @@ export function RequestsPage({
         </div>
         
         <div className="prov-section-head-right">
+          <button
+            type="button"
+            className={`prov-icon-btn ${isRefreshing ? 'prov-icon-btn--spinning' : ''}`}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            aria-label="Refresh"
+            title="Refresh requests"
+          >
+            <RotateCw size={14} className={isRefreshing ? 'prov-refresh-icon' : ''} />
+          </button>
           {showSearch && (
             <input
               type="text"
@@ -376,7 +394,7 @@ export function RequestsPage({
                           </button>
                         </>
                       )}
-                      {(req.status === 'approved' || req.status === 'accepted') && (
+                      {req.status === 'approved' && (
                         <span className="prov-status-text prov-status-text--approved">✓ Approved</span>
                       )}
                       {req.status === 'completed' && (

@@ -17,6 +17,7 @@ import { useToast } from '../../../shared/toast/toastContext.js'
 import { CertificateTemplateDownloads } from '../components/CertificateTemplateDownloads.jsx'
 import { CustomSelect } from '../components/CustomSelect.jsx'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
+import { parseExpiryDate, formatReadableDate, getCertStatus, getDaysRemaining, getRenewalDate } from '../utils/dateHelpers.js'
 
 /* ── Employee searchable dropdown ────────────────────────────────── */
 function empInitials(name) {
@@ -555,42 +556,31 @@ export function IssueCertificatePage({ onCancel, employees = [], organizations =
 
   // Dynamic values helper for validity status
   const getValidityStats = () => {
-    if (!issuedCertificate) return { status: 'UNKNOWN', days: 0, pillClass: '', progressClass: '', textClass: '', percent: 0 }
+    if (!issuedCertificate) return { status: 'UNKNOWN', days: 0, pillClass: '', progressClass: '', textClass: '', percent: 0, renewalStr: '—' }
     
-    const exp = new Date(issuedCertificate.rawExpiryDate)
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
+    const days = getDaysRemaining(issuedCertificate.rawExpiryDate)
+    const status = getCertStatus(issuedCertificate.rawExpiryDate)
+    const renewalStr = getRenewalDate(issuedCertificate.rawExpiryDate)
     
-    const diffTime = exp.getTime() - now.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    let statusText = 'Compliant'
     let pillCls = 'prov-detail-status-pill'
     let progressCls = 'prov-validity-progress-bar--green'
     let textCls = 'prov-validity-icon'
     
-    if (diffDays <= 0) {
-      statusText = 'Expired'
+    if (status === 'EXPIRED') {
       pillCls = 'prov-detail-status-pill prov-detail-status-pill--danger'
       progressCls = 'prov-validity-progress-bar--danger'
       textCls = 'prov-validity-icon--danger'
-    } else if (diffDays <= 90) {
-      statusText = 'Expires Soon'
+    } else if (status === 'EXPIRING_SOON') {
       pillCls = 'prov-detail-status-pill prov-detail-status-pill--warn'
       progressCls = 'prov-validity-progress-bar--warn'
       textCls = 'prov-validity-icon--warn'
     }
     
-    const percent = Math.max(0, Math.min(100, (diffDays / 730) * 100))
-    
-    // Recommended renewal is 30 days before expiry
-    const recRenewal = new Date(issuedCertificate.rawExpiryDate)
-    recRenewal.setDate(recRenewal.getDate() - 30)
-    const renewalStr = recRenewal.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    const percent = Math.max(0, Math.min(100, (days / 730) * 100))
 
     return {
-      status: statusText,
-      days: diffDays < 0 ? 0 : diffDays,
+      status: status.replace('_', ' '),
+      days,
       pillClass: pillCls,
       progressClass: progressCls,
       textClass: textCls,

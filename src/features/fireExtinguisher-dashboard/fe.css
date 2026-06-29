@@ -1507,3 +1507,10 @@
   .fe-comp-interval-row > button { align-self: flex-end; }
   .fe-comp-channel-card { padding: 14px; }
 }
+
+/* ── Inspection page — view-only kicker variant ────────────── */
+.fe-insp-kicker--view {
+  background: rgba(148,163,184,0.1) !important;
+  color: rgba(148,163,184,0.75) !important;
+  border-color: rgba(148,163,184,0.2) !important;
+}

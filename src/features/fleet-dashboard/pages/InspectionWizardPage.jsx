@@ -181,7 +181,7 @@ function SignatureCanvas({ onSign, onClear, signed, initialDataUrl }) {
      draftInspection — existing draft doc (or null) to resume from
      onBack          — go back to vehicle selection
 ───────────────────────────────────────────────────────────── */
-export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
+export function InspectionWizardPage({ vehicle, draftInspection, onBack, viewInspection = null, resolveInspection = null, onNewInspection = null }) {
   const { upsertDraftInspection, finaliseInspection, openAlerts } = useFleetData()
   const { profile } = useAuth()
 
@@ -195,6 +195,30 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
   const [saving,    setSaving]    = useState(false)
   const [saveMsg,   setSaveMsg]   = useState(null)  // { type: 'ok'|'err', text }
   const [submitDone, setSubmitDone] = useState(false)
+  const [originalNotes, setOriginalNotes] = useState('')
+  
+  // Determine mode: new, view, or resolve
+  const isViewMode = !!viewInspection
+  const isResolveMode = !!resolveInspection
+  
+  // Seed state from view/resolve inspection
+  useEffect(() => {
+    const sourceInspection = viewInspection || resolveInspection
+    if (sourceInspection) {
+      setOdometer(String(sourceInspection.currentKm ?? ''))
+      setAnswers(sourceInspection.checklist ?? {})
+      setNotes(sourceInspection.notes ?? '')
+      // In resolve mode, don't seed signature - user must sign again
+      if (!resolveInspection) {
+        setSignature(sourceInspection.signature ?? null)
+      } else {
+        setSignature(null)
+      }
+      if (resolveInspection) {
+        setOriginalNotes(sourceInspection.notes ?? '')
+      }
+    }
+  }, [viewInspection, resolveInspection])
 
   const photoSlots = ['FRONT', 'REAR', 'DEFECT']
 
@@ -209,9 +233,16 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
   }
 
   function deriveOutcome() {
+    // If defect description has text, inspection is not cleared
+    if (notes.trim()) return 'fail'
+    // If any item is FAIL, inspection failed
     if (Object.values(answers).includes('FAIL')) return 'fail'
+    // If any item is N/A, inspection is conditional
+    if (Object.values(answers).includes('NA')) return 'conditional'
+    // All items must be PASS to be cleared
     const allAnswered = CHECKLIST.flatMap((s) => s.items).every((i) => answers[i.id])
-    return allAnswered ? 'pass' : 'conditional'
+    const allPass = Object.values(answers).every((v) => v === 'PASS')
+    return allAnswered && allPass ? 'pass' : 'conditional'
   }
 
   function handlePhotoAdd(slot, file) {
@@ -258,8 +289,55 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
       setSaveMsg({ type: 'err', text: validationErr.message })
       return
     }
+    
+    /* Validate all checklist items are completed (not blank) */
+    const totalItems = CHECKLIST.reduce((sum, section) => sum + section.items.length, 0)
+    const answeredItems = Object.keys(answers).length
+    if (answeredItems < totalItems) {
+      setSaveMsg({ type: 'err', text: `Please complete all checklist items (${answeredItems}/${totalItems} completed).` })
+      return
+    }
+    
+    /* Validate digital signature is required */
+    if (!signature) {
+      setSaveMsg({ type: 'err', text: 'Digital signature is required to submit the inspection.' })
+      return
+    }
+    
+    /* Validate defect description requires at least 2 photos (only for new inspections, not resolve mode) */
+    if (!isResolveMode && notes.trim()) {
+      const photoCount = Object.values(photos).filter(p => p !== null).length
+      if (photoCount < 2) {
+        setSaveMsg({ type: 'err', text: 'At least 2 photos must be uploaded when describing defects.' })
+        return
+      }
+    }
+    
+    /* In resolve mode, check for remaining issues and show warning */
+    let hasWarning = false
+    if (isResolveMode) {
+      const hasDefects = notes.trim()
+      const hasFail = Object.values(answers).includes('FAIL')
+      const hasNA = Object.values(answers).includes('NA')
+      
+      if (hasDefects || hasFail || hasNA) {
+        const issues = []
+        if (hasDefects) issues.push('defect description')
+        if (hasFail) issues.push('failed items')
+        if (hasNA) issues.push('N/A items')
+        
+        // Show warning but allow submission - vehicle will be marked as uncleared
+        setSaveMsg({ 
+          type: 'err', 
+          text: `Warning: Vehicle still has issues (${issues.join(', ')}). Will be marked as NOT CLEARED. You can resolve these issues in a follow-up inspection.` 
+        })
+        hasWarning = true
+      }
+    }
+    
     setSaving(true)
-    setSaveMsg(null)
+    // Don't clear saveMsg if there's a warning - let it show to user
+    if (!hasWarning) setSaveMsg(null)
     const outcome = deriveOutcome()
     const payload = {
       vehicleId:      vehicle.id,
@@ -272,8 +350,13 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
       notes:          notes.trim(),
       signature:      signature || null,
     }
+    
+    // In resolve mode, always create a new record (don't pass draftId)
+    // In new mode, use draftId if exists
+    const effectiveDraftId = isResolveMode ? null : draftId
+    
     try {
-      await finaliseInspection(draftId, vehicle.id, payload)
+      await finaliseInspection(effectiveDraftId, vehicle.id, payload)
       setSubmitDone(true)
     } catch {
       setSaveMsg({ type: 'err', text: 'Submission failed. Please try again.' })
@@ -299,6 +382,77 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
 
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
   const isResuming = !!draftInspection
+
+  // View mode header
+  if (isViewMode) {
+    return (
+      <div className="fleet-subpage wiz-page">
+        <div className="wiz-header">
+          <button type="button" className="wiz-back-btn" onClick={onBack}>
+            <ArrowLeft size={16} /> Back
+          </button>
+          <div className="wiz-header-title">
+            <h1 className="wiz-title">Inspection Record</h1>
+            <p className="wiz-subtitle">{vehicle.unitId} • {today}</p>
+          </div>
+        </div>
+
+        <div className="wiz-content">
+          <div className="wiz-section">
+            <div className="wiz-section-header">
+              <h3 className="wiz-section-title">Odometer Reading</h3>
+            </div>
+            <div className="wiz-odometer-display">
+              <Gauge size={20} className="wiz-odometer-icon" />
+              <span className="wiz-odometer-value">{odometer} KM</span>
+            </div>
+          </div>
+
+          {CHECKLIST.map((section) => (
+            <div key={section.id} className="wiz-section">
+              <div className="wiz-section-header">
+                <section.Icon size={18} className="wiz section-icon" />
+                <h3 className="wiz-section-title">{section.label}</h3>
+              </div>
+              <div className="wiz-checklist">
+                {section.items.map((item) => {
+                  const value = answers[item.id]
+                  const isPass = value === 'PASS'
+                  const isFail = value === 'FAIL'
+                  const isNA = value === 'NA'
+                  return (
+                    <div key={item.id} className="wiz-check-item" style={{ opacity: 0.7 }}>
+                      <span className="wiz-check-label">{item.label}</span>
+                      <div className="wiz-check-buttons">
+                        <span className={`wiz-check-badge ${isPass ? 'wiz-check-badge--pass' : isFail ? 'wiz-check-badge--fail' : isNA ? 'wiz-check-badge--na' : ''}`}>
+                          {value || 'Not answered'}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+
+          {notes && (
+            <div className="wiz-section">
+              <div className="wiz-section-header">
+                <h3 className="wiz-section-title">Defect Description</h3>
+              </div>
+              <div className="wiz-notes-display">{notes}</div>
+            </div>
+          )}
+
+          <div className="wiz-actions">
+            <button type="button" className="wiz-submit-btn" onClick={onNewInspection}>
+              <Pen size={16} /> New Inspection
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fleet-subpage wiz-page">
@@ -333,26 +487,31 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
             <ArrowLeft size={15} />
           </button>
           <div>
-            <h1 className="wiz-title">Vehicle Daily Inspection</h1>
+            <h1 className="wiz-title">
+              {isResolveMode ? 'Resolve Inspection' : 'Vehicle Daily Inspection'}
+            </h1>
             <p className="wiz-meta">
               <Tag size={11} />
               Unit #&nbsp;{vehicle.unitId}&nbsp;·&nbsp;{today}
+              {isResolveMode && <span className="wiz-meta-draft"> · RESOLVE MODE</span>}
               {isResuming && <span className="wiz-meta-draft"> · DRAFT</span>}
             </p>
           </div>
         </div>
         <div className="wiz-header-actions">
-          <button type="button" className="wiz-btn wiz-btn--ghost" onClick={handleSave} disabled={saving}>
-            {saving
-              ? <span className="fleet-spinner" style={{ width: 13, height: 13 }} />
-              : <Save size={13} />}
-            SAVE PROGRESS
-          </button>
+          {!isResolveMode && (
+            <button type="button" className="wiz-btn wiz-btn--ghost" onClick={handleSave} disabled={saving}>
+              {saving
+                ? <span className="fleet-spinner" style={{ width: 13, height: 13 }} />
+                : <Save size={13} />}
+              SAVE PROGRESS
+            </button>
+          )}
           <button type="button" className="wiz-btn wiz-btn--primary" onClick={handleSubmit} disabled={saving}>
             {saving
               ? <span className="fleet-spinner" style={{ width: 13, height: 13 }} />
               : <Send size={13} />}
-            FINALIZE &amp; SUBMIT
+            {isResolveMode ? 'SUBMIT RESOLVED' : 'FINALIZE SUBMIT'}
           </button>
         </div>
       </div>
@@ -458,9 +617,26 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
             </div>
             <span className="wiz-section-title">Describe any observed defects</span>
           </div>
-          <textarea className="wiz-defects-textarea" rows={7}
+          <textarea 
+            className="wiz-defects-textarea" 
+            rows={7}
             placeholder="Include detailed information on hazards or items requiring attention…"
-            value={notes} onChange={(e) => setNotes(e.target.value)} />
+            value={notes} 
+            onChange={(e) => setNotes(e.target.value)}
+            disabled={isViewMode}
+          />
+          {isResolveMode && originalNotes.trim() && notes.trim() === originalNotes.trim() && (
+            <button 
+              type="button" 
+              className="wiz-mark-solved-btn"
+              onClick={() => {
+                setNotes('')
+                setPhotos([])
+              }}
+            >
+              <CheckCircle size={14} /> Mark as Solved
+            </button>
+          )}
         </div>
       </div>
 
@@ -481,7 +657,7 @@ export function InspectionWizardPage({ vehicle, draftInspection, onBack }) {
           onSign={setSignature}
           onClear={() => setSignature(null)}
           signed={!!signature}
-          initialDataUrl={isResuming ? signature : null}
+          initialDataUrl={isResuming && !isResolveMode ? signature : null}
         />
         <p className="wiz-sig-disclaimer">
           DIGITALLY SIGNED &amp; LEGALLY BINDING INSPECTION OF THE ABOVE

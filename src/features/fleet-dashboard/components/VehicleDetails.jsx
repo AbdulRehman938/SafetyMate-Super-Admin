@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   ArrowLeft,
   Calendar,
@@ -10,7 +10,10 @@ import {
   ShieldCheck,
   ChevronRight,
   RefreshCw,
-  X
+  X,
+  Printer,
+  Fingerprint,
+  Info
 } from 'lucide-react'
 import {
   BarChart,
@@ -40,29 +43,54 @@ function loadJsPDF() {
   })
 }
 
-export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false, backText = "Back to Registry", onEdit, statusReset }) {
+export function VehicleDetails({ vehicle, alerts = [], inspections = [], onBack, viewOnly = false, backText = "Back to Registry", onEdit, statusReset }) {
   const [submitting, setSubmitting] = useState(false)
   const [approved, setApproved] = useState(vehicle.complianceStatus === 'Approved')
   const [showHistory, setShowHistory] = useState(false)
   const [message, setMessage] = useState('')
   const [showEditModal, setShowEditModal] = useState(false)
+  const [defectPage, setDefectPage] = useState(1)
+  const DEFECT_PAGE_SIZE = 5
 
-  // Filter alerts specifically for this vehicle
-  const vehicleAlerts = alerts
-    .filter((a) => a.vehicleId === vehicle.id)
-    .sort((a, b) => {
-      const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0)
-      const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0)
-      return bDate - aDate
-    })
+  // Filter inspections with defects (notes) for this vehicle
+  const vehicleDefects = useMemo(() => {
+    return inspections
+      .filter((i) => i.vehicleId === vehicle.id && i.notes && i.notes.trim())
+      .sort((a, b) => {
+        const aDate = a.inspectedAt?.toDate ? a.inspectedAt.toDate() : new Date(a.inspectedAt || 0)
+        const bDate = b.inspectedAt?.toDate ? b.inspectedAt.toDate() : new Date(b.inspectedAt || 0)
+        return bDate - aDate
+      })
+      .map((inspection, index) => ({
+        id: inspection.id || `defect-${index}`,
+        description: inspection.notes,
+        reportedDate: inspection.inspectedAt?.toDate ? inspection.inspectedAt.toDate() : new Date(inspection.inspectedAt || 0),
+        severity: inspection.outcome === 'fail' ? 'HIGH' : 'MEDIUM',
+        status: inspection.outcome === 'fail' ? 'OPEN' : 'RESOLVED',
+        reference: inspection.id?.slice(-8).toUpperCase() || `INS-${index + 1}`
+      }))
+  }, [inspections, vehicle.id])
 
-  // Display actual vehicle alerts only - no dummy data
-  const displayedAlerts = useMemo(() => {
+  // Display actual vehicle defects only
+  const displayedDefects = useMemo(() => {
     if (!showHistory) {
-      return vehicleAlerts.filter((a) => a.status !== 'resolved')
+      return vehicleDefects.filter((d) => d.status === 'OPEN')
     }
-    return vehicleAlerts
-  }, [vehicleAlerts, showHistory])
+    return vehicleDefects
+  }, [vehicleDefects, showHistory])
+
+  // Pagination for defects
+  const defectTotalPages = Math.max(1, Math.ceil(displayedDefects.length / DEFECT_PAGE_SIZE))
+  const defectSafePage = Math.min(defectPage, defectTotalPages)
+  const paginatedDefects = useMemo(() => {
+    const start = (defectSafePage - 1) * DEFECT_PAGE_SIZE
+    return displayedDefects.slice(start, start + DEFECT_PAGE_SIZE)
+  }, [displayedDefects, defectSafePage])
+
+  // Reset defect page when toggling history
+  useEffect(() => {
+    setDefectPage(1)
+  }, [showHistory])
 
   // Calculate daily average based on mileage or standard progression
   const totalDistance = vehicle.mileageKm ? vehicle.mileageKm.toLocaleString() + ' KM' : '—'
@@ -70,12 +98,77 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
     ? (Math.floor((vehicle.mileageKm / 30) * 10) / 10).toLocaleString(undefined, { minimumFractionDigits: 1 }) + ' KM' 
     : '—'
 
-  // Generate chart data from actual fuel logs if available, otherwise show empty state
+  // Calculate service interval data
+  const serviceData = useMemo(() => {
+    const nextService = vehicle.nextService
+    const lastService = vehicle.lastService
+    const mileageKm = vehicle.mileageKm || 0
+    
+    // Calculate days until next service
+    let daysUntilService = null
+    let serviceProgress = 0
+    let serviceStatus = 'No data'
+    
+    if (nextService) {
+      const now = Date.now()
+      const nextDate = nextService.toDate ? nextService.toDate() : new Date(nextService)
+      daysUntilService = Math.ceil((nextDate - now) / (1000 * 60 * 60 * 24))
+      
+      // Calculate progress (assuming 30-day service interval as baseline)
+      if (lastService) {
+        const lastDate = lastService.toDate ? lastService.toDate() : new Date(lastService)
+        const totalDays = 30 // Standard service interval
+        const daysSinceLast = Math.ceil((now - lastDate) / (1000 * 60 * 60 * 24))
+        serviceProgress = Math.min(100, (daysSinceLast / totalDays) * 100)
+      }
+      
+      if (daysUntilService < 0) {
+        serviceStatus = 'OVERDUE'
+      } else if (daysUntilService < 7) {
+        serviceStatus = 'DUE SOON'
+      } else {
+        serviceStatus = `${daysUntilService} DAYS`
+      }
+    }
+    
+    return {
+      daysUntilService,
+      serviceProgress,
+      serviceStatus,
+      mileageKm
+    }
+  }, [vehicle.nextService, vehicle.lastService, vehicle.mileageKm])
   const chartData = useMemo(() => {
-    // If we had fuel logs, we would use them here
-    // For now, return empty array to show no data state
-    return []
-  }, [])
+    const vehicleInspections = inspections
+      .filter((i) => i.vehicleId === vehicle.id && i.currentKm)
+      .sort((a, b) => {
+        const aDate = a.inspectedAt?.toDate ? a.inspectedAt.toDate() : new Date(a.inspectedAt || 0)
+        const bDate = b.inspectedAt?.toDate ? b.inspectedAt.toDate() : new Date(b.inspectedAt || 0)
+        return aDate - bDate
+      })
+    
+    if (vehicleInspections.length === 0) return []
+    
+    // Take last 12 inspections for the chart
+    const recentInspections = vehicleInspections.slice(-12)
+    
+    // Calculate distance between consecutive inspections
+    let previousKm = 0
+    return recentInspections.map((inspection, index) => {
+      const currentKm = inspection.currentKm || 0
+      const distance = index === 0 ? currentKm : currentKm - previousKm
+      previousKm = currentKm
+      
+      const date = inspection.inspectedAt?.toDate ? inspection.inspectedAt.toDate() : new Date(inspection.inspectedAt || 0)
+      const monthName = date.toLocaleString('default', { month: 'short' })
+      const day = date.getDate()
+      
+      return {
+        name: `${monthName} ${day}`,
+        distance: Math.max(0, distance)
+      }
+    })
+  }, [inspections, vehicle.id])
 
   // Submit Approval: updates vehicle compliance status in Firestore
   async function handleSubmitApproval() {
@@ -84,6 +177,7 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
       const vehicleRef = doc(db, 'fleet_vehicles', vehicle.id)
       await updateDoc(vehicleRef, {
         complianceStatus: 'Approved',
+        status: 'inactive', // Set to inactive after approval, not active
         lastAuditAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
@@ -96,6 +190,50 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Download QR code
+  function downloadVehicleQR() {
+    if (!vehicle.qrCode) return
+    const link = document.createElement('a')
+    link.href = vehicle.qrCode
+    link.download = `vehicle-qr-${vehicle.vehicleId || vehicle.unitId}.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // Print QR code
+  function printVehicleQR() {
+    if (!vehicle.qrCode) return
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Vehicle QR Code - ${vehicle.vehicleId || vehicle.unitId}</title>
+          <style>
+            body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: Arial, sans-serif; }
+            .container { text-align: center; padding: 20px; }
+            .qr-code { margin: 20px 0; }
+            .vehicle-id { font-size: 24px; font-weight: bold; margin-top: 10px; }
+            .vehicle-info { font-size: 14px; color: #666; margin-top: 5px; }
+            .label { font-size: 14px; color: #666; margin-bottom: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <p class="label">Vehicle Identification QR Code</p>
+            <div class="qr-code">
+              <img src="${vehicle.qrCode}" alt="Vehicle QR Code" style="width: 200px; height: 200px;" />
+            </div>
+            <p class="vehicle-id">${vehicle.vehicleId || vehicle.unitId}</p>
+            <p class="vehicle-info">${vehicle.model || '—'} • ${vehicle.plateNumber || '—'}</p>
+          </div>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.print()
   }
 
   // Handle PDF Download
@@ -380,6 +518,66 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
         </div>
       </div>
 
+      {/* Vehicle Identification QR Code Card */}
+      {vehicle.qrCode && (
+        <div className="fleet-section-card" style={{ padding: '24px', marginBottom: '20px', background: 'rgba(58,130,255,0.05)', border: '1px solid rgba(58,130,255,0.2)' }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: '11px', fontWeight: 800, color: '#3a82ff',
+            letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Fingerprint size={14} /> VEHICLE IDENTIFICATION
+          </h3>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+            {/* QR Code Display */}
+            <div style={{ flexShrink: 0, background: '#fff', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+              <img src={vehicle.qrCode} alt="Vehicle QR Code" style={{ width: '180px', height: '180px', display: 'block' }} />
+            </div>
+            
+            {/* Vehicle ID and Actions */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: 800, color: 'rgba(148,163,184,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  VEHICLE ID
+                </p>
+                <p style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#3a82ff', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                  {vehicle.vehicleId || vehicle.unitId}
+                </p>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={downloadVehicleQR}
+                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff', padding: '10px 20px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}>
+                  <Download size={14} />
+                  DOWNLOAD QR
+                </button>
+                <button
+                  type="button"
+                  onClick={printVehicleQR}
+                  style={{ background: 'linear-gradient(135deg,#3a82ff,#1c5fb3)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff', padding: '10px 20px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}>
+                  <Printer size={14} />
+                  PRINT QR
+                </button>
+              </div>
+              
+              <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <p style={{ margin: 0, fontSize: '11px', color: 'rgba(148,163,184,0.7)', fontWeight: 600, lineHeight: '1.5' }}>
+                  <Info size={12} style={{ color: '#3a82ff', marginRight: '6px', display: 'inline', verticalAlign: 'middle' }} />
+                  Unique vehicle identification QR code. Scan to access vehicle digital twin and maintenance records.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Middle row of two cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '20px', marginBottom: '20px' }}>
         
@@ -467,10 +665,20 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em' }}>
                 <span style={{ color: 'rgba(148,163,184,0.8)' }}>ENGINE LUBRICATION</span>
-                <span style={{ color: 'rgba(148,163,184,0.5)' }}>No data</span>
+                <span style={{ color: serviceData.serviceStatus === 'OVERDUE' ? '#ff535f' : serviceData.serviceStatus === 'DUE SOON' ? '#fe8e2a' : 'rgba(148,163,184,0.5)' }}>
+                  {serviceData.serviceStatus}
+                </span>
               </div>
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '0%', background: 'rgba(148,163,184,0.3)', borderRadius: '999px' }} />
+                <div 
+                  style={{ 
+                    height: '100%', 
+                    width: `${serviceData.serviceProgress}%`, 
+                    background: serviceData.serviceStatus === 'OVERDUE' ? '#ff535f' : serviceData.serviceStatus === 'DUE SOON' ? '#fe8e2a' : 'rgba(148,163,184,0.3)', 
+                    borderRadius: '999px',
+                    transition: 'width 0.3s ease'
+                  }} 
+                />
               </div>
             </div>
 
@@ -478,10 +686,19 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em' }}>
                 <span style={{ color: 'rgba(148,163,184,0.8)' }}>BRAKING SYSTEM</span>
-                <span style={{ color: 'rgba(148,163,184,0.5)' }}>No data</span>
+                <span style={{ color: 'rgba(148,163,184,0.5)' }}>
+                  {serviceData.mileageKm > 0 ? `${serviceData.mileageKm.toLocaleString()} KM` : 'No data'}
+                </span>
               </div>
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '0%', background: 'rgba(148,163,184,0.3)', borderRadius: '999px' }} />
+                <div 
+                  style={{ 
+                    height: '100%', 
+                    width: serviceData.mileageKm > 0 ? '75%' : '0%', 
+                    background: serviceData.mileageKm > 0 ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.3)', 
+                    borderRadius: '999px' 
+                  }} 
+                />
               </div>
             </div>
 
@@ -501,18 +718,20 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
               marginTop: 'auto',
               padding: '12px 14px',
               borderRadius: '8px',
-              background: 'rgba(148,163,184,0.05)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: serviceData.serviceStatus === 'OVERDUE' ? 'rgba(255,83,95,0.08)' : 'rgba(148,163,184,0.05)',
+              border: serviceData.serviceStatus === 'OVERDUE' ? '1px solid rgba(255,83,95,0.25)' : '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               alignItems: 'center',
               gap: '12px'
             }}>
-              <div style={{ color: 'rgba(148,163,184,0.5)' }}>
+              <div style={{ color: serviceData.serviceStatus === 'OVERDUE' ? '#ff535f' : 'rgba(148,163,184,0.5)' }}>
                 <Calendar size={18} />
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: 'rgba(148,163,184,0.5)' }}>Estimated Service</p>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(148, 163, 184, 0.4)', fontWeight: 600 }}>No data available</p>
+                <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: serviceData.serviceStatus === 'OVERDUE' ? '#ff8080' : 'rgba(148,163,184,0.5)' }}>Estimated Service</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: serviceData.serviceStatus === 'OVERDUE' ? 'rgba(255,128,128,0.85)' : 'rgba(148, 163, 184, 0.4)', fontWeight: 600 }}>
+                  {serviceData.serviceStatus === 'No data' ? 'No data available' : serviceData.serviceStatus}
+                </p>
               </div>
             </div>
           </div>
@@ -553,64 +772,54 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
               </tr>
             </thead>
             <tbody>
-              {displayedAlerts.length === 0 ? (
+              {paginatedDefects.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(148,163,184,0.5)', fontSize: '13px' }}>
                     No defect records found for this vehicle.
                   </td>
                 </tr>
               ) : (
-                displayedAlerts.map((alert) => {
+                paginatedDefects.map((defect) => {
                   let sevColor = 'rgba(148,163,184,0.1)'
                   let sevText = '#94a3b8'
                   let border = '1px solid rgba(148,163,184,0.2)'
-                  if (alert.severity === 'critical') {
+                  if (defect.severity === 'HIGH') {
                     sevColor = 'rgba(255,83,95,0.08)'
                     sevText = '#ff8080'
                     border = '1px solid rgba(255,83,95,0.2)'
-                  } else if (alert.severity === 'minor') {
-                    sevColor = 'rgba(58,130,255,0.08)'
-                    sevText = '#8ab8ff'
-                    border = '1px solid rgba(58,130,255,0.2)'
-                  } else if (alert.severity === 'low') {
-                    sevColor = 'rgba(255,255,255,0.02)'
-                    sevText = 'rgba(148,163,184,0.8)'
-                    border = '1px solid rgba(255,255,255,0.05)'
+                  } else if (defect.severity === 'MEDIUM') {
+                    sevColor = 'rgba(254,142,42,0.08)'
+                    sevText = '#fe8e2a'
+                    border = '1px solid rgba(254,142,42,0.2)'
                   }
 
                   let statusNode = null
-                  if (alert.status === 'resolved') {
+                  if (defect.status === 'RESOLVED') {
                     statusNode = (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#16c988', fontWeight: 600 }}>
                         <CheckCircle size={13} style={{ color: '#16c988' }} /> Resolved
                       </span>
                     )
-                  } else if (alert.status === 'pending') {
-                    statusNode = (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#3a82ff', fontWeight: 600 }}>
-                        <RefreshCw size={13} style={{ animation: 'fleet-spin 2s linear infinite', color: '#3a82ff' }} /> Pending
-                      </span>
-                    )
-                  } else {
+                  } else if (defect.status === 'OPEN') {
                     statusNode = (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#fe8e2a', fontWeight: 600 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800 }}>!</span> Escalated
+                        <AlertTriangle size={13} style={{ color: '#fe8e2a' }} /> Open
                       </span>
                     )
                   }
 
                   let dateStr = ''
-                  if (alert.createdAt) {
-                    const d = alert.createdAt.toDate ? alert.createdAt.toDate() : new Date(alert.createdAt)
+                  if (defect.reportedDate) {
+                    const d = defect.reportedDate
                     if (!isNaN(d.getTime())) {
                       dateStr = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
                     }
                   }
 
                   return (
-                    <tr key={alert.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <tr key={defect.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <td style={{ padding: '14px 0', fontSize: '13.5px', fontWeight: 700, color: '#ffffff' }}>
-                        {alert.message}
+                        {defect.description}
                       </td>
                       <td style={{ padding: '14px 0', fontSize: '12.5px', color: 'rgba(148, 163, 184, 0.7)', fontWeight: 600 }}>
                         {dateStr}
@@ -628,14 +837,14 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
                           textTransform: 'uppercase',
                           letterSpacing: '0.04em'
                         }}>
-                          {alert.severity}
+                          {defect.severity}
                         </span>
                       </td>
                       <td style={{ padding: '14px 0', fontSize: '12.5px' }}>
                         {statusNode}
                       </td>
                       <td style={{ padding: '14px 0', fontSize: '12.5px', color: 'rgba(148, 163, 184, 0.5)', fontFamily: 'monospace', fontWeight: 700 }}>
-                        {alert.reference || `#DEF-${alert.id.slice(0, 3).toUpperCase()}`}
+                        {defect.reference}
                       </td>
                     </tr>
                   )
@@ -644,6 +853,34 @@ export function VehicleDetails({ vehicle, alerts = [], onBack, viewOnly = false,
             </tbody>
           </table>
         </div>
+
+        {/* Pagination for defects */}
+        {defectTotalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: '11.5px', color: 'rgba(148,163,184,0.5)' }}>
+              Showing {paginatedAlerts.length} of {displayedAlerts.length} defect{displayedAlerts.length !== 1 ? 's' : ''}
+            </span>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setDefectPage((p) => Math.max(1, p - 1))}
+                disabled={defectSafePage <= 1}
+                style={{ background: 'none', border: 'none', fontSize: '12.5px', fontWeight: 700, color: defectSafePage <= 1 ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.7)', cursor: defectSafePage <= 1 ? 'not-allowed' : 'pointer', padding: '4px 8px' }}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: '11px', color: 'rgba(148,163,184,0.4)' }}>{defectSafePage} / {defectTotalPages}</span>
+              <button
+                type="button"
+                onClick={() => setDefectPage((p) => Math.min(defectTotalPages, p + 1))}
+                disabled={defectSafePage >= defectTotalPages}
+                style={{ background: 'none', border: 'none', fontSize: '12.5px', fontWeight: 700, color: defectSafePage >= defectTotalPages ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.7)', cursor: defectSafePage >= defectTotalPages ? 'not-allowed' : 'pointer', padding: '4px 8px' }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Compliance Audit Statement Card */}
