@@ -3,12 +3,14 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Archive, ShieldCheck, Menu, LogOut, User } from 'lucide-react'
 import { useAuth } from '../../app/providers/authContext.js'
 import { initials, avatarColor } from './utils/feHelpers.js'
+import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
+import { useModulePath } from '../../shared/navigation/modulePaths.js'
 import './fe.css'
 
 const NAV_ITEMS = [
-  { to: '/extinguisher/dashboard',   label: 'Dashboard',             Icon: LayoutDashboard },
-  { to: '/extinguisher/assets',      label: 'Asset Registry',        Icon: Archive         },
-  { to: '/extinguisher/compliance',  label: 'Compliance Monitoring', Icon: ShieldCheck     },
+  { path: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+  { path: '/assets', label: 'Asset Registry', Icon: Archive },
+  { path: '/compliance', label: 'Compliance Monitoring', Icon: ShieldCheck },
 ]
 
 function getGreeting(name) {
@@ -22,6 +24,7 @@ function getGreeting(name) {
 export function FELayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -85,8 +88,8 @@ export function FELayout() {
         <nav className="fe-nav">
           {NAV_ITEMS.map((item) => (
             <NavLink
-              key={item.to}
-              to={item.to}
+              key={item.path}
+              to={fePath(item.path)}
               className={({ isActive }) => `fe-nav-link${isActive ? ' active' : ''}`}
               onClick={() => isMobile && setMobileSidebarOpen(false)}
             >
@@ -103,7 +106,7 @@ export function FELayout() {
             className="fe-profile-btn"
             onClick={() => {
               if (isMobile) setMobileSidebarOpen(false)
-              navigate('/extinguisher/profile')
+              navigate(fePath('/profile'))
             }}
             title={sidebarCollapsed && !isMobile ? displayName : undefined}
           >
@@ -158,7 +161,7 @@ export function FELayout() {
           <button
             type="button"
             className="fe-icon-btn"
-            onClick={() => navigate('/extinguisher/profile')}
+            onClick={() => navigate(fePath('/profile'))}
             title="Profile Settings"
             style={{ marginLeft: 'auto', flexShrink: 0 }}
           >
@@ -170,6 +173,7 @@ export function FELayout() {
         <main className="fe-page-content">
           <Outlet />
         </main>
+        <CopyrightFooter />
       </div>
     </div>
   )

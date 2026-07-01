@@ -18,6 +18,7 @@ import { collection, getDocs, limit, onSnapshot, orderBy, query, startAt, endAt,
 import { useAuth } from '../providers/authContext.js'
 import { getOrganizationLabel } from '../../shared/auth/currentUser.js'
 import { db } from '../../config/firebase.js'
+import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
 
 const primaryNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -373,6 +374,7 @@ export function AppLayout() {
         <main className="page-content">
           <Outlet />
         </main>
+        <CopyrightFooter />
       </motion.div>
     </div>
   )

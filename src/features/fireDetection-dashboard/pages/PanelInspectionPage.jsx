@@ -8,10 +8,12 @@ import {
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import { storage } from '../../../config/firebase.js'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function PanelInspectionPage() {
   const navigate = useNavigate()
+  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const [searchParams] = useSearchParams()
   const panelIdFromUrl = searchParams.get('id')
   
@@ -104,7 +106,7 @@ export function PanelInspectionPage() {
   const handleLaunchInspection = () => {
     if (!selectedPanelId) return
     setInspectionLaunched(true)
-    navigate(`/detection/panel-inspection?id=${selectedPanelId}`, { replace: true })
+    navigate(fdPath(`/panel-inspection?id=${selectedPanelId}`), { replace: true })
   }
 
   const handleChecklistToggle = (item, value) => {
@@ -282,7 +284,7 @@ export function PanelInspectionPage() {
         type: 'success',
         onConfirm: () => {
           setIsTimerRunning(false)
-          navigate('/detection/panels')
+          navigate(fdPath('/panels'))
         }
       })
     } catch (err) {

@@ -26,3 +26,7 @@ dist-ssr
 *.sln
 *.sw?
 config.bat
+
+
+# OS generated files
+Thumbs.db

@@ -331,6 +331,8 @@ body {
   overflow: hidden;
   border-radius: 0;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .topnav {
@@ -464,6 +466,8 @@ body {
 }
 
 .topnav-content {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 18px;
 }
 
@@ -5852,11 +5856,6 @@ h2 {
 }
 
 /* Footer & Copyright styles */
-.login-footer {
-  text-align: center;
-  margin-top: 28px;
-}
-
 .warning-text {
   font-family: monospace;
   font-size: 9px;
@@ -5873,13 +5872,31 @@ h2 {
   margin: 0;
 }
 
-.bottom-copyright {
-  position: absolute;
-  bottom: 24px;
+.shell-copyright {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 14px 20px 18px;
   font-family: monospace;
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: rgba(203, 214, 255, 0.2);
+  color: rgba(203, 214, 255, 0.32);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.shell-copyright--dashboard {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.shell-copyright--login {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  padding: 0 20px;
 }
 
 @media (max-width: 768px) {
@@ -5909,12 +5926,13 @@ h2 {
   .login-card {
     padding: 36px 28px;
   }
-  .bottom-copyright {
+  .shell-copyright--login {
     position: relative;
     bottom: auto;
+    left: auto;
+    right: auto;
     margin-top: 40px;
     margin-bottom: 20px;
-    text-align: center;
   }
   .encrypt-tooltip {
     position: fixed;

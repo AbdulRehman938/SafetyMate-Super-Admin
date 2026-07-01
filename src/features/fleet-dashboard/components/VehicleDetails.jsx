@@ -327,7 +327,7 @@ export function VehicleDetails({ vehicle, alerts = [], inspections = [], onBack,
       doc.setFontSize(8)
       doc.setTextColor(120, 120, 120)
       doc.text('This document serves as an official SafetyMate digital twin asset status record.', 15, 280)
-      doc.text('SafetyMate (c) 2026. All rights reserved.', 15, 285)
+      doc.text('(c) 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate - A BGB Group Safety Solution.', 15, 285)
 
       doc.save(`${vehicle.unitId}-condition-report.pdf`)
     } catch (err) {

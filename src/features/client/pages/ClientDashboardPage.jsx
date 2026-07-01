@@ -4,13 +4,14 @@ import { HealthScoreDonut } from '../components/HealthScoreDonut.jsx'
 import { SentinelAlertsFeed } from '../components/SentinelAlertsFeed.jsx'
 import { SideDrawer } from '../components/SideDrawer.jsx'
 import { HiraReviewForm } from '../components/HiraReviewForm.jsx'
-import { AlertTriangle, FileText, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, FileText, ShieldAlert, FolderKanban, ShieldCheck, GraduationCap, Truck, Flame, Users2, ChartColumn, ClipboardList, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { collection, doc, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 import { db } from '../../../config/firebase.js'
 import { normalizeEvidenceUrls } from '../alertDetailHelpers.js'
 import { AlertDetailReadonly } from '../components/AlertDetailReadonly.jsx'
 import { isWorkforceRole } from '../workforceRoles.js'
+import { getSubscribedModuleKeys, shouldShowClientModule } from '../clientModules.js'
 
 /** Foundation: all dashboard queries will be scoped with organizationId from user_profiles. */
 export function ClientDashboardPage() {
@@ -22,7 +23,6 @@ export function ClientDashboardPage() {
   const [respondAlert, setRespondAlert] = useState(null)
   const [responseNotes, setResponseNotes] = useState('')
   const [markResolved, setMarkResolved] = useState(false)
-  const [managerFeedback, setManagerFeedback] = useState('')
   const [incidentAssignee, setIncidentAssignee] = useState('')
   const [sentinelAlerts, setSentinelAlerts] = useState([])
   const [alertsLoading, setAlertsLoading] = useState(true)
@@ -55,6 +55,159 @@ export function ClientDashboardPage() {
       { key: 'restricted', label: 'Restricted', pct: pct(workforceStats.restricted), className: 'client-wf-seg--low' },
     ]
   }, [workforceStats])
+
+  const moduleCards = [
+    {
+      key: 'fleet',
+      tone: 'fleet',
+      eyebrow: 'Fleet Management',
+      title: 'Fleet Management',
+      badge: 'Integrated',
+      summary: 'Open fleet operations, vehicle oversight, and maintenance tracking inside the client account.',
+      stats: [
+        { label: 'Active Vehicles', value: '45' },
+        { label: 'Driver Certifications', value: '98%' },
+        { label: 'Maintenance Alerts', value: '4' },
+      ],
+      cta: 'Open Fleet Module',
+      icon: Truck,
+      onClick: () => navigate('/client/fleet'),
+    },
+    {
+      key: 'fire-safety',
+      tone: 'extinguisher',
+      eyebrow: 'Fire Safety System',
+      title: 'Fire Safety System',
+      badge: 'Integrated',
+      summary: 'Access extinguishers, detection, inspections, and fire safety controls from one module.',
+      stats: [
+        { label: 'Registered Units', value: '112' },
+        { label: 'Upcoming Inspections', value: '18' },
+        { label: 'Compliant', value: '94%' },
+      ],
+      cta: 'Open Fire Safety Module',
+      icon: Flame,
+      onClick: () => navigate('/client/fire-safety'),
+    },
+    {
+      key: 'training',
+      tone: 'detection',
+      eyebrow: 'Training Management',
+      title: 'Training Management',
+      badge: 'Integrated',
+      summary: 'Manage training requests, courses, and certification workflows within the same platform.',
+      stats: [
+        { label: 'Open Requests', value: '12' },
+        { label: 'Active Courses', value: '8' },
+        { label: 'Certificates Issued', value: '76' },
+      ],
+      cta: 'Open Training Module',
+      icon: GraduationCap,
+      onClick: () => navigate('/client/training'),
+    },
+    {
+      key: 'safety-files',
+      tone: 'extinguisher',
+      eyebrow: 'Safety Files',
+      title: 'Safety Files',
+      badge: 'Integrated',
+      summary: 'Central access to critical compliance records and supporting safety documentation.',
+      stats: [
+        { label: 'Stored Files', value: '128' },
+        { label: 'Pending Review', value: '7' },
+        { label: 'Shared Today', value: '5' },
+      ],
+      cta: 'Open Safety Files',
+      icon: FolderKanban,
+      onClick: () => navigate('/client/safety-files'),
+    },
+    {
+      key: 'risk-assessments',
+      tone: 'detection',
+      eyebrow: 'Risk Assessments',
+      title: 'Risk Assessments',
+      badge: 'Integrated',
+      summary: 'Review, approve, and monitor hazard and risk assessment workflows.',
+      stats: [
+        { label: 'Open Reviews', value: '9' },
+        { label: 'High Risk', value: '3' },
+        { label: 'Approved', value: '21' },
+      ],
+      cta: 'Open Assessments',
+      icon: ShieldCheck,
+      onClick: () => navigate('/client/risk-assessment'),
+    },
+    {
+      key: 'contractors',
+      tone: 'fleet',
+      eyebrow: 'Contractor Management',
+      title: 'Contractor Management',
+      badge: 'Integrated',
+      summary: 'Track contractor access, readiness, and site approval status in one place.',
+      stats: [
+        { label: 'Contractors', value: '29' },
+        { label: 'Active Sites', value: '14' },
+        { label: 'Pending Checks', value: '6' },
+      ],
+      cta: 'Open Contractors',
+      icon: Users2,
+      onClick: () => navigate('/client/contractors'),
+    },
+    {
+      key: 'reports',
+      tone: 'detection',
+      eyebrow: 'Reports & Analytics',
+      title: 'Reports & Analytics',
+      badge: 'Integrated',
+      summary: 'See performance summaries, compliance trends, and executive reporting snapshots.',
+      stats: [
+        { label: 'Open Reports', value: '11' },
+        { label: 'Monthly Trends', value: '4' },
+        { label: 'Exports', value: '18' },
+      ],
+      cta: 'View Reports',
+      icon: ChartColumn,
+      onClick: () => navigate('/client/reports'),
+    },
+    {
+      key: 'incidents',
+      tone: 'fleet',
+      eyebrow: 'Incidents',
+      title: 'Incidents',
+      badge: 'Integrated',
+      summary: 'Monitor active incidents and response workflows without leaving the client dashboard.',
+      stats: [
+        { label: 'Open Incidents', value: '6' },
+        { label: 'Under Review', value: '4' },
+        { label: 'Closed Today', value: '2' },
+      ],
+      cta: 'Open Incidents',
+      icon: ClipboardList,
+      onClick: () => navigate('/client/incidents'),
+    },
+    {
+      key: 'settings',
+      tone: 'extinguisher',
+      eyebrow: 'Settings',
+      title: 'Settings',
+      badge: 'Integrated',
+      summary: 'Manage account preferences, profile information, and platform configuration.',
+      stats: [
+        { label: 'Profile Status', value: 'Ready' },
+        { label: 'Notifications', value: 'On' },
+        { label: 'Access Level', value: 'Admin' },
+      ],
+      cta: 'Open Settings',
+      icon: Settings,
+      onClick: () => navigate('/client/settings'),
+      alwaysVisible: true,
+    },
+  ]
+
+  const subscribedModuleKeys = useMemo(() => getSubscribedModuleKeys(profile), [profile])
+  const visibleModuleCards = moduleCards.filter((card) =>
+    shouldShowClientModule(card.key, subscribedModuleKeys, card.alwaysVisible),
+  )
 
   useEffect(() => {
     if (!orgId) {
@@ -408,7 +561,6 @@ export function ClientDashboardPage() {
     setRespondAlert(alert)
     setResponseNotes('')
     setMarkResolved(false)
-    setManagerFeedback('')
     setIncidentAssignee('')
     setDrawerOpen(true)
   }
@@ -440,7 +592,6 @@ export function ClientDashboardPage() {
     setRespondAlert(null)
     setResponseNotes('')
     setMarkResolved(false)
-    setManagerFeedback('')
     setIncidentAssignee('')
   }
 
@@ -515,7 +666,50 @@ export function ClientDashboardPage() {
       {/* TODO: Wire to Firestore where('organizationId', '==', orgId) for KPI aggregates */}
       <header className="client-dash-header">
         <h1>Dashboard</h1>
+        <p className="client-dash-sub">Subscribed services are surfaced here as modules so clients can move through one integrated account.</p>
       </header>
+
+      <div className="client-module-grid">
+        {visibleModuleCards.map((card) => (
+          <article
+            key={card.key}
+            className={`client-card client-module-card client-module-card--${card.tone}`}
+            onClick={card.onClick || undefined}
+            role={card.onClick ? 'button' : undefined}
+            tabIndex={card.onClick ? 0 : undefined}
+            onKeyDown={(e) => {
+              if (!card.onClick) return
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                card.onClick()
+              }
+            }}
+          >
+            <div className="client-module-head">
+              <div className="client-module-head-left">
+                {card.icon ? <card.icon size={16} className="client-module-icon" /> : null}
+                <div>
+                <p className="client-module-eyebrow">{card.eyebrow}</p>
+                <h2>{card.title}</h2>
+              </div>
+              </div>
+              <span className="client-module-badge">{card.badge}</span>
+            </div>
+            <p className="client-module-summary">{card.summary}</p>
+            <div className="client-module-stats">
+              {card.stats.map((stat) => (
+                <div key={stat.label} className="client-module-stat">
+                  <span>{stat.label}</span>
+                  <b>{stat.value}</b>
+                </div>
+              ))}
+            </div>
+            <div className="client-module-footer">
+              <span>{card.cta}</span>
+            </div>
+          </article>
+        ))}
+      </div>
 
       <div className="client-dash-top3">
         <article className="client-card client-card--health">

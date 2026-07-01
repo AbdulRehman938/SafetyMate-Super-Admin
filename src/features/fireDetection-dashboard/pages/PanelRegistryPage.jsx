@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, ChevronDown, Edit, Filter } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function PanelRegistryPage() {
   const navigate = useNavigate()
+  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const { panels, loading, zones, totalPanels, panelsRequiringReplacement, avgSystemSensitivity } = useFireDetectionData()
   
   const [searchQuery, setSearchQuery] = useState('')
@@ -89,7 +91,7 @@ export function PanelRegistryPage() {
         <button
           type="button"
           className="fd-btn fd-btn--primary"
-          onClick={() => navigate('/detection/panels/new')}
+          onClick={() => navigate(fdPath('/panels/new'))}
           style={{ padding: '10px 20px' }}
         >
           <Plus size={16} style={{ marginRight: 8 }} />
@@ -282,7 +284,7 @@ export function PanelRegistryPage() {
           currentPanels.map(panel => (
             <div
               key={panel.id}
-              onClick={() => navigate(`/detection/panels/${panel.id}`)}
+              onClick={() => navigate(fdPath(`/panels/${panel.id}`))}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1.2fr 1.2fr 1fr 1fr 0.8fr',
@@ -350,7 +352,7 @@ export function PanelRegistryPage() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      navigate(`/detection/panel-inspection?panelId=${panel.id}`)
+                      navigate(fdPath(`/panel-inspection?id=${panel.id}`))
                     }}
                     style={{
                       padding: '6px 12px',
@@ -371,7 +373,7 @@ export function PanelRegistryPage() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      navigate(`/detection/panel-inspection?id=${panel.id}`)
+                      navigate(fdPath(`/panel-inspection?id=${panel.id}`))
                     }}
                     style={{
                       padding: '6px 12px',

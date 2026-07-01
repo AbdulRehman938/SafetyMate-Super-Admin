@@ -4,6 +4,7 @@ import { Clock, Mail, Link, CheckCircle, AlertCircle, Save, Eye, Edit, Copy, Fil
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../../../config/firebase.js'
 import { useAuth } from '../../../app/providers/authContext.js'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fe.css'
 
 /* ─────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ function ToggleSwitch({ enabled, onChange, disabled }) {
 /* ── Main Page Component ── */
 export function FECompliancePage() {
   const navigate = useNavigate()
+  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
   const { profile } = useAuth()
   const [config, setConfig] = useState({
     intervals: INTERVAL_CONFIGS.reduce((acc, cfg) => ({ ...acc, [cfg.id]: cfg.defaultEnabled }), {}),
@@ -384,7 +386,7 @@ export function FECompliancePage() {
               type="button" 
               className="fe-btn fe-btn--ghost" 
               style={{ width:'100%', justifyContent:'center', fontSize:12 }}
-              onClick={() => navigate('/extinguisher/assets')}
+              onClick={() => navigate(fePath('/assets'))}
             >
               <Eye size={12}/> View Asset Log
             </button>

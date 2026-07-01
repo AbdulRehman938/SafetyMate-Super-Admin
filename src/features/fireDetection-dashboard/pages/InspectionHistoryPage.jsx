@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, CheckCircle, XCircle, AlertTriangle, FileText, Activity } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function InspectionHistoryPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const { assets, panels, activityLog } = useFireDetectionData()
   
   const type = searchParams.get('type') || 'hydrant'
@@ -94,7 +96,7 @@ export function InspectionHistoryPage() {
         <h2 style={{ marginBottom: 8, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>Asset Not Found</h2>
         <p style={{ marginBottom: 24, fontSize: 14 }}>The requested asset could not be found.</p>
         <button
-          onClick={() => navigate(type === 'hydrant' ? '/detection/assets' : '/detection/panels')}
+          onClick={() => navigate(type === 'hydrant' ? fdPath('/assets') : fdPath('/panels'))}
           style={{
             padding: '12px 24px',
             background: '#3a82ff',
@@ -117,7 +119,7 @@ export function InspectionHistoryPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         <button
-          onClick={() => navigate(type === 'hydrant' ? `/detection/assets/${id}` : `/detection/panels/${id}`)}
+          onClick={() => navigate(type === 'hydrant' ? fdPath(`/assets/${id}`) : fdPath(`/panels/${id}`))}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -189,7 +191,7 @@ export function InspectionHistoryPage() {
             This {type === 'hydrant' ? 'hydrant' : 'panel'} has no inspection history yet.
           </p>
           <button
-            onClick={() => navigate(type === 'hydrant' ? `/detection/inspection?id=${id}` : `/detection/panel-inspection?id=${id}`)}
+            onClick={() => navigate(type === 'hydrant' ? fdPath(`/inspection?id=${id}`) : fdPath(`/panel-inspection?id=${id}`))}
             style={{
               padding: '12px 24px',
               background: '#3a82ff',

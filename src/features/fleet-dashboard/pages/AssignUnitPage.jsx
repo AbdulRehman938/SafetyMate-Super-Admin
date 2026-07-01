@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useFleetData } from '../hooks/useFleetData.js'
 import { healthClass, formatDate, cap } from '../utils/fleetHelpers.js'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fleet.css'
 
 const DURATION_OPTIONS = ['Temporary', 'Permanent']
@@ -186,6 +187,7 @@ function FleetDropdown({ label, value, onChange, options = [], placeholder = 'Se
 ───────────────────────────────────────────────────────────────── */
 export function AssignUnitPage({ onBack, onConfirmed }) {
   const navigate = useNavigate()
+  const fleetPath = useModulePath('/fleet', '/client/fleet')
   const { vehicles, inspections, openAlerts, loading, updateVehicle } = useFleetData()
 
   const [search, setSearch]       = useState('')
@@ -325,7 +327,7 @@ export function AssignUnitPage({ onBack, onConfirmed }) {
 
   function handleStartInspection() {
     if (!selected) return
-    navigate('/fleet/inspections', { state: { vehicleId: selected.id } })
+    navigate(fleetPath('/inspections'), { state: { vehicleId: selected.id } })
   }
 
   async function handleConfirm() {

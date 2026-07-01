@@ -8,6 +8,7 @@ import {
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { formatDateTime } from '../utils/feHelpers.js'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fe.css'
 
 /* ─────────────────────────────────────────────────────────────
@@ -148,6 +149,7 @@ function SignatureCanvas({ onSign, onClear, signed }) {
 export function FEInspectionPage() {
   const { assetId } = useParams()
   const navigate    = useNavigate()
+  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
   const { assets, inspections, addActivityEntry, upsertDraftInspection, finaliseInspection } = useFireExtData()
   const { profile } = useAuth()
 
@@ -267,7 +269,7 @@ export function FEInspectionPage() {
           {hasFail && ' Maintenance required immediately.'}
         </p>
         <button type="button" className="fe-btn fe-btn--primary" style={{ marginTop:8 }}
-          onClick={() => navigate('/extinguisher/assets')}>
+          onClick={() => navigate(fePath('/assets'))}>
           Back to Asset Registry
         </button>
       </div>
@@ -279,7 +281,7 @@ export function FEInspectionPage() {
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'50vh', gap:12 }}>
       <XCircle size={36} style={{ color:'rgba(255,83,95,0.5)' }} />
       <p style={{ margin:0, fontSize:14, color:'rgba(148,163,184,0.7)' }}>Asset not found — {assetId}</p>
-      <button type="button" className="fe-btn fe-btn--ghost" onClick={() => navigate('/extinguisher/assets')}>
+      <button type="button" className="fe-btn fe-btn--ghost" onClick={() => navigate(fePath('/assets'))}>
         Back to Registry
       </button>
     </div>
@@ -291,7 +293,7 @@ export function FEInspectionPage() {
       <div className="fe-insp-header">
         <div className="fe-insp-header-left">
           <button type="button" className="fe-reg-back" style={{ margin:0 }}
-            onClick={() => navigate('/extinguisher/assets')}>
+            onClick={() => navigate(fePath('/assets'))}>
             <ArrowLeft size={15}/>
           </button>
           <div>
@@ -319,7 +321,7 @@ export function FEInspectionPage() {
         {isNew ? <SessionTimer /> : (
           /* View mode — "Start New Inspection" CTA */
           <button type="button" className="fe-btn fe-btn--primary"
-            onClick={() => navigate(`/extinguisher/assets/${assetId}/inspect?new=1`)}>
+            onClick={() => navigate(fePath(`/assets/${assetId}/inspect?new=1`))}>
             <Plus size={14}/> Start New Inspection
           </button>
         )}
@@ -374,7 +376,7 @@ export function FEInspectionPage() {
               This asset has not been inspected yet.
             </p>
             <button type="button" className="fe-btn fe-btn--primary"
-              onClick={() => navigate(`/extinguisher/assets/${assetId}/inspect?new=1`)}>
+              onClick={() => navigate(fePath(`/assets/${assetId}/inspect?new=1`))}>
               <Plus size={14}/> Start First Inspection
             </button>
           </div>
@@ -498,7 +500,7 @@ export function FEInspectionPage() {
 
             {/* Start new inspection CTA */}
             <button type="button" className="fe-btn fe-btn--primary fe-reg-cta-btn"
-              onClick={() => navigate(`/extinguisher/assets/${assetId}/inspect?new=1`)}>
+              onClick={() => navigate(fePath(`/assets/${assetId}/inspect?new=1`))}>
               <Plus size={15}/> Start New Inspection
             </button>
           </div>

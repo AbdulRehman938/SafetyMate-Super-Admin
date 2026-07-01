@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import { CustomSelect } from '../../training-dashboard/components/CustomSelect.jsx'
+import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 const PAGE_SIZE = 10
@@ -87,6 +88,7 @@ export function FDDashboardPage() {
     systemMetrics,
   } = useFireDetectionData()
   const navigate = useNavigate()
+  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
 
   const [searchTerm, setSearchTerm] = useState('')
   const [sectorFilter, setSectorFilter] = useState('all')
@@ -301,7 +303,7 @@ export function FDDashboardPage() {
                       type="button"
                       className="fd-btn fd-btn--ghost"
                       style={{ padding:'6px 12px', fontSize:11 }}
-                      onClick={() => navigate(`/detection/assets/${asset.id}`)}
+                      onClick={() => navigate(fdPath(`/assets/${asset.id}`))}
                     >
                       View
                     </button>

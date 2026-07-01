@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Bell, Search, UserCircle2 } from 'lucide-react'
 import { useAuth } from '../providers/authContext.js'
+import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
 
 export function TopNavLayout() {
   const location = useLocation()
@@ -71,6 +72,7 @@ export function TopNavLayout() {
       <main className="topnav-content">
         <Outlet />
       </main>
+      <CopyrightFooter />
     </div>
   )
 }

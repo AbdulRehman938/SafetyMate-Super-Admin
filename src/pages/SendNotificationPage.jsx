@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { db } from '../config/firebase.js'
 import { useAuth } from '../app/providers/authContext.js'
+import { CopyrightFooter } from '../shared/components/CopyrightFooter.jsx'
 
 const AUDIENCE_OPTIONS = [
   { value: 'all_users', label: 'All Users', meta: 'Total: 452 employees', icon: Users },
@@ -376,6 +377,7 @@ export function SendNotificationPage() {
           </button>
         </div>
       </footer>
+      <CopyrightFooter />
     </section>
   )
 }
