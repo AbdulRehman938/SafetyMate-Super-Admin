@@ -48,7 +48,6 @@ function getEmployeeName(emp) {
 
 export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employees = [] }) {
   const todayStr = getTodayStr()
-
   const [course, setCourse] = useState('')
   const [instructor, setInstructor] = useState('')
   const [company, setCompany] = useState('')
