@@ -3,6 +3,7 @@ import {
   Bell,
   Building2,
   LayoutDashboard,
+  LayoutGrid,
   LogOut,
   Menu,
   Megaphone,
@@ -18,6 +19,7 @@ import { collection, getDocs, limit, onSnapshot, orderBy, query, startAt, endAt,
 import { useAuth } from '../providers/authContext.js'
 import { getOrganizationLabel } from '../../shared/auth/currentUser.js'
 import { db } from '../../config/firebase.js'
+import { AppFooter } from '../../shared/components/AppFooter.jsx'
 
 const primaryNavItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -25,9 +27,10 @@ const primaryNavItems = [
 ]
 
 const secondaryNavItems = [
-  { to: '/announcements', label: 'Announcements', icon: Megaphone },
-  { to: '/billing', label: 'Billing & Payment', icon: WalletCards },
-  { to: '/security-logs', label: 'Security & Logs', icon: ShieldCheck },
+  { to: '/announcements',    label: 'Announcements',    icon: Megaphone     },
+  { to: '/module-requests',  label: 'Module Requests',  icon: LayoutGrid    },
+  { to: '/billing',          label: 'Billing & Payment',icon: WalletCards   },
+  { to: '/security-logs',    label: 'Security & Logs',  icon: ShieldCheck   },
 ]
 
 const SIDEBAR_W = 280
@@ -373,6 +376,7 @@ export function AppLayout() {
         <main className="page-content">
           <Outlet />
         </main>
+        <AppFooter variant="page" />
       </motion.div>
     </div>
   )

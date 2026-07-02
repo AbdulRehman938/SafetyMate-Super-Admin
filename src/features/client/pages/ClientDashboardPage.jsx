@@ -4,7 +4,7 @@ import { HealthScoreDonut } from '../components/HealthScoreDonut.jsx'
 import { SentinelAlertsFeed } from '../components/SentinelAlertsFeed.jsx'
 import { SideDrawer } from '../components/SideDrawer.jsx'
 import { HiraReviewForm } from '../components/HiraReviewForm.jsx'
-import { AlertTriangle, FileText, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, FileText, ShieldAlert, FolderOpen, Award, Users, Package, BarChart3, Settings, Truck, Flame, GraduationCap, HardHat } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { collection, doc, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 import { db } from '../../../config/firebase.js'
@@ -13,8 +13,21 @@ import { AlertDetailReadonly } from '../components/AlertDetailReadonly.jsx'
 import { isWorkforceRole } from '../workforceRoles.js'
 
 /** Foundation: all dashboard queries will be scoped with organizationId from user_profiles. */
+
+const MODULE_CARDS = [
+  { key: 'safety_files', label: 'Safety Files', icon: FolderOpen, description: 'Access certificates and compliance documents', route: '/client/certificates' },
+  { key: 'risk_assessment', label: 'Risk Assessments', icon: FileText, description: 'Manage HIRA assessments and reviews', route: '/client/risk-assessment' },
+  { key: 'training', label: 'Training Management', icon: GraduationCap, description: 'Training courses and certifications', route: '/training/dashboard' },
+  { key: 'fleet', label: 'Fleet Management', icon: Truck, description: 'Vehicle tracking and inspections', route: '/client/fleet' },
+  { key: 'fire_safety', label: 'Fire Safety System', icon: Flame, description: 'Fire extinguisher and detection systems', route: '/client/fire-ext' },
+  { key: 'contractors', label: 'Contractor Management', icon: HardHat, description: 'Manage contractor access and compliance', route: '/client/workforce' },
+  { key: 'reports', label: 'Reports & Analytics', icon: BarChart3, description: 'View compliance reports and analytics', route: '/client/dashboard' },
+  { key: 'incidents', label: 'Incidents', icon: AlertTriangle, description: 'Report and track safety incidents', route: '/client/incidents' },
+  { key: 'settings', label: 'Settings', icon: Settings, description: 'Account and organization settings', route: '/client/dashboard' },
+]
+
 export function ClientDashboardPage() {
-  const { profile, organizationId } = useAuth()
+  const { profile, organizationId, modules } = useAuth()
   const orgId = profile?.organizationId ?? organizationId
   const navigate = useNavigate()
 
@@ -510,12 +523,46 @@ export function ClientDashboardPage() {
 
   // HIRA review is handled by reusable component `HiraReviewForm`.
 
+  const visibleModules = useMemo(() => {
+    const userModules = modules || []
+    return MODULE_CARDS.filter(card => {
+      if (card.key === 'safety_files' || card.key === 'risk_assessment' || card.key === 'incidents' || card.key === 'contractors' || card.key === 'reports' || card.key === 'settings') {
+        return true
+      }
+      if (card.key === 'fleet') return userModules.includes('fleet')
+      if (card.key === 'fire_safety') return userModules.includes('fire_extinguisher') || userModules.includes('fire_detection')
+      if (card.key === 'training') return userModules.includes('training')
+      return true
+    })
+  }, [modules])
+
   return (
     <section className="client-page client-dashboard-page">
       {/* TODO: Wire to Firestore where('organizationId', '==', orgId) for KPI aggregates */}
       <header className="client-dash-header">
         <h1>Dashboard</h1>
       </header>
+
+      {/* Module Cards Grid */}
+      <div className="client-modules-grid">
+        {visibleModules.map((card) => {
+          const Icon = card.icon
+          return (
+            <button
+              key={card.key}
+              className="client-module-card"
+              onClick={() => navigate(card.route)}
+              type="button"
+            >
+              <div className="client-module-icon">
+                <Icon size={24} />
+              </div>
+              <h3 className="client-module-title">{card.label}</h3>
+              <p className="client-module-desc">{card.description}</p>
+            </button>
+          )
+        })}
+      </div>
 
       <div className="client-dash-top3">
         <article className="client-card client-card--health">

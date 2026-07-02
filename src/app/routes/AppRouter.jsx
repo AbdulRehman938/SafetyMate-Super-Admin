@@ -18,15 +18,20 @@ import { BillingPage } from '../../features/billing/pages/BillingPage.jsx'
 import { SecurityLogsPage } from '../../features/security/pages/SecurityLogsPage.jsx'
 import { SettingsPage } from '../../features/settings/pages/SettingsPage.jsx'
 import { UserProfilePage } from '../../features/users/pages/UserProfilePage.jsx'
+import { ModuleRequestsPage } from '../../features/module-requests/pages/ModuleRequestsPage.jsx'
 import { LoginPage } from '../../features/auth/pages/LoginPage.jsx'
 import { MobileAppBlockedPage } from '../../features/mobile/pages/MobileAppBlockedPage.jsx'
 import { ClientLayout } from '../../features/client/ClientLayout.jsx'
+import { ClientHomePage } from '../../features/client/pages/ClientHomePage.jsx'
 import { ClientDashboardPage } from '../../features/client/pages/ClientDashboardPage.jsx'
 import { RiskAssessmentPage } from '../../features/client/pages/RiskAssessmentPage.jsx'
 import { WorkforcePage } from '../../features/client/pages/WorkforcePage.jsx'
 import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
 import { CertificatesPage } from '../../features/client/pages/CertificatesPage.jsx'
 import { PPEPage } from '../../features/client/pages/PPEPage.jsx'
+import { ClientFleetPage } from '../../features/client/pages/ClientFleetPage.jsx'
+import { ClientFireExtPage } from '../../features/client/pages/ClientFireExtPage.jsx'
+import { ClientFireDetPage } from '../../features/client/pages/ClientFireDetPage.jsx'
 import { TrainingDashboardPage } from '../../features/training-dashboard/pages/TrainingDashboardPage.jsx'
 import { FleetDashboardPage }       from '../../features/fleet-dashboard/pages/FleetDashboardPage.jsx'
 import { SiteMapPage }              from '../../features/fleet-dashboard/pages/SiteMapPage.jsx'
@@ -54,7 +59,6 @@ import { InspectionHistoryPage } from '../../features/fireDetection-dashboard/pa
 import { RegisterPanelPage } from '../../features/fireDetection-dashboard/pages/RegisterPanelPage.jsx'
 import { PanelInspectionPage } from '../../features/fireDetection-dashboard/pages/PanelInspectionPage.jsx'
 import { ComplianceMonitoringPage } from '../../features/fireDetection-dashboard/pages/ComplianceMonitoringPage.jsx'
-import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
 import { useAuth } from '../providers/authContext.js'
 
 export function AppRouter() {
@@ -276,15 +280,35 @@ export function AppRouter() {
     return (
       <Routes>
         <Route element={<ClientLayout />}>
-          <Route path="/client/dashboard" element={<ClientDashboardPage />} />
+          <Route path="/client/home"           element={<ClientHomePage />} />
+          <Route path="/client/dashboard"      element={<ClientDashboardPage />} />
           <Route path="/client/risk-assessment" element={<RiskAssessmentPage />} />
-          <Route path="/client/incidents" element={<IncidentsPage />} />
-          <Route path="/client/certificates" element={<CertificatesPage />} />
-          <Route path="/client/workforce" element={<WorkforcePage />} />
-          <Route path="/client/ppe" element={<PPEPage />} />
+          <Route path="/client/incidents"      element={<IncidentsPage />} />
+          <Route path="/client/certificates"   element={<CertificatesPage />} />
+          <Route path="/client/workforce"      element={<WorkforcePage />} />
+          <Route path="/client/ppe"            element={<PPEPage />} />
+
+          {/* ── Fleet module ── */}
+          <Route path="/client/fleet"                element={<ClientFleetPage view="dashboard" />} />
+          <Route path="/client/fleet/site-map"       element={<ClientFleetPage view="site-map" />} />
+          <Route path="/client/fleet/vehicles"       element={<ClientFleetPage view="vehicles" />} />
+          <Route path="/client/fleet/inspections"    element={<ClientFleetPage view="inspections" />} />
+          <Route path="/client/fleet/fuel"           element={<ClientFleetPage view="fuel" />} />
+
+          {/* ── Fire Extinguisher module ── */}
+          <Route path="/client/fire-ext"             element={<ClientFireExtPage view="dashboard" />} />
+          <Route path="/client/fire-ext/assets"      element={<ClientFireExtPage view="assets" />} />
+          <Route path="/client/fire-ext/compliance"  element={<ClientFireExtPage view="compliance" />} />
+
+          {/* ── Fire Detection module ── */}
+          <Route path="/client/fire-det"             element={<ClientFireDetPage view="dashboard" />} />
+          <Route path="/client/fire-det/assets"      element={<ClientFireDetPage view="assets" />} />
+          <Route path="/client/fire-det/panels"      element={<ClientFireDetPage view="panels" />} />
+          <Route path="/client/fire-det/inspections" element={<ClientFireDetPage view="inspections" />} />
+          <Route path="/client/fire-det/compliance"  element={<ClientFireDetPage view="compliance" />} />
         </Route>
-        <Route path="/" element={<Navigate to="/client/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/client/home" replace />} />
+        <Route path="*" element={<Navigate to="/client/home" replace />} />
       </Routes>
     )
   }
@@ -312,6 +336,7 @@ export function AppRouter() {
         <Route path="/announcements" element={<AnnouncementComposerPage />} />
         <Route path="/billing" element={<BillingPage />} />
         <Route path="/security-logs" element={<SecurityLogsPage />} />
+        <Route path="/module-requests" element={<ModuleRequestsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/users/:uid" element={<UserProfilePage />} />
         <Route path="/mobile" element={<MobileAppBlockedPage />} />

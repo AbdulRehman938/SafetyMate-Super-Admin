@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Archive, ShieldCheck, Menu, LogOut, User } from 'lucide-react'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { initials, avatarColor } from '../utils/fdHelpers.js'
+import { AppFooter } from '../../../shared/components/AppFooter.jsx'
 import '../fd.css'
 
 const NAV_ITEMS = [
@@ -174,6 +175,7 @@ export function FDLayout() {
         <main className="fd-page-content">
           <Outlet />
         </main>
+        <AppFooter variant="page" />
       </div>
     </div>
   )

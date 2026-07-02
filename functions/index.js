@@ -1,6 +1,37 @@
 const admin = require('firebase-admin')
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore')
 const { onCall, HttpsError } = require('firebase-functions/v2/https')
+const { defineSecret } = require('firebase-functions/params')
+
+// Brevo SMTP key — stored as a Firebase secret
+// Set via: firebase functions:secrets:set BREVO_SMTP_KEY
+const brevoSmtpKey = defineSecret('BREVO_SMTP_KEY')
+
+// Email addresses
+const SUPER_ADMIN_NOTIFY_EMAIL = 'safetymateadmin@yopmail.com'
+const SENDER_EMAIL             = 'iamrehman941@gmail.com'
+const SENDER_NAME              = 'SafetyMate'
+// BREVO_LOGIN_EMAIL: the SMTP login shown in Brevo dashboard → SMTP & API → SMTP tab
+const BREVO_LOGIN_EMAIL        = '9c3806001@smtp-brevo.com'
+
+/**
+ * Creates a nodemailer transporter using Brevo SMTP.
+ * Brevo SMTP host: smtp-relay.brevo.com, port 587
+ * Login: your Brevo account email (the Gmail you verified as sender)
+ * Password: the SMTP key
+ */
+function createTransporter(smtpKey) {
+  const nodemailer = require('nodemailer')
+  return nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: BREVO_LOGIN_EMAIL,  // Brevo account login email (SMTP username)
+      pass: smtpKey,            // Brevo SMTP key
+    },
+  })
+}
 
 admin.initializeApp()
 
@@ -398,3 +429,219 @@ exports.createClientAdmin = onCall(async (request) => {
   }
 })
 
+
+// ── sendModuleRequestEmail ─────────────────────────────────────────────────────
+// Called by COMPANY users to request access to a module.
+// Writes a module_request doc to Firestore AND sends an email to the Super Admin.
+exports.sendModuleRequestEmail = onCall({ secrets: [brevoSmtpKey] }, async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.')
+    }
+
+    const transporter = createTransporter(brevoSmtpKey.value())
+
+    const data = request.data || {}
+    const organizationId   = String(data.organizationId   || '').trim()
+    const organizationName = String(data.organizationName || '').trim()
+    const moduleKey        = String(data.moduleKey        || '').trim()
+    const moduleLabel      = String(data.moduleLabel      || '').trim()
+    const requesterName    = String(data.requesterName    || '').trim()
+    const requesterEmail   = String(data.requesterEmail   || '').trim()
+    const message          = String(data.message          || '').trim()
+
+    if (!organizationId || !moduleKey) {
+      throw new HttpsError('invalid-argument', 'organizationId and moduleKey are required.')
+    }
+
+    // 1. Write request document to Firestore
+    const db = admin.firestore()
+    const reqRef = await db.collection('module_requests').add({
+      organizationId,
+      organizationName,
+      moduleKey,
+      moduleLabel,
+      requesterName,
+      requesterEmail,
+      message,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    // 2. Send email to Super Admin via Brevo SMTP
+    const adminEmail = SUPER_ADMIN_NOTIFY_EMAIL
+
+    await transporter.sendMail({
+      from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      to: adminEmail,
+      subject: `Module Access Request — ${moduleLabel} — ${organizationName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f6fa; padding: 32px;">
+          <div style="background: #0a0f1e; border-radius: 12px; padding: 28px; color: #ffffff;">
+            <h1 style="margin: 0 0 8px; font-size: 22px; color: #ffffff;">
+              SafetyMate — Module Access Request
+            </h1>
+            <p style="margin: 0 0 24px; color: rgba(203,214,255,0.7); font-size: 14px;">
+              A company has requested access to a new platform module.
+            </p>
+
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(148,163,184,0.8); font-size: 13px; width: 40%;">Company Name</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #ffffff; font-size: 13px; font-weight: 600;">${organizationName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(148,163,184,0.8); font-size: 13px;">Company ID</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #7ab5ff; font-size: 13px; font-family: monospace;">${organizationId}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(148,163,184,0.8); font-size: 13px;">Requested Module</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #4deba0; font-size: 13px; font-weight: 600;">${moduleLabel}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: rgba(148,163,184,0.8); font-size: 13px;">Requested By</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); color: #ffffff; font-size: 13px;">${requesterName} &lt;${requesterEmail}&gt;</td>
+              </tr>
+              ${message ? `
+              <tr>
+                <td style="padding: 10px 0; color: rgba(148,163,184,0.8); font-size: 13px; vertical-align: top;">Message</td>
+                <td style="padding: 10px 0; color: rgba(235,242,255,0.85); font-size: 13px;">${message}</td>
+              </tr>` : ''}
+            </table>
+
+            <div style="margin-top: 28px; padding: 16px; background: rgba(58,130,255,0.1); border: 1px solid rgba(58,130,255,0.25); border-radius: 8px;">
+              <p style="margin: 0; font-size: 13px; color: rgba(235,242,255,0.85);">
+                To grant or revoke access, open the Super Admin dashboard, navigate to
+                <strong style="color: #7ab5ff;">Companies → ${organizationName}</strong>
+                and use the <strong style="color: #7ab5ff;">Module Access</strong> toggles.
+              </p>
+            </div>
+          </div>
+          <p style="text-align: center; margin: 16px 0 0; font-size: 11px; color: rgba(148,163,184,0.5);">
+            © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+          </p>
+        </div>
+      `,
+    })
+
+    // 3. Send confirmation email back to the requester
+    if (requesterEmail) {
+      await transporter.sendMail({
+        from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+        to: requesterEmail,
+        subject: `Your request for ${moduleLabel} access has been received`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f6fa; padding: 32px;">
+            <div style="background: #0a0f1e; border-radius: 12px; padding: 28px; color: #ffffff;">
+              <h1 style="margin: 0 0 8px; font-size: 20px; color: #ffffff;">Request Received ✓</h1>
+              <p style="margin: 0 0 20px; color: rgba(203,214,255,0.7); font-size: 14px;">
+                Hi ${requesterName}, your request for <strong style="color: #4deba0;">${moduleLabel}</strong> access has been received by the SafetyMate team.
+              </p>
+              <p style="margin: 0; color: rgba(203,214,255,0.7); font-size: 14px;">
+                A platform administrator will review your request and activate the module in your dashboard. You will be notified when access is granted.
+              </p>
+            </div>
+            <p style="text-align: center; margin: 16px 0 0; font-size: 11px; color: rgba(148,163,184,0.5);">
+              © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+            </p>
+          </div>
+        `,
+      })
+    }
+
+    return { ok: true, requestId: reqRef.id }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[sendModuleRequestEmail] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to send module request.'))
+  }
+})
+
+// ── updateCompanyModules ───────────────────────────────────────────────────────
+// Called by SUPER_ADMIN to grant or revoke module access for a company.
+// Writes the modules[] array to organizations/{organizationId}.
+exports.updateCompanyModules = onCall({ secrets: [brevoSmtpKey] }, async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.')
+    }
+
+    const db = admin.firestore()
+    const callerSnap = await db.collection('user_profiles').doc(request.auth.uid).get()
+    const callerRole = String(callerSnap?.data?.()?.role || '')
+    if (callerRole !== 'SUPER_ADMIN') {
+      throw new HttpsError('permission-denied', 'Only SUPER_ADMIN can update company modules.')
+    }
+
+    const data = request.data || {}
+    const organizationId = String(data.organizationId || '').trim()
+    const modules        = Array.isArray(data.modules) ? data.modules : []
+
+    if (!organizationId) {
+      throw new HttpsError('invalid-argument', 'organizationId is required.')
+    }
+
+    // Validate module keys against allowed list
+    const ALLOWED_MODULES = ['fleet', 'fire_extinguisher', 'fire_detection']
+    const cleaned = modules
+      .map((m) => String(m).trim().toLowerCase())
+      .filter((m) => ALLOWED_MODULES.includes(m))
+
+    await db.collection('organizations').doc(organizationId).update({
+      modules: cleaned,
+      modulesUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    // Notify the company's admin users that modules have been updated
+    const transporter = createTransporter(brevoSmtpKey.value())
+
+    const orgSnap = await db.collection('organizations').doc(organizationId).get()
+    const org = orgSnap.data() || {}
+    const orgName = org.name || org.companyName || organizationId
+    const contactEmail = org.primaryContact?.email
+
+    if (contactEmail) {
+      const moduleLabels = {
+        fleet: 'Fleet Management',
+        fire_extinguisher: 'Fire Extinguisher Safety',
+        fire_detection: 'Fire Detection & Alarms',
+      }
+      const enabledList = cleaned.map((k) => moduleLabels[k] || k)
+      const listHtml = enabledList.length > 0
+        ? enabledList.map((l) => `<li style="color: #4deba0; padding: 4px 0;">${l}</li>`).join('')
+        : '<li style="color: rgba(148,163,184,0.7);">No additional modules currently active</li>'
+
+      await transporter.sendMail({
+        from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+        to: contactEmail,
+        subject: `Your SafetyMate module access has been updated`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f6fa; padding: 32px;">
+            <div style="background: #0a0f1e; border-radius: 12px; padding: 28px; color: #ffffff;">
+              <h1 style="margin: 0 0 8px; font-size: 20px; color: #ffffff;">Module Access Updated</h1>
+              <p style="margin: 0 0 20px; color: rgba(203,214,255,0.7); font-size: 14px;">
+                The platform modules available to <strong style="color: #ffffff;">${orgName}</strong> have been updated by your SafetyMate administrator.
+              </p>
+              <p style="margin: 0 0 12px; color: rgba(148,163,184,0.8); font-size: 13px;">Currently active modules:</p>
+              <ul style="margin: 0 0 20px; padding-left: 20px; font-size: 14px; font-weight: 600;">
+                ${listHtml}
+              </ul>
+              <p style="margin: 0; color: rgba(203,214,255,0.7); font-size: 13px;">
+                Log into your SafetyMate dashboard to access these modules.
+              </p>
+            </div>
+            <p style="text-align: center; margin: 16px 0 0; font-size: 11px; color: rgba(148,163,184,0.5);">
+              © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+            </p>
+          </div>
+        `,
+      }).catch(() => {}) // Non-fatal — don't fail the function if email fails
+    }
+
+    return { ok: true, modules: cleaned }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[updateCompanyModules] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to update modules.'))
+  }
+})

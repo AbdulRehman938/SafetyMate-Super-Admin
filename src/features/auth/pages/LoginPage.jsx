@@ -4,6 +4,7 @@ import * as Yup from 'yup'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../../config/firebase.js'
 import { AlertCircle, Eye, EyeOff, Lock, Mail, ArrowRight, HelpCircle } from 'lucide-react'
+import { AppFooter } from '../../../shared/components/AppFooter.jsx'
 
 export function LoginPage({ initialError = '' }) {
   const [error, setError] = useState(initialError)
@@ -108,7 +109,7 @@ export function LoginPage({ initialError = '' }) {
             <span className="brand-safety">Safety</span>
             <span className="brand-mate">Mate</span>
           </h1>
-          <p className="login-kicker">SINGLE ADMINISTRATOR ACCESS ONLY</p>
+          <p className="login-kicker">SECURE PLATFORM ACCESS</p>
           <p className="login-node">SYSTEM NODE: CORE-01</p>
         </header>
 
@@ -206,7 +207,7 @@ export function LoginPage({ initialError = '' }) {
       </div>
 
       <div className="bottom-copyright">
-        © 2026 SECURE SYSTEMS PROTOCOL
+        <AppFooter variant="page" />
       </div>
     </section>
   )

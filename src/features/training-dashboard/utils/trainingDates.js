@@ -12,8 +12,39 @@ function parseIsoDate(str) {
   return isNaN(d.getTime()) ? null : d
 }
 
-function parsePreferredDate(dateStr) {
-  if (!dateStr || typeof dateStr !== 'string') return { start: null, end: null }
+function parsePreferredDate(dateVal) {
+  if (!dateVal) return { start: null, end: null }
+
+  // If it's a Firestore Timestamp or similar object
+  if (typeof dateVal.toDate === 'function') {
+    dateVal = dateVal.toDate()
+  } else if (typeof dateVal === 'object' && dateVal.seconds !== undefined) {
+    dateVal = new Date(dateVal.seconds * 1000)
+  }
+
+  // If it's a JS Date object
+  if (dateVal instanceof Date) {
+    if (!isNaN(dateVal.getTime())) return { start: dateVal, end: dateVal }
+    return { start: null, end: null }
+  }
+
+  // If it is a number (timestamp)
+  if (typeof dateVal === 'number') {
+    const parsed = new Date(dateVal)
+    if (!isNaN(parsed.getTime())) return { start: parsed, end: parsed }
+    return { start: null, end: null }
+  }
+
+  // Otherwise treat as string or try to stringify
+  if (typeof dateVal !== 'string') {
+    try {
+      dateVal = String(dateVal)
+    } catch {
+      return { start: null, end: null }
+    }
+  }
+
+  const dateStr = dateVal
 
   const iso = parseIsoDate(dateStr)
   if (iso) return { start: iso, end: iso }
