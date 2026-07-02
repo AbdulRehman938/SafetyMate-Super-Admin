@@ -6,65 +6,45 @@ import {
   Bell,
   Calendar,
   Check,
-  ChartColumn,
   ClipboardList,
-  Flame,
   Fuel,
-  FolderKanban,
   LayoutDashboard,
   LayoutGrid,
   LogOut,
   Map,
   Menu,
   Package,
-  Settings,
   Truck,
   UserCircle2,
   Users,
   Wrench,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion'
 import { useAuth } from '../../app/providers/authContext.js'
 import { GlobalSearch } from './components/GlobalSearch.jsx'
 import { getDashboardPathForRole } from '../../shared/auth/currentUser.js'
 import { useNotifications } from '../training-dashboard/hooks/useNotifications.js'
-import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
-import { getSubscribedModuleKeys, shouldShowClientModule } from './clientModules.js'
 import './client.css'
 
 const NAVS_BY_ROLE = {
   COMPANY: [
-    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard, alwaysVisible: true },
-    { to: '/client/safety-files', label: 'Safety Files', icon: FolderKanban, moduleKey: 'safety-files' },
-    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList, moduleKey: 'risk-assessments' },
-    { to: '/client/training', label: 'Training', icon: Award, moduleKey: 'training' },
-    { to: '/client/fleet', label: 'Fleet', icon: Truck, moduleKey: 'fleet' },
-    { to: '/client/fire-safety', label: 'Fire Safety', icon: Flame, moduleKey: 'fire-safety' },
-    { to: '/client/contractors', label: 'Contractors', icon: Users, moduleKey: 'contractors' },
-    { to: '/client/reports', label: 'Reports', icon: ChartColumn, moduleKey: 'reports' },
-    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle, moduleKey: 'incidents' },
-    { to: '/client/certificates', label: 'Certificates', icon: Award, moduleKey: 'certificates' },
-    { to: '/client/workforce', label: 'Workforce', icon: Users, moduleKey: 'workforce' },
-    { to: '/client/ppe', label: 'PPE & Assets', icon: Package, moduleKey: 'ppe' },
-    { to: '/client/settings', label: 'Settings', icon: Settings, alwaysVisible: true },
+    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList },
+    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle },
+    { to: '/client/certificates', label: 'Certificates', icon: Award },
+    { to: '/client/workforce', label: 'Workforce', icon: Users },
+    { to: '/client/ppe', label: 'PPE & Assets', icon: Package },
   ],
   client_admin: [
-    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard, alwaysVisible: true },
-    { to: '/client/safety-files', label: 'Safety Files', icon: FolderKanban, moduleKey: 'safety-files' },
-    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList, moduleKey: 'risk-assessments' },
-    { to: '/client/training', label: 'Training', icon: Award, moduleKey: 'training' },
-    { to: '/client/fleet', label: 'Fleet', icon: Truck, moduleKey: 'fleet' },
-    { to: '/client/fire-safety', label: 'Fire Safety', icon: Flame, moduleKey: 'fire-safety' },
-    { to: '/client/contractors', label: 'Contractors', icon: Users, moduleKey: 'contractors' },
-    { to: '/client/reports', label: 'Reports', icon: ChartColumn, moduleKey: 'reports' },
-    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle, moduleKey: 'incidents' },
-    { to: '/client/certificates', label: 'Certificates', icon: Award, moduleKey: 'certificates' },
-    { to: '/client/workforce', label: 'Workforce', icon: Users, moduleKey: 'workforce' },
-    { to: '/client/ppe', label: 'PPE & Assets', icon: Package, moduleKey: 'ppe' },
-    { to: '/client/settings', label: 'Settings', icon: Settings, alwaysVisible: true },
+    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList },
+    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle },
+    { to: '/client/certificates', label: 'Certificates', icon: Award },
+    { to: '/client/workforce', label: 'Workforce', icon: Users },
+    { to: '/client/ppe', label: 'PPE & Assets', icon: Package },
   ],
   TRAINING_PROVIDER: [
     { to: '/training/dashboard', label: 'Overview', icon: LayoutGrid },
@@ -121,13 +101,7 @@ export function ClientLayout() {
     return `Good Evening, ${firstName}`
   }
   const role = profile?.role || 'COMPANY'
-  const subscribedModuleKeys = useMemo(() => getSubscribedModuleKeys(profile), [profile])
-  const navItems = useMemo(() => {
-    const items = NAVS_BY_ROLE[role] || NAVS_BY_ROLE.COMPANY
-    return items.filter((item) =>
-      shouldShowClientModule(item.moduleKey, subscribedModuleKeys, item.alwaysVisible || !item.moduleKey),
-    )
-  }, [role, subscribedModuleKeys])
+  const navItems = NAVS_BY_ROLE[role] || NAVS_BY_ROLE.COMPANY
 
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_BP).matches)
   const [sidebarOpen, setSidebarOpen] = useState(() => !window.matchMedia(MOBILE_BP).matches)
@@ -137,6 +111,7 @@ export function ClientLayout() {
   // Notification panel state
   const [notifOpen,      setNotifOpen]      = useState(false)
   const [notifModalOpen, setNotifModalOpen] = useState(false)
+  const notifRef   = useRef(null)
   const bellBtnRef = useRef(null)
   const [bellRect,  setBellRect]  = useState(null)
   const [isMobileView, setIsMobileView] = useState(() => window.innerWidth <= 768)
@@ -776,7 +751,6 @@ export function ClientLayout() {
         <main className="page-content client-page-content">
           <Outlet />
         </main>
-        <CopyrightFooter />
       </motion.div>
 
       {/* ── Navigation guard modal ── */}

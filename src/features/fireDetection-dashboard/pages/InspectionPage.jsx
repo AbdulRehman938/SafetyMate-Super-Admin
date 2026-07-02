@@ -6,12 +6,10 @@ import {
   FileText, MapPin, Activity
 } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function InspectionPage() {
   const navigate = useNavigate()
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const [searchParams] = useSearchParams()
   const assetIdFromUrl = searchParams.get('id')
 
@@ -97,7 +95,7 @@ export function InspectionPage() {
   const handleLaunchInspection = () => {
     if (!selectedAssetId) return
     setInspectionLaunched(true)
-    navigate(fdPath(`/inspection?id=${selectedAssetId}`), { replace: true })
+    navigate(`/detection/inspection?id=${selectedAssetId}`, { replace: true })
   }
 
   const handleChecklistToggle = (item, value) => {
@@ -314,7 +312,7 @@ export function InspectionPage() {
 
       showModal('Success', 'Inspection report submitted successfully!', 'success', () => {
         // Redirect to dashboard after successful submission
-        navigate(fdPath('/dashboard'))
+        navigate('/detection/dashboard')
       })
       // Reset form
       setStaticPressure('')

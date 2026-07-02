@@ -11,7 +11,6 @@ import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firesto
 import { db } from '../../../config/firebase.js'
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fe.css'
 
 /* ─────────────────────────────────────────────────────────────
@@ -434,7 +433,6 @@ function printTag(unitId, canvasEl) {
 ───────────────────────────────────────────────────────────── */
 export function FERegisterAssetPage() {
   const navigate = useNavigate()
-  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
   const [searchParams] = useSearchParams()
   const draftId = searchParams.get('draft')
   const { addAsset, updateAsset, addActivityEntry } = useFireExtData()
@@ -548,10 +546,10 @@ export function FERegisterAssetPage() {
         })
         if (status === 'active') {
           printTag(unitId, qrCanvasRef.current)
-          navigate(fePath('/assets'))
+          navigate('/extinguisher/assets')
         } else {
           setToast({ type: 'ok', text: `Draft updated — Unit ID: ${unitId}` })
-          setTimeout(() => navigate(fePath('/assets')), 1800)
+          setTimeout(() => navigate('/extinguisher/assets'), 1800)
         }
       } else {
         // ── Creating new asset ──
@@ -592,10 +590,10 @@ export function FERegisterAssetPage() {
         })
         if (status === 'active') {
           printTag(unitId, qrCanvasRef.current)
-          navigate(fePath('/assets'))
+          navigate('/extinguisher/assets')
         } else {
           setToast({ type: 'ok', text: `Draft saved — Unit ID: ${unitId}` })
-          setTimeout(() => navigate(fePath('/assets')), 1800)
+          setTimeout(() => navigate('/extinguisher/assets'), 1800)
         }
       }
     } catch (err) {

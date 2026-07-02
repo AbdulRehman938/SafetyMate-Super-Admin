@@ -54,14 +54,8 @@ import { InspectionHistoryPage } from '../../features/fireDetection-dashboard/pa
 import { RegisterPanelPage } from '../../features/fireDetection-dashboard/pages/RegisterPanelPage.jsx'
 import { PanelInspectionPage } from '../../features/fireDetection-dashboard/pages/PanelInspectionPage.jsx'
 import { ComplianceMonitoringPage } from '../../features/fireDetection-dashboard/pages/ComplianceMonitoringPage.jsx'
-import { FireSafetyDashboardPage } from '../../features/client/pages/FireSafetyDashboardPage.jsx'
-import { TrainingManagementPage } from '../../features/client/pages/TrainingManagementPage.jsx'
-import { ReportsAnalyticsPage } from '../../features/client/pages/ReportsAnalyticsPage.jsx'
-import { SafetyFilesPage } from '../../features/client/pages/SafetyFilesPage.jsx'
-import { ContractorManagementPage } from '../../features/client/pages/ContractorManagementPage.jsx'
-import { ClientSettingsPage } from '../../features/client/pages/ClientSettingsPage.jsx'
+import { FireDetectionDashboardPage } from '../../features/client/pages/FireDetectionDashboardPage.jsx'
 import { useAuth } from '../providers/authContext.js'
-import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
 
 export function AppRouter() {
   const {
@@ -127,7 +121,6 @@ export function AppRouter() {
             <p className="loading-state-sub">Checking your session…</p>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -153,7 +146,6 @@ export function AppRouter() {
             <p className="loading-state-sub">Loading your profile and permissions…</p>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -182,7 +174,6 @@ export function AppRouter() {
             </button>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -209,7 +200,6 @@ export function AppRouter() {
             </button>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -287,48 +277,11 @@ export function AppRouter() {
       <Routes>
         <Route element={<ClientLayout />}>
           <Route path="/client/dashboard" element={<ClientDashboardPage />} />
-          <Route path="/client/safety-files" element={<SafetyFilesPage />} />
-          <Route path="/client/fleet" element={<FleetDashboardPage />} />
-          <Route path="/client/fleet/dashboard" element={<FleetDashboardPage />} />
-          <Route path="/client/fleet/site-map" element={<SiteMapPage />} />
-          <Route path="/client/fleet/twins" element={<VehicleTwinsPage />} />
-          <Route path="/client/fleet/inspections" element={<InspectionLogPage />} />
-          <Route path="/client/fleet/fuel" element={<FuelIntelligencePage />} />
-          <Route path="/client/fleet/profile" element={<ProfileSettingsPage />} />
-          <Route path="/client/fire-safety" element={<FireSafetyDashboardPage />} />
-          <Route path="/client/training" element={<TrainingManagementPage />} />
           <Route path="/client/risk-assessment" element={<RiskAssessmentPage />} />
           <Route path="/client/incidents" element={<IncidentsPage />} />
           <Route path="/client/certificates" element={<CertificatesPage />} />
-          <Route path="/client/contractors" element={<ContractorManagementPage />} />
           <Route path="/client/workforce" element={<WorkforcePage />} />
           <Route path="/client/ppe" element={<PPEPage />} />
-          <Route path="/client/reports" element={<ReportsAnalyticsPage />} />
-          <Route path="/client/settings" element={<ClientSettingsPage />} />
-        </Route>
-        <Route path="/client/fire-safety/extinguisher" element={<Navigate to="/client/fire-safety/extinguisher/dashboard" replace />} />
-        <Route element={<FELayout />}>
-          <Route path="/client/fire-safety/extinguisher/dashboard" element={<FEDashboardPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets" element={<FEAssetRegistryPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets/new" element={<FERegisterAssetPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets/:id" element={<FEDetailPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets/:assetId/inspect" element={<FEInspectionPage />} />
-          <Route path="/client/fire-safety/extinguisher/compliance" element={<FECompliancePage />} />
-          <Route path="/client/fire-safety/extinguisher/profile" element={<FEProfilePage />} />
-        </Route>
-        <Route path="/client/fire-safety/detection" element={<Navigate to="/client/fire-safety/detection/dashboard" replace />} />
-        <Route element={<FDLayout />}>
-          <Route path="/client/fire-safety/detection/dashboard" element={<FDDashboardPage />} />
-          <Route path="/client/fire-safety/detection/assets" element={<AssetRegistryPage />} />
-          <Route path="/client/fire-safety/detection/assets/:id" element={<HydrantDetailPage />} />
-          <Route path="/client/fire-safety/detection/inspection" element={<InspectionPage />} />
-          <Route path="/client/fire-safety/detection/inspection-history/:id" element={<InspectionHistoryPage />} />
-          <Route path="/client/fire-safety/detection/panels" element={<PanelRegistryPage />} />
-          <Route path="/client/fire-safety/detection/panels/:id" element={<PanelDetailPage />} />
-          <Route path="/client/fire-safety/detection/panels/new" element={<RegisterPanelPage />} />
-          <Route path="/client/fire-safety/detection/panel-inspection" element={<PanelInspectionPage />} />
-          <Route path="/client/fire-safety/detection/compliance" element={<ComplianceMonitoringPage />} />
-          <Route path="/client/fire-safety/detection/profile" element={<FDProfilePage />} />
         </Route>
         <Route path="/" element={<Navigate to="/client/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/client/dashboard" replace />} />

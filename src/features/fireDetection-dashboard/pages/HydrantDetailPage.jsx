@@ -3,12 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, QrCode, MapPin, Calendar, ShieldAlert, Activity, CheckCircle, AlertTriangle, Download, Printer, FileText, Camera, Lock, RefreshCw, Check, X } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import QRCode from 'qrcode'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function HydrantDetailPage() {
   const navigate = useNavigate()
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const { id } = useParams()
   const { assets } = useFireDetectionData()
   
@@ -130,7 +128,7 @@ export function HydrantDetailPage() {
         <h2 style={{ marginBottom: 8, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>Hydrant Not Found</h2>
         <p style={{ marginBottom: 24, fontSize: 14 }}>The requested hydrant could not be found.</p>
         <button
-          onClick={() => navigate(fdPath('/assets'))}
+          onClick={() => navigate('/detection/registry')}
           style={{
             padding: '12px 24px',
             background: '#3a82ff',
@@ -153,7 +151,7 @@ export function HydrantDetailPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         <button
-          onClick={() => navigate(fdPath('/assets'))}
+          onClick={() => navigate('/detection/registry')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -475,7 +473,7 @@ export function HydrantDetailPage() {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button
-                onClick={() => navigate(fdPath(`/inspection?id=${asset.id}`))}
+                onClick={() => navigate(`/detection/inspection?id=${asset.id}`)}
                 style={{
                   width: '100%',
                   padding: '14px 20px',
@@ -497,7 +495,7 @@ export function HydrantDetailPage() {
                 Start New Inspection
               </button>
               <button
-                onClick={() => navigate(fdPath(`/inspection-history/${asset.id}?type=hydrant`))}
+                onClick={() => navigate(`/detection/inspection-history/${asset.id}?type=hydrant`)}
                 style={{
                   width: '100%',
                   padding: '14px 20px',
@@ -554,7 +552,7 @@ export function HydrantDetailPage() {
               </div>
               <div style={{ marginLeft: 'auto' }}>
                 <button
-                  onClick={() => navigate(fdPath(`/inspection?id=${asset.id}`))}
+                  onClick={() => navigate(`/detection/inspection?id=${asset.id}`)}
                   style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'linear-gradient(135deg, #3a82ff, #16c988)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 10px rgba(58,130,255,0.3)' }}
                 >
                   <RefreshCw size={12} /> Start New Inspection

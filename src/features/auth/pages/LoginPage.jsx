@@ -4,7 +4,6 @@ import * as Yup from 'yup'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../../config/firebase.js'
 import { AlertCircle, Eye, EyeOff, Lock, Mail, ArrowRight, HelpCircle } from 'lucide-react'
-import { CopyrightFooter } from '../../../shared/components/CopyrightFooter.jsx'
 
 export function LoginPage({ initialError = '' }) {
   const [error, setError] = useState(initialError)
@@ -206,7 +205,9 @@ export function LoginPage({ initialError = '' }) {
         </footer>
       </div>
 
-      <CopyrightFooter variant="login" />
+      <div className="bottom-copyright">
+        © 2026 SECURE SYSTEMS PROTOCOL
+      </div>
     </section>
   )
 }

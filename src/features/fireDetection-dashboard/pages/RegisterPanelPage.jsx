@@ -7,7 +7,6 @@ import 'leaflet/dist/leaflet.css'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 // Fix for default marker icon in Leaflet
@@ -27,19 +26,18 @@ function genUnitId() {
 }
 
 // Build QR payload
-function buildQrPayload(unitId, values, basePath = '/detection') {
+function buildQrPayload(unitId, values) {
   return JSON.stringify({
     id: unitId,
     type: values?.panelType || 'Pending',
     sn: values?.serialNumber || 'Pending',
     zone: values?.zone || 'Pending',
-    url: `${window.location.origin}${basePath}/panels?id=${unitId}`
+    url: `${window.location.origin}/detection/panels?id=${unitId}`
   })
 }
 
 // QR Canvas component
 function QRCanvas({ unitId, values, canvasRef: canvasRefCallback }) {
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const canvasRef = useRef(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -54,7 +52,7 @@ function QRCanvas({ unitId, values, canvasRef: canvasRefCallback }) {
     setLoading(true)
     setError(null)
 
-    const payload = buildQrPayload(unitId, values, fdPath())
+    const payload = buildQrPayload(unitId, values)
 
     QRCode.toCanvas(canvasRef.current, payload, {
       width: 126,
@@ -71,7 +69,7 @@ function QRCanvas({ unitId, values, canvasRef: canvasRefCallback }) {
         setError('QR generation failed')
         setLoading(false)
       })
-  }, [unitId, values, fdPath])
+  }, [unitId, values?.panelType, values?.serialNumber, values?.zone])
 
   return (
     <div className="fd-dt-qr-container">
@@ -193,7 +191,6 @@ function MapClickHandler({ onMapClick }) {
 
 export function RegisterPanelPage() {
   const navigate = useNavigate()
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const { addPanel, addActivityEntry, zones } = useFireDetectionData()
   const { profile } = useAuth()
 
@@ -313,7 +310,7 @@ export function RegisterPanelPage() {
 
       // Print tag
       printTag(unitId, qrCanvasRef.current)
-      navigate(fdPath('/panels'))
+      navigate('/detection/panels')
     } catch (err) {
       console.error('Panel registration failed:', err)
     } finally {

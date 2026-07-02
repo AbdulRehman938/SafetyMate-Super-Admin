@@ -796,9 +796,7 @@ export function BillingHistoryPage() {
         </div>
       ) : null}
 
-      <footer className="billing-page-foot">
-        © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™ – A BGB Group Safety Solution.
-      </footer>
+      <footer className="billing-page-foot">SAFETYMATE ADMINISTRATION DASHBOARD © 2026</footer>
     </section>
   )
 }

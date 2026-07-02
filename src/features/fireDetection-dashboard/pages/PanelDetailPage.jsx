@@ -3,13 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, QrCode, Download, Printer, Activity, MapPin, ShieldAlert, Calendar, AlertTriangle, FileText } from 'lucide-react'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import QRCode from 'qrcode'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function PanelDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   const { panels, loading } = useFireDetectionData()
   const qrCanvasRef = useRef(null)
 
@@ -163,7 +161,7 @@ export function PanelDetailPage() {
         <h2 style={{ marginBottom: 8, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>Panel Not Found</h2>
         <p style={{ marginBottom: 24, fontSize: 14 }}>The requested panel could not be found.</p>
         <button
-          onClick={() => navigate(fdPath('/panels'))}
+          onClick={() => navigate('/detection/panels')}
           style={{
             padding: '12px 24px',
             background: '#3a82ff',
@@ -186,7 +184,7 @@ export function PanelDetailPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         <button
-          onClick={() => navigate(fdPath('/panels'))}
+          onClick={() => navigate('/detection/panels')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -444,7 +442,7 @@ export function PanelDetailPage() {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button
-                onClick={() => navigate(fdPath(`/panel-inspection?id=${asset.id}`))}
+                onClick={() => navigate(`/detection/panel-inspection?id=${asset.id}`)}
                 style={{
                   width: '100%',
                   padding: '14px 20px',
@@ -465,7 +463,7 @@ export function PanelDetailPage() {
                 Schedule New Inspection
               </button>
               <button
-                onClick={() => navigate(fdPath(`/inspection-history/${asset.id}?type=panel`))}
+                onClick={() => navigate(`/detection/inspection-history/${asset.id}?type=panel`)}
                 style={{
                   width: '100%',
                   padding: '14px 20px',

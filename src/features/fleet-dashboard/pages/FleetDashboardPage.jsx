@@ -8,7 +8,6 @@ import { FleetMap } from '../components/FleetMap.jsx'
 import { AssignUnitPage } from './AssignUnitPage.jsx'
 import { RegisterVehiclePage } from './RegisterVehiclePage.jsx'
 import { healthClass, cap, exportToCSV, formatDate } from '../utils/fleetHelpers.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fleet.css'
 
 const STATUS_FILTERS = ['All', 'active', 'maintenance', 'offline']
@@ -30,7 +29,6 @@ const LIST_SCROLL_H = `calc(${MAIN_H} - 44px - 42px - 24px - 54px)`
 
 export function FleetDashboardPage() {
   const navigate = useNavigate()
-  const fleetPath = useModulePath('/fleet', '/client/fleet')
   const {
     vehicles, openAlerts,
     loading, activeVehicles, totalVehicles,
@@ -147,7 +145,7 @@ export function FleetDashboardPage() {
         onBack={() => setShowAssign(false)}
         onConfirmed={() => {
           setShowAssign(false)
-          navigate(fleetPath('/site-map'))
+          navigate('/fleet/site-map')
         }}
       />
     </div>
