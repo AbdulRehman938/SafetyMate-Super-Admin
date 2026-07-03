@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, MapPin, Calendar, QrCode, RefreshCw, CheckCircle, XCircle, Printer, Save, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Upload, MapPin, RefreshCw, CheckCircle, ChevronDown } from 'lucide-react'
 import QRCode from 'qrcode'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
+import { db } from '../../../config/firebase.js'
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
@@ -135,27 +137,20 @@ function printTag(unitId, canvasEl) {
   win.document.close()
 }
 
-// Custom select component for dark theme
-function CustomSelect({ id, value, onChange, options, placeholder, error }) {
+// Custom select component for dark theme (plain — no search, for fixed option lists)
+function CustomSelect({ id, value, onChange, options, placeholder }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   return (
     <div className="fd-custom-select" ref={ref} id={id}>
-      <div
-        className={`fd-custom-select-trigger ${open ? 'open' : ''}`}
-        onClick={() => setOpen(!open)}
-      >
+      <div className={`fd-custom-select-trigger ${open ? 'open' : ''}`} onClick={() => setOpen(!open)}>
         <span>{value || placeholder}</span>
         <ChevronDown size={14} className={`fd-custom-select-chevron ${open ? 'open' : ''}`} />
       </div>
@@ -165,14 +160,187 @@ function CustomSelect({ id, value, onChange, options, placeholder, error }) {
             <div
               key={typeof opt === 'string' ? opt : opt.value}
               className={`fd-custom-select-option ${value === (typeof opt === 'string' ? opt : opt.value) ? 'selected' : ''}`}
-              onClick={() => {
-                onChange(typeof opt === 'string' ? opt : opt.value)
-                setOpen(false)
-              }}
+              onClick={() => { onChange(typeof opt === 'string' ? opt : opt.value); setOpen(false) }}
             >
               {typeof opt === 'string' ? opt : opt.label}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Creatable searchable select — search existing options or add new ones saved to Firestore
+function CreatableSelect({ id, value, onChange, options, placeholder, onAddOption }) {
+  const [open,   setOpen]   = useState(false)
+  const [search, setSearch] = useState('')
+  const ref       = useRef(null)
+  const searchRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setSearch('') }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  useEffect(() => {
+    if (open && searchRef.current) setTimeout(() => searchRef.current?.focus(), 30)
+  }, [open])
+
+  const filtered = search.trim()
+    ? options.filter(o => o.toLowerCase().includes(search.trim().toLowerCase()))
+    : options
+
+  const hasExactMatch = options.some(o => o.toLowerCase() === search.trim().toLowerCase())
+  const showAdd = search.trim().length > 0 && !hasExactMatch
+
+  const handleSelect = (val) => { onChange(val); setSearch(''); setOpen(false) }
+
+  const handleAdd = async () => {
+    const newVal = search.trim()
+    if (!newVal) return
+    if (onAddOption) await onAddOption(newVal)
+    onChange(newVal)
+    setSearch('')
+    setOpen(false)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filtered.length === 1) handleSelect(filtered[0])
+      else if (showAdd) handleAdd()
+    }
+    if (e.key === 'Escape') { setOpen(false); setSearch('') }
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }} id={id}>
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 12px',
+          background: 'rgba(255,255,255,0.04)',
+          border: `1px solid ${open ? 'rgba(58,130,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+          borderRadius: 8,
+          color: value ? 'rgba(235,242,255,0.9)' : 'rgba(148,163,184,0.45)',
+          fontSize: 13, fontWeight: value ? 600 : 400,
+          cursor: 'pointer', textAlign: 'left',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value || placeholder}
+        </span>
+        <ChevronDown size={13} style={{ flexShrink: 0, marginLeft: 6, transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none', color: 'rgba(148,163,184,0.5)' }} />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 300,
+          background: '#0d1220', border: '1px solid rgba(58,130,255,0.25)', borderRadius: 10,
+          boxShadow: '0 20px 48px rgba(0,0,0,0.8)', overflow: 'hidden',
+        }}>
+          {/* Search bar — always visible */}
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(148,163,184,0.45)" strokeWidth="2"
+                style={{ position: 'absolute', left: 9, pointerEvents: 'none' }}>
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search or type to add new…"
+                autoComplete="off"
+                spellCheck={false}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '7px 28px 7px 30px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 7,
+                  color: 'rgba(235,242,255,0.9)', fontSize: 12.5, outline: 'none',
+                }}
+              />
+              {search && (
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); setSearch('') }}
+                  style={{ position: 'absolute', right: 7, background: 'none', border: 'none', padding: 2, cursor: 'pointer', color: 'rgba(148,163,184,0.5)', display: 'flex' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Options list */}
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtered.map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(opt) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '9px 14px', border: 'none',
+                  background: opt === value ? 'rgba(58,130,255,0.14)' : 'transparent',
+                  color: opt === value ? '#8ab8ff' : 'rgba(203,214,255,0.85)',
+                  fontSize: 13, fontWeight: opt === value ? 700 : 500,
+                  textAlign: 'left', cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => { if (opt !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                onMouseLeave={(e) => { if (opt !== value) e.currentTarget.style.background = 'transparent' }}
+              >
+                {opt === value && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                    <path d="M20 6 9 17l-5-5"/>
+                  </svg>
+                )}
+                {opt}
+              </button>
+            ))}
+
+            {filtered.length === 0 && !showAdd && (
+              <p style={{ margin: 0, padding: '14px', fontSize: 12, color: 'rgba(148,163,184,0.4)', textAlign: 'center' }}>
+                No options yet
+              </p>
+            )}
+
+            {/* Add new row */}
+            {showAdd && (
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); handleAdd() }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '9px 14px', border: 'none',
+                  borderTop: filtered.length > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                  background: 'rgba(22,201,136,0.08)', color: '#4deba0',
+                  fontSize: 13, fontWeight: 700, textAlign: 'left', cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(22,201,136,0.15)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(22,201,136,0.08)'}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add &ldquo;{search.trim()}&rdquo;
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -191,8 +359,7 @@ function MapClickHandler({ onMapClick }) {
 
 export function RegisterPanelPage() {
   const navigate = useNavigate()
-  const { addPanel, addActivityEntry, zones } = useFireDetectionData()
-  const { profile } = useAuth()
+  const { addPanel, addActivityEntry } = useFireDetectionData()
 
   const [saving, setSaving] = useState(false)
   const [qrGenerated, setQrGenerated] = useState(false)
@@ -201,15 +368,45 @@ export function RegisterPanelPage() {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
 
+  // Panel model options — loaded from Firestore, no hardcoded defaults
+  const [panelModelOptions, setPanelModelOptions] = useState([])
+
+  useEffect(() => {
+    async function loadPanelModels() {
+      try {
+        const snap = await getDoc(doc(db, 'fd_options', 'panelModels'))
+        if (snap.exists() && Array.isArray(snap.data().values)) {
+          setPanelModelOptions(snap.data().values)
+        }
+      } catch (err) {
+        console.warn('Could not load panel model options:', err.message)
+      }
+    }
+    loadPanelModels()
+  }, [])
+
+  async function handleAddPanelModel(newValue) {
+    try {
+      await setDoc(
+        doc(db, 'fd_options', 'panelModels'),
+        { values: arrayUnion(newValue) },
+        { merge: true }
+      )
+      setPanelModelOptions(prev => Array.from(new Set([...prev, newValue])))
+    } catch (err) {
+      console.warn('Could not save panel model option:', err.message)
+      // Still works locally
+    }
+  }
+
   // Map state
-  const [mapPosition, setMapPosition] = useState([51.505, -0.09]) // Default to London
   const [selectedMapPosition, setSelectedMapPosition] = useState(null)
 
   // Initialize map
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
       mapInstanceRef.current = L.map(mapRef.current, {
-        center: mapPosition,
+        center: [51.505, -0.09],
         zoom: 13,
         scrollWheelZoom: false
       })
@@ -318,14 +515,7 @@ export function RegisterPanelPage() {
     }
   }
 
-  // Panel model options
-  const panelModelOptions = [
-    'Sentry Prime V2',
-    'Sentry Pro V3',
-    'Guardian Core',
-    'Defender X',
-    'Observer Max'
-  ]
+  // Panel model field uses CreatableSelect above
 
   return (
     <div className="fd-subpage">
@@ -405,12 +595,13 @@ export function RegisterPanelPage() {
                 <label style={{ fontSize: 11, fontWeight: 800, color: 'rgba(148,163,184,0.55)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Panel Model
                 </label>
-                <CustomSelect
+                <CreatableSelect
                   id="panelModel"
                   value={panelModel}
                   onChange={setPanelModel}
                   options={panelModelOptions}
-                  placeholder="Select model"
+                  placeholder="Search or add model…"
+                  onAddOption={handleAddPanelModel}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -1,6 +1,7 @@
 const admin = require('firebase-admin')
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore')
 const { onCall, HttpsError } = require('firebase-functions/v2/https')
+const { onSchedule } = require('firebase-functions/v2/scheduler')
 const { defineSecret } = require('firebase-functions/params')
 
 // Brevo SMTP key — stored as a Firebase secret
@@ -763,3 +764,199 @@ exports.updateCompanyPause = onCall({ secrets: [brevoSmtpKey] }, async (request)
     throw new HttpsError('internal', String(err?.message || 'Failed to update pause.'))
   }
 })
+
+// ── sendFEComplianceAlert ─────────────────────────────────────────────────────
+// Called from the FE Compliance page — sends a test email via Brevo SMTP.
+// The callable pattern handles CORS automatically for web clients.
+exports.sendFEComplianceAlert = onCall({ secrets: [brevoSmtpKey] }, async (request) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError('unauthenticated', 'You must be signed in.')
+  }
+
+  const data        = request.data || {}
+  const to          = String(data.to          || '').trim()
+  const subject     = String(data.subject     || '').trim()
+  const htmlContent = String(data.html        || '').trim()
+  const textContent = String(data.text        || '').trim()
+  const isTest      = Boolean(data.isTest)
+
+  if (!to)                             throw new HttpsError('invalid-argument', 'Recipient email is required.')
+  if (!subject)                        throw new HttpsError('invalid-argument', 'Subject is required.')
+  if (!htmlContent && !textContent)    throw new HttpsError('invalid-argument', 'html or text content is required.')
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new HttpsError('invalid-argument', 'Invalid recipient email format.')
+
+  try {
+    const transporter = createTransporter(brevoSmtpKey.value())
+    await transporter.sendMail({
+      from:    `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      to,
+      subject: isTest ? `[TEST] ${subject}` : subject,
+      text:    textContent || 'Please view this email in an HTML-capable email client.',
+      html:    htmlContent || `<pre>${textContent}</pre>`,
+    })
+    return { ok: true, recipient: to, isTest }
+  } catch (err) {
+    console.error('[sendFEComplianceAlert] SMTP error:', err)
+    throw new HttpsError('internal', `SMTP delivery failed: ${err.message || 'unknown error'}`)
+  }
+})
+
+// ── feComplianceExpiryCron ─────────────────────────────────────────────────────
+// Runs every day at 08:00 UTC.
+// Reads the saved compliance config (intervals, recipientEmail, emailTemplate, channels)
+// and sends Brevo alerts for any assets whose certExpiry falls within an enabled window.
+exports.feComplianceExpiryCron = onSchedule(
+  { schedule: 'every day 08:00', secrets: [brevoSmtpKey] },
+  async () => {
+    const db = admin.firestore()
+
+    // 1. Load compliance config
+    const configSnap = await db.collection('fe_compliance_config').doc('default').get()
+    if (!configSnap.exists) {
+      console.log('[feComplianceExpiryCron] No compliance config found — skipping.')
+      return
+    }
+    const config = configSnap.data()
+
+    // Guard: email channel must be enabled and a recipient must be set
+    if (!config.channels?.email) {
+      console.log('[feComplianceExpiryCron] Email channel disabled — skipping.')
+      return
+    }
+    const recipientEmail = String(config.recipientEmail || '').trim()
+    if (!recipientEmail) {
+      console.log('[feComplianceExpiryCron] No recipientEmail configured — skipping.')
+      return
+    }
+
+    const intervals  = config.intervals  || {}
+    const template   = String(config.emailTemplate || '')
+
+    // 2. Load all assets that have a certExpiry field
+    const assetsSnap = await db.collection('fe_assets').get()
+    const now        = Date.now()
+    const DAY_MS     = 1000 * 60 * 60 * 24
+
+    const toSend = [] // { asset, alertLabel, daysUntilExpiry }
+
+    assetsSnap.forEach((docSnap) => {
+      const asset = { id: docSnap.id, ...docSnap.data() }
+      if (!asset.certExpiry) return
+
+      const expiry = asset.certExpiry?.toMillis
+        ? asset.certExpiry.toMillis()
+        : new Date(asset.certExpiry).getTime()
+
+      const daysLeft = Math.ceil((expiry - now) / DAY_MS)
+
+      // Check in most-urgent order so the right label is applied
+      if (daysLeft <= 0  && intervals.alert_expired) {
+        toSend.push({ asset, alertLabel: 'EXPIRED',        daysLeft })
+      } else if (daysLeft <= 7  && intervals.alert_7day) {
+        toSend.push({ asset, alertLabel: '7-DAY URGENT',   daysLeft })
+      } else if (daysLeft <= 30 && intervals.alert_30day) {
+        toSend.push({ asset, alertLabel: '30-DAY CRITICAL',daysLeft })
+      } else if (daysLeft <= 90 && intervals.alert_90day) {
+        toSend.push({ asset, alertLabel: '90-DAY EARLY',   daysLeft })
+      }
+    })
+
+    if (toSend.length === 0) {
+      console.log('[feComplianceExpiryCron] No assets require notification today.')
+      return
+    }
+
+    // 3. Build and send one batched email listing all affected assets
+    const transporter = createTransporter(brevoSmtpKey.value())
+
+    const assetRowsHtml = toSend.map(({ asset, alertLabel, daysLeft }) => {
+      const expiryStr = asset.certExpiry?.toDate
+        ? asset.certExpiry.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : new Date(asset.certExpiry).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+
+      const badgeColor = daysLeft <= 0 ? '#ff535f' : daysLeft <= 7 ? '#fbbf24' : daysLeft <= 30 ? '#fe8e2a' : '#4deba0'
+
+      return `
+        <tr>
+          <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;color:#fff;font-weight:600;">${asset.assetId || asset.id}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;color:rgba(203,214,255,0.8);">${asset.extinguisherType || '—'}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;color:rgba(203,214,255,0.8);">${asset.facilitySite || '—'}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;color:${badgeColor};font-weight:700;">${expiryStr}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <span style="background:${badgeColor}22;color:${badgeColor};border:1px solid ${badgeColor}55;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;">${alertLabel}</span>
+          </td>
+        </tr>`
+    }).join('')
+
+    // Also substitute placeholders in the custom template if it contains them
+    const firstAsset   = toSend[0].asset
+    const firstExpiry  = firstAsset.certExpiry?.toDate
+      ? firstAsset.certExpiry.toDate().toLocaleDateString('en-GB')
+      : new Date(firstAsset.certExpiry).toLocaleDateString('en-GB')
+
+    const resolvedTemplate = template
+      .replace(/\[Client Name\]/g,       recipientEmail)
+      .replace(/\[Location\]/g,          firstAsset.facilitySite     || 'Multiple Sites')
+      .replace(/\[Asset ID\]/g,          firstAsset.assetId          || firstAsset.id)
+      .replace(/\[Extinguisher Type\]/g, firstAsset.extinguisherType || 'Various')
+      .replace(/\[Expiry Date\]/g,       firstExpiry)
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;background:#f4f6fa;padding:32px;">
+        <div style="background:#0a0f1e;border-radius:12px;padding:28px;color:#fff;">
+          <h1 style="margin:0 0 6px;font-size:20px;color:#fff;">🔥 Fire Extinguisher Compliance Alert</h1>
+          <p style="margin:0 0 20px;color:rgba(203,214,255,0.7);font-size:13px;">
+            ${toSend.length} asset${toSend.length !== 1 ? 's require' : ' requires'} attention today — ${new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
+          </p>
+          <table style="width:100%;border-collapse:collapse;background:rgba(255,255,255,0.03);border-radius:8px;overflow:hidden;">
+            <thead>
+              <tr style="background:rgba(58,130,255,0.12);">
+                <th style="padding:9px 12px;text-align:left;font-size:11px;font-weight:800;letter-spacing:0.06em;color:rgba(148,163,184,0.7);text-transform:uppercase;">Asset ID</th>
+                <th style="padding:9px 12px;text-align:left;font-size:11px;font-weight:800;letter-spacing:0.06em;color:rgba(148,163,184,0.7);text-transform:uppercase;">Type</th>
+                <th style="padding:9px 12px;text-align:left;font-size:11px;font-weight:800;letter-spacing:0.06em;color:rgba(148,163,184,0.7);text-transform:uppercase;">Site</th>
+                <th style="padding:9px 12px;text-align:left;font-size:11px;font-weight:800;letter-spacing:0.06em;color:rgba(148,163,184,0.7);text-transform:uppercase;">Expiry</th>
+                <th style="padding:9px 12px;text-align:left;font-size:11px;font-weight:800;letter-spacing:0.06em;color:rgba(148,163,184,0.7);text-transform:uppercase;">Alert</th>
+              </tr>
+            </thead>
+            <tbody>${assetRowsHtml}</tbody>
+          </table>
+
+          ${resolvedTemplate ? `
+          <div style="margin-top:24px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;">
+            <p style="margin:0;font-size:13px;color:rgba(203,214,255,0.8);white-space:pre-line;">${resolvedTemplate}</p>
+          </div>` : ''}
+        </div>
+        <p style="text-align:center;margin:16px 0 0;font-size:11px;color:rgba(148,163,184,0.5);">
+          © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+        </p>
+      </div>`
+
+    const enabledLabels = []
+    if (intervals.alert_90day)  enabledLabels.push('90-day')
+    if (intervals.alert_30day)  enabledLabels.push('30-day')
+    if (intervals.alert_7day)   enabledLabels.push('7-day')
+    if (intervals.alert_expired) enabledLabels.push('expired')
+
+    await transporter.sendMail({
+      from:    `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      to:      recipientEmail,
+      subject: `🔥 Compliance Alert — ${toSend.length} Fire Extinguisher Asset${toSend.length !== 1 ? 's' : ''} Require Attention`,
+      text:    `${toSend.length} fire extinguisher asset(s) require attention.\n\n` +
+               toSend.map(({ asset, alertLabel, daysLeft }) =>
+                 `• ${asset.assetId || asset.id} — ${alertLabel} (${daysLeft <= 0 ? 'EXPIRED' : `${daysLeft} days left`})`
+               ).join('\n'),
+      html,
+    })
+
+    console.log(`[feComplianceExpiryCron] Sent alert to ${recipientEmail} for ${toSend.length} assets.`)
+
+    // 4. Log to Firestore for audit trail
+    await db.collection('fe_activity_log').add({
+      action:         'Compliance Alert Sent',
+      technicianName: 'SafetyMate System',
+      assetId:        `${toSend.length} asset(s)`,
+      statusUpdate:   `Intervals: ${enabledLabels.join(', ')}`,
+      timestamp:      admin.firestore.FieldValue.serverTimestamp(),
+    })
+  }
+)

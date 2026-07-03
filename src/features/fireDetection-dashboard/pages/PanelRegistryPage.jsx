@@ -157,10 +157,18 @@ export function PanelRegistryPage() {
             Annual Compliance Score
           </div>
           <div style={{ fontSize: 32, fontWeight: 900, color: 'rgba(235,242,255,0.97)' }}>
-            100
+            {totalPanels === 0
+              ? '—'
+              : `${Math.round(((totalPanels - panelsRequiringReplacement) / totalPanels) * 100)}%`}
           </div>
           <div style={{ marginTop: 12, height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-            <div style={{ width: '100%', height: '100%', background: '#3a82ff', borderRadius: 2 }} />
+            <div style={{
+              width: totalPanels === 0 ? '0%' : `${Math.round(((totalPanels - panelsRequiringReplacement) / totalPanels) * 100)}%`,
+              height: '100%',
+              background: totalPanels === 0 ? '#3a82ff' : panelsRequiringReplacement === 0 ? '#16c988' : panelsRequiringReplacement / totalPanels > 0.3 ? '#ff535f' : '#fe8e2a',
+              borderRadius: 2,
+              transition: 'width 0.4s ease',
+            }} />
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   collection, query, onSnapshot, orderBy,
-  addDoc, updateDoc, doc, serverTimestamp, where,
+  addDoc, updateDoc, doc, serverTimestamp,
   getDoc, setDoc
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -49,14 +49,17 @@ export function useFireDetectionData() {
 
   /* ── Alerts stream (open only) ── */
   useEffect(() => {
+    // Single orderBy to avoid needing a composite index.
+    // Filter out resolved alerts client-side.
     const q = query(
       collection(db, 'fd_alerts'),
-      where('status', '!=', 'resolved'),
-      orderBy('severity', 'desc'),
       orderBy('createdAt', 'desc'),
     )
     const unsub = onSnapshot(q,
-      (snap) => setAlerts(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (snap) => {
+        const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        setAlerts(all.filter((a) => a.status !== 'resolved'))
+      },
       (err) => console.warn('fd_alerts stream error:', err.message),
     )
     return () => unsub()

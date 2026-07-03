@@ -521,8 +521,6 @@ export function ClientDashboardPage() {
     }
   }
 
-  // HIRA review is handled by reusable component `HiraReviewForm`.
-
   const visibleModules = useMemo(() => {
     const userModules = modules || []
     return MODULE_CARDS.filter(card => {

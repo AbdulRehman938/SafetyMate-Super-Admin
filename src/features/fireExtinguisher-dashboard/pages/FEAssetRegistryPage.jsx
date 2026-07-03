@@ -91,7 +91,7 @@ export function FEAssetRegistryPage() {
             <Download size={13}/> Export CSV
           </button>
           <button type="button" className="fe-btn fe-btn--primary"
-            onClick={() => navigate('/extinguisher/assets/new')}>
+            onClick={() => navigate('new')}>
             <Plus size={15}/> Register New Asset
           </button>
         </div>
@@ -130,7 +130,7 @@ export function FEAssetRegistryPage() {
             </p>
             {!search && statusF === 'all' && (
               <button type="button" className="fe-btn fe-btn--primary" style={{ marginTop:16 }}
-                onClick={() => navigate('/extinguisher/assets/new')}>
+                onClick={() => navigate('new')}>
                 <Plus size={14}/> Register First Asset
               </button>
             )}
@@ -154,7 +154,7 @@ export function FEAssetRegistryPage() {
                 <tbody>
                   {paginated.map((a) => (
                     <tr key={a.id}
-                      onClick={() => navigate(`/extinguisher/assets/${a.id}`)}
+                      onClick={() => navigate(a.id)}
                       style={{ cursor: 'pointer' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(58,130,255,0.08)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
@@ -193,13 +193,13 @@ export function FEAssetRegistryPage() {
                               fontWeight: 700,
                               cursor: 'pointer',
                             }}
-                            onClick={(e) => { e.stopPropagation(); navigate(`/extinguisher/assets/new?draft=${a.id}`) }}>
+                            onClick={(e) => { e.stopPropagation(); navigate(`new?draft=${a.id}`) }}>
                             <PenLine size={12}/> Continue
                           </button>
                         ) : (
                           <button type="button" className="fe-btn fe-btn--ghost"
                             style={{ padding:'5px 12px', fontSize:11.5 }}
-                            onClick={(e) => { e.stopPropagation(); navigate(`/extinguisher/assets/${a.id}/inspect?new=1`) }}>
+                            onClick={(e) => { e.stopPropagation(); navigate(`${a.id}/inspect?new=1`) }}>
                             <ClipboardList size={12}/> Inspect
                           </button>
                         )}

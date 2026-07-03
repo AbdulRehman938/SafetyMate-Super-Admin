@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clock, Mail, Link, CheckCircle, AlertCircle, Save, Eye, Edit, Copy, FileText } from 'lucide-react'
+import { Clock, Mail, Link, CheckCircle, AlertCircle, Save, Eye, Edit, Copy, Send } from 'lucide-react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db } from '../../../config/firebase.js'
+import { getFunctions, httpsCallable } from 'firebase/functions'
+import { db, app } from '../../../config/firebase.js'
 import { useAuth } from '../../../app/providers/authContext.js'
 import '../fe.css'
 
@@ -100,6 +101,7 @@ export function FECompliancePage() {
       email: true,
       sms: false,
     },
+    recipientEmail: '', // Email where alerts are sent
     emailTemplate: DEFAULT_TEMPLATE,
   })
   const [saving, setSaving] = useState(false)
@@ -157,32 +159,68 @@ export function FECompliancePage() {
   }
 
   async function handleTestNotification() {
+    const recipient = config.recipientEmail?.trim()
+    if (!recipient) {
+      setToast({ type: 'err', text: 'Enter a recipient email address before sending a test.' })
+      return
+    }
+
     setSaving(true)
     setToast(null)
     try {
-      const response = await fetch('/api/notifications/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: 'test@example.com', // Replace with actual test email
-          subject: 'TEST: SafetyMate Notification System',
-          html: '<p>This is a test email from the SafetyMate notification system.</p><p>If you received this, email notifications are working correctly.</p>',
-          text: 'This is a test email from the SafetyMate notification system.',
-        }),
+      const functions = getFunctions(app)
+      const sendAlert = httpsCallable(functions, 'sendFEComplianceAlert')
+
+      const result = await sendAlert({
+        to: recipient,
+        subject: 'COMPLIANCE ALERT: Fire Extinguisher Expiry',
+        isTest: true,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f4f6fa;padding:32px;">
+            <div style="background:#0a0f1e;border-radius:12px;padding:28px;color:#fff;">
+              <p style="margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:0.08em;color:rgba(254,142,42,0.9);text-transform:uppercase;">
+                🧪 Test Email — SafetyMate Compliance System
+              </p>
+              <h1 style="margin:0 0 16px;font-size:20px;color:#fff;">COMPLIANCE ALERT: Fire Extinguisher Expiry</h1>
+              <p style="margin:0 0 12px;color:rgba(203,214,255,0.8);font-size:14px;">
+                Dear <strong style="color:#fff;">[Client Name]</strong>,
+              </p>
+              <p style="margin:0 0 12px;color:rgba(203,214,255,0.8);font-size:14px;">
+                This is an automated notification regarding fire extinguisher compliance at <strong style="color:#fff;">[Location]</strong>.
+              </p>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px;margin:0 0 16px;">
+                <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:rgba(148,163,184,0.7);letter-spacing:0.05em;text-transform:uppercase;">Asset Details</p>
+                <p style="margin:4px 0;font-size:13px;color:rgba(235,242,255,0.9);">• Unit ID: <span style="color:#8ab8ff;font-weight:600;">[Asset ID]</span></p>
+                <p style="margin:4px 0;font-size:13px;color:rgba(235,242,255,0.9);">• Type: <span style="color:#8ab8ff;font-weight:600;">[Extinguisher Type]</span></p>
+                <p style="margin:4px 0;font-size:13px;color:rgba(235,242,255,0.9);">• Expiry Date: <span style="color:#ff8080;font-weight:600;">[Expiry Date]</span></p>
+              </div>
+              <p style="margin:0 0 12px;color:rgba(203,214,255,0.8);font-size:14px;">
+                Please ensure inspection and certification are completed before the expiry date to maintain compliance.
+              </p>
+              <p style="margin:0;color:rgba(203,214,255,0.8);font-size:14px;">
+                Best regards,<br/>
+                <strong style="color:#fff;">SafetyMate Compliance Team</strong>
+              </p>
+            </div>
+            <p style="text-align:center;margin:16px 0 0;font-size:11px;color:rgba(148,163,184,0.5);">
+              © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+            </p>
+          </div>
+        `,
+        text: templateContent,
       })
 
-      if (response.ok) {
-        setToast({ type: 'ok', text: 'Test notification sent successfully.' })
+      if (result.data?.ok) {
+        setToast({ type: 'ok', text: `Test email sent to ${recipient} via Brevo SMTP.` })
       } else {
-        const error = await response.json()
-        setToast({ type: 'err', text: `Failed to send test: ${error.error}` })
+        setToast({ type: 'err', text: 'Email function returned an unexpected response.' })
       }
     } catch (err) {
-      setToast({ type: 'err', text: 'Failed to send test notification.' })
+      console.error('Test email failed:', err)
+      setToast({ type: 'err', text: `Failed to send test: ${err.message || 'Unknown error'}` })
     } finally {
       setSaving(false)
+      setTimeout(() => setToast(null), 5000)
     }
   }
 
@@ -224,16 +262,6 @@ export function FECompliancePage() {
           </p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button
-            type="button"
-            className="fe-btn fe-btn--ghost"
-            onClick={handleTestNotification}
-            disabled={saving}
-            style={{ flexShrink:0 }}
-          >
-            {saving ? <span className="fe-spinner" style={{ width:14, height:14 }}/> : <Mail size={14}/>}
-            Test Email
-          </button>
           <button
             type="button"
             className="fe-btn fe-btn--primary"
@@ -402,6 +430,47 @@ export function FECompliancePage() {
             <span className="fe-card-title">Channel Management</span>
           </div>
         </div>
+
+        {/* Recipient email input */}
+        <div style={{ padding:'16px 20px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', marginBottom:4 }}>
+          <label style={{ display:'block', fontSize:11, fontWeight:800, letterSpacing:'0.07em', color:'rgba(148,163,184,0.7)', marginBottom:6 }}>
+            ALERT RECIPIENT EMAIL
+          </label>
+          <div style={{ display:'flex', gap:10, alignItems:'center', paddingBottom:16 }}>
+            <input
+              type="email"
+              value={config.recipientEmail || ''}
+              onChange={(e) => setConfig((prev) => ({ ...prev, recipientEmail: e.target.value }))}
+              placeholder="e.g. safety@yourcompany.com"
+              style={{
+                flex:1, padding:'9px 12px',
+                background:'rgba(255,255,255,0.04)',
+                border:'1px solid rgba(255,255,255,0.1)',
+                borderRadius:8, color:'rgba(235,242,255,0.9)',
+                fontSize:13.5, outline:'none',
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(58,130,255,0.5)' }}
+              onBlur={(e)  => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+            />
+            <button
+              type="button"
+              className="fe-btn fe-btn--ghost"
+              onClick={handleTestNotification}
+              disabled={saving || !config.recipientEmail?.trim()}
+              style={{ flexShrink:0, gap:6 }}
+            >
+              {saving
+                ? <span className="fe-spinner" style={{ width:13, height:13 }}/>
+                : <Send size={13}/>
+              }
+              Send Test
+            </button>
+          </div>
+          <p style={{ margin:'0 0 12px', fontSize:11.5, color:'rgba(148,163,184,0.45)' }}>
+            Compliance alerts for expiring/expired assets will be sent to this address. Use "Send Test" to verify delivery.
+          </p>
+        </div>
+
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:16, padding:'16px 20px' }}>
           <div className="fe-comp-channel-card">
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>

@@ -1,26 +1,3 @@
-/**
- * create_company_user.js
- * ─────────────────────────────────────────────────────────────────────────────
- * Creates a Firebase Auth user + Firestore user_profiles document with
- * role = 'COMPANY', linked to a company organisation.
- *
- * Uses the Firebase Admin SDK (serviceAccountKey.json) — bypasses all
- * Firestore security rules, no super admin sign-in required.
- *
- * ── MODE A — Create a brand-new organisation AND its first admin user ──────
- *   node scripts/create_company_user.js --email admin@acme.com --password Acme@2026 --name "Jane Smith" --org-name "Acme Corp"
- *
- * ── MODE B — Add a user to an EXISTING organisation ───────────────────────
- *   node scripts/create_company_user.js --email admin@acme.com --password Acme@2026 --name "Jane Smith" --org-id YOUR_ORG_FIRESTORE_ID
- *
- * ── Optional flags ─────────────────────────────────────────────────────────
- *   --role  COMPANY | client_admin   (default: COMPANY)
- *
- * Run from the project root:
- *   node scripts/create_company_user.js --email ... --password ... --name ... --org-name ...
- * ─────────────────────────────────────────────────────────────────────────────
- */
-
 import { initializeApp, cert, getApps } from 'firebase-admin/app'
 import { getFirestore, FieldValue }      from 'firebase-admin/firestore'
 import { getAuth }                       from 'firebase-admin/auth'

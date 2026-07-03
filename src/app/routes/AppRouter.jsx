@@ -296,19 +296,47 @@ export function AppRouter() {
           <Route path="/client/fleet/fuel"           element={<ClientFleetPage view="fuel" />} />
 
           {/* ── Fire Extinguisher module ── */}
-          <Route path="/client/fire-ext"             element={<ClientFireExtPage view="dashboard" />} />
-          <Route path="/client/fire-ext/assets"      element={<ClientFireExtPage view="assets" />} />
-          <Route path="/client/fire-ext/compliance"  element={<ClientFireExtPage view="compliance" />} />
+          <Route path="/client/fire-ext"                           element={<ClientFireExtPage view="dashboard" />} />
+          <Route path="/client/fire-ext/assets"                    element={<ClientFireExtPage view="assets" />} />
+          <Route path="/client/fire-ext/assets/new"                element={<ClientFireExtPage view="register" />} />
+          <Route path="/client/fire-ext/assets/:id"                element={<ClientFireExtPage view="detail" />} />
+          <Route path="/client/fire-ext/assets/:assetId/inspect"   element={<ClientFireExtPage view="inspect" />} />
+          <Route path="/client/fire-ext/compliance"                element={<ClientFireExtPage view="compliance" />} />
+          {/* Mirror routes so FE pages' internal navigate('/extinguisher/...') still works for COMPANY users */}
+          <Route path="/extinguisher/dashboard"                    element={<ClientFireExtPage view="dashboard" />} />
+          <Route path="/extinguisher/assets"                       element={<ClientFireExtPage view="assets" />} />
+          <Route path="/extinguisher/assets/new"                   element={<ClientFireExtPage view="register" />} />
+          <Route path="/extinguisher/assets/:id"                   element={<ClientFireExtPage view="detail" />} />
+          <Route path="/extinguisher/assets/:assetId/inspect"      element={<ClientFireExtPage view="inspect" />} />
+          <Route path="/extinguisher/compliance"                   element={<ClientFireExtPage view="compliance" />} />
+          <Route path="/extinguisher/profile"                      element={<ClientFireExtPage view="dashboard" />} />
 
           {/* ── Fire Detection module ── */}
-          <Route path="/client/fire-det"             element={<ClientFireDetPage view="dashboard" />} />
-          <Route path="/client/fire-det/assets"      element={<ClientFireDetPage view="assets" />} />
-          <Route path="/client/fire-det/panels"      element={<ClientFireDetPage view="panels" />} />
-          <Route path="/client/fire-det/inspections" element={<ClientFireDetPage view="inspections" />} />
-          <Route path="/client/fire-det/compliance"  element={<ClientFireDetPage view="compliance" />} />
+          <Route path="/client/fire-det"                          element={<ClientFireDetPage view="dashboard" />} />
+          <Route path="/client/fire-det/assets"                   element={<ClientFireDetPage view="assets" />} />
+          <Route path="/client/fire-det/assets/:id"               element={<ClientFireDetPage view="assetDetail" />} />
+          <Route path="/client/fire-det/panels"                   element={<ClientFireDetPage view="panels" />} />
+          <Route path="/client/fire-det/panels/new"               element={<ClientFireDetPage view="registerPanel" />} />
+          <Route path="/client/fire-det/panels/:id"               element={<ClientFireDetPage view="panelDetail" />} />
+          <Route path="/client/fire-det/inspections"              element={<ClientFireDetPage view="inspections" />} />
+          <Route path="/client/fire-det/inspection-history/:id"   element={<ClientFireDetPage view="inspectionHistory" />} />
+          <Route path="/client/fire-det/panel-inspection"         element={<ClientFireDetPage view="panelInspection" />} />
+          <Route path="/client/fire-det/compliance"               element={<ClientFireDetPage view="compliance" />} />
+          {/* Mirror routes so FD pages' internal navigate('/detection/...') calls work for COMPANY users */}
+          <Route path="/detection/dashboard"                      element={<ClientFireDetPage view="dashboard" />} />
+          <Route path="/detection/assets"                         element={<ClientFireDetPage view="assets" />} />
+          <Route path="/detection/assets/:id"                     element={<ClientFireDetPage view="assetDetail" />} />
+          <Route path="/detection/panels"                         element={<ClientFireDetPage view="panels" />} />
+          <Route path="/detection/panels/new"                     element={<ClientFireDetPage view="registerPanel" />} />
+          <Route path="/detection/panels/:id"                     element={<ClientFireDetPage view="panelDetail" />} />
+          <Route path="/detection/inspection"                     element={<ClientFireDetPage view="inspections" />} />
+          <Route path="/detection/inspection-history/:id"         element={<ClientFireDetPage view="inspectionHistory" />} />
+          <Route path="/detection/panel-inspection"               element={<ClientFireDetPage view="panelInspection" />} />
+          <Route path="/detection/compliance"                     element={<ClientFireDetPage view="compliance" />} />
+          <Route path="/detection/registry"                       element={<ClientFireDetPage view="assets" />} />
+          <Route path="/" element={<Navigate to="/client/home" replace />} />
+          <Route path="*" element={<Navigate to="/client/home" replace />} />
         </Route>
-        <Route path="/" element={<Navigate to="/client/home" replace />} />
-        <Route path="*" element={<Navigate to="/client/home" replace />} />
       </Routes>
     )
   }
