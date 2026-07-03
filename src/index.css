@@ -3808,6 +3808,12 @@ input::placeholder {
   animation: spin 0.9s linear infinite;
 }
 
+/* Generic spin utility used by Loader2 icons */
+.spin {
+  animation: spin 0.8s linear infinite;
+  display: block;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);

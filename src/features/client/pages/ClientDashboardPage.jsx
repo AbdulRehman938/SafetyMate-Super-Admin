@@ -538,62 +538,6 @@ export function ClientDashboardPage() {
 
   return (
     <section className="client-page client-dashboard-page">
-      {/* TODO: Wire to Firestore where('organizationId', '==', orgId) for KPI aggregates */}
-      <header className="client-dash-header">
-        <h1>Dashboard</h1>
-      </header>
-
-      {/* Module Cards Grid */}
-      <div className="client-modules-grid">
-        {visibleModules.map((card) => {
-          const Icon = card.icon
-          return (
-            <button
-              key={card.key}
-              className="client-module-card"
-              onClick={() => navigate(card.route)}
-              type="button"
-            >
-              <div className="client-module-icon">
-                <Icon size={24} />
-              </div>
-              <h3 className="client-module-title">{card.label}</h3>
-              <p className="client-module-desc">{card.description}</p>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="client-dash-top3">
-        <article className="client-card client-card--health">
-          <h2 className="client-card-kicker">Overall Compliance</h2>
-          {/* TODO: Wire to Firestore where('organizationId', '==', orgId) for compliance score */}
-          <div className="client-health-inner">
-            <HealthScoreDonut percent={healthScore} size={140} strokeWidth={12} />
-            <p className="client-health-caption">Health Score</p>
-          </div>
-        </article>
-
-        <article className="client-card client-card--risk client-card--risk-critical">
-          <div className="client-risk-head">
-            <h2>Critical Risks</h2>
-            <span className="client-badge client-badge--danger">Action Required</span>
-          </div>
-          {/* TODO: Wire to Firestore where('organizationId', '==', orgId) for critical risk count */}
-          <p className="client-risk-number">{String(criticalCount).padStart(2, '0')}</p>
-          <p className="client-risk-foot">Open critical items</p>
-        </article>
-
-        <article className="client-card client-card--risk client-card--risk-standard">
-          <div className="client-risk-head">
-            <h2>Standard Risks</h2>
-            <span className="client-badge client-badge--warn">Monitored</span>
-          </div>
-          {/* TODO: Wire to Firestore where('organizationId', '==', orgId) for standard risk count */}
-          <p className="client-risk-number">{String(standardCount).padStart(2, '0')}</p>
-          <p className="client-risk-foot">Items under watch</p>
-        </article>
-      </div>
 
       <div className="client-dash-main">
         <div className="client-dash-feed-col">

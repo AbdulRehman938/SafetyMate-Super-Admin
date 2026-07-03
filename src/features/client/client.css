@@ -12776,3 +12776,46 @@ audio.evidence-media {
   font-weight: 700;
   color: rgba(235, 242, 255, 0.97);
 }
+
+/* ── Paused module card ─────────────────────────────────────── */
+.client-module-card--paused {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.client-module-card--paused:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(251, 191, 36, 0.28);
+  background: rgba(12, 18, 36, 0.6);
+}
+
+.client-module-card--paused .client-module-card__bg-icon {
+  opacity: 0.05;
+}
+
+.client-module-card__pause-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(251, 191, 36, 0.9);
+  z-index: 2;
+}
+
+/* Paused colour variants border */
+.client-module-card--paused.client-module-card--blue,
+.client-module-card--paused.client-module-card--orange,
+.client-module-card--paused.client-module-card--red {
+  border-color: rgba(251, 191, 36, 0.2);
+}

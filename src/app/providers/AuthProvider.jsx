@@ -102,6 +102,38 @@ export function AuthProvider({ children }) {
       ? ['fleet', 'fire_extinguisher', 'fire_detection']
       : (Array.isArray(orgDoc?.modules) ? orgDoc.modules : [])
 
+    // pausedModules: { fleet: { until: Timestamp }, fire_extinguisher: { until: Timestamp } }
+    // A module is paused if its `until` timestamp is in the future.
+    const pausedModules = isSuperAdmin ? {} : (orgDoc?.pausedModules || {})
+
+    // requestsPausedUntil: Timestamp | null — blocks new requests from this company
+    const requestsPausedUntil = isSuperAdmin ? null : (orgDoc?.requestsPausedUntil || null)
+
+    // Helper: is a specific module currently paused?
+    const isModulePaused = (moduleKey) => {
+      const entry = pausedModules[moduleKey]
+      if (!entry?.until) return false
+      const until = typeof entry.until?.toDate === 'function'
+        ? entry.until.toDate()
+        : new Date(entry.until)
+      return until > new Date()
+    }
+
+    // Helper: are new requests currently blocked?
+    const isRequestsPaused = () => {
+      if (!requestsPausedUntil) return false
+      const until = typeof requestsPausedUntil?.toDate === 'function'
+        ? requestsPausedUntil.toDate()
+        : new Date(requestsPausedUntil)
+      return until > new Date()
+    }
+
+    const requestsPausedUntilDate = requestsPausedUntil
+      ? (typeof requestsPausedUntil?.toDate === 'function'
+          ? requestsPausedUntil.toDate()
+          : new Date(requestsPausedUntil))
+      : null
+
     const updateProfile = async (updates) => {
       if (!authUser) throw new Error('No authenticated user')
       const userRef = doc(db, 'user_profiles', authUser.uid)
@@ -117,7 +149,12 @@ export function AuthProvider({ children }) {
       isSuperAdmin,
       organizationId,
       orgDoc,
-      modules,          // ← string[] e.g. ['fleet', 'fire_extinguisher']
+      modules,
+      pausedModules,
+      requestsPausedUntil,
+      requestsPausedUntilDate,
+      isModulePaused,
+      isRequestsPaused,
       loadingProfile,
       profileStatus,
       error,

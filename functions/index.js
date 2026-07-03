@@ -11,8 +11,9 @@ const brevoSmtpKey = defineSecret('BREVO_SMTP_KEY')
 const SUPER_ADMIN_NOTIFY_EMAIL = 'safetymateadmin@yopmail.com'
 const SENDER_EMAIL             = 'iamrehman941@gmail.com'
 const SENDER_NAME              = 'SafetyMate'
-// BREVO_LOGIN_EMAIL: the SMTP login shown in Brevo dashboard → SMTP & API → SMTP tab
-const BREVO_LOGIN_EMAIL        = '9c3806001@smtp-brevo.com'
+// BREVO_LOGIN_EMAIL: the email you used to CREATE your Brevo account
+// This is used as the SMTP username — it may differ from SENDER_EMAIL
+const BREVO_LOGIN_EMAIL        = 'iamrehman941@gmail.com'
 
 /**
  * Creates a nodemailer transporter using Brevo SMTP.
@@ -511,9 +512,11 @@ exports.sendModuleRequestEmail = onCall({ secrets: [brevoSmtpKey] }, async (requ
 
             <div style="margin-top: 28px; padding: 16px; background: rgba(58,130,255,0.1); border: 1px solid rgba(58,130,255,0.25); border-radius: 8px;">
               <p style="margin: 0; font-size: 13px; color: rgba(235,242,255,0.85);">
-                To grant or revoke access, open the Super Admin dashboard, navigate to
-                <strong style="color: #7ab5ff;">Companies → ${organizationName}</strong>
-                and use the <strong style="color: #7ab5ff;">Module Access</strong> toggles.
+                To grant or revoke access, open the Super Admin dashboard and navigate to
+                <strong style="color: #7ab5ff;">Module Requests</strong>
+                from the sidebar. Find <strong style="color: #7ab5ff;">${organizationName}</strong>,
+                expand the company row and use the <strong style="color: #7ab5ff;">Grant</strong> or
+                <strong style="color: #7ab5ff;">Revoke</strong> buttons next to each module.
               </p>
             </div>
           </div>
@@ -643,5 +646,120 @@ exports.updateCompanyModules = onCall({ secrets: [brevoSmtpKey] }, async (reques
     if (err instanceof HttpsError) throw err
     console.error('[updateCompanyModules] Failed', err)
     throw new HttpsError('internal', String(err?.message || 'Failed to update modules.'))
+  }
+})
+
+// ── updateCompanyPause ─────────────────────────────────────────────────────────
+// Called by SUPER_ADMIN to pause/unpause module access or module requests for a company.
+//
+// Pause types:
+//   type: 'module_access'  — pauses a specific module (company can't use it)
+//   type: 'requests'       — blocks new module access requests from this company
+//
+// Pass `until: null` to immediately lift a pause.
+exports.updateCompanyPause = onCall({ secrets: [brevoSmtpKey] }, async (request) => {
+  try {
+    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'You must be signed in.')
+
+    const db = admin.firestore()
+    const callerSnap = await db.collection('user_profiles').doc(request.auth.uid).get()
+    if (String(callerSnap?.data?.()?.role || '') !== 'SUPER_ADMIN') {
+      throw new HttpsError('permission-denied', 'Only SUPER_ADMIN can manage pauses.')
+    }
+
+    const data           = request.data || {}
+    const organizationId = String(data.organizationId || '').trim()
+    const pauseType      = String(data.type || '')           // 'module_access' | 'requests'
+    const moduleKey      = String(data.moduleKey || '').trim()
+    const until          = data.until ?? null                 // ISO string or null
+    const reason         = String(data.reason || '').trim()
+
+    if (!organizationId) throw new HttpsError('invalid-argument', 'organizationId is required.')
+    if (!['module_access', 'requests'].includes(pauseType)) {
+      throw new HttpsError('invalid-argument', 'type must be module_access or requests.')
+    }
+
+    const orgRef  = db.collection('organizations').doc(organizationId)
+    const orgSnap = await orgRef.get()
+    if (!orgSnap.exists) throw new HttpsError('not-found', 'Organization not found.')
+
+    const untilValue = until
+      ? admin.firestore.Timestamp.fromDate(new Date(until))
+      : null
+
+    if (pauseType === 'requests') {
+      // Block/unblock new module requests from this company
+      await orgRef.update({
+        requestsPausedUntil: untilValue,
+        requestsPauseReason: reason || null,
+        requestsPauseUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+    } else {
+      // Pause/unpause a specific module
+      if (!moduleKey) throw new HttpsError('invalid-argument', 'moduleKey is required for module_access pause.')
+      const currentPaused = orgSnap.data().pausedModules || {}
+      const updated = {
+        ...currentPaused,
+        [moduleKey]: untilValue ? { until: untilValue, reason: reason || null } : null,
+      }
+      // Clean up null entries
+      Object.keys(updated).forEach((k) => { if (!updated[k]) delete updated[k] })
+      await orgRef.update({
+        pausedModules: updated,
+        pauseUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+    }
+
+    // Notify the company contact about the pause/unpause
+    const org = orgSnap.data()
+    const contactEmail = org.primaryContact?.email
+    if (contactEmail && untilValue) {
+      const transporter = createTransporter(brevoSmtpKey.value())
+      const untilDateStr = new Date(until).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+      const isModule = pauseType === 'module_access'
+      const { fleet: _f, fire_extinguisher: _fe, fire_detection: _fd } = {
+        fleet: 'Fleet Management', fire_extinguisher: 'Fire Extinguisher Safety', fire_detection: 'Fire Detection & Alarms',
+      }
+      const moduleLabel = { fleet: 'Fleet Management', fire_extinguisher: 'Fire Extinguisher Safety', fire_detection: 'Fire Detection & Alarms' }[moduleKey] || moduleKey
+
+      await transporter.sendMail({
+        from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+        to: contactEmail,
+        subject: isModule
+          ? `${moduleLabel} access temporarily paused — ${org.name}`
+          : `Module access requests temporarily blocked — ${org.name}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f4f6fa;padding:32px;">
+            <div style="background:#0a0f1e;border-radius:12px;padding:28px;color:#fff;">
+              <h1 style="margin:0 0 8px;font-size:20px;color:#fff;">
+                ${isModule ? `${moduleLabel} Access Paused` : 'Module Requests Blocked'}
+              </h1>
+              <p style="margin:0 0 16px;color:rgba(203,214,255,0.7);font-size:14px;">
+                ${isModule
+                  ? `Access to <strong style="color:#fbbf24;">${moduleLabel}</strong> for <strong>${org.name}</strong> has been temporarily paused.`
+                  : `New module access requests from <strong>${org.name}</strong> have been temporarily blocked.`
+                }
+              </p>
+              <p style="margin:0 0 16px;color:rgba(203,214,255,0.7);font-size:14px;">
+                This will automatically lift on <strong style="color:#fbbf24;">${untilDateStr}</strong>.
+                ${reason ? `<br><br>Reason: <em>${reason}</em>` : ''}
+              </p>
+              <p style="margin:0;color:rgba(203,214,255,0.7);font-size:13px;">
+                Contact your SafetyMate administrator if you have questions.
+              </p>
+            </div>
+            <p style="text-align:center;margin:16px 0 0;font-size:11px;color:rgba(148,163,184,0.5);">
+              © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+            </p>
+          </div>
+        `,
+      }).catch(() => {})
+    }
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[updateCompanyPause] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to update pause.'))
   }
 })
