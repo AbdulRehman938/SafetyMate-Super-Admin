@@ -140,7 +140,7 @@ export function NewSubscriberPage() {
   const [billingCycle, setBillingCycle] = useState('Monthly')
   const [selectedPlanKey, setSelectedPlanKey] = useState('Starter')
   const [allocatedUsers, setAllocatedUsers] = useState(10)
-  const [adminAccount, setAdminAccount] = useState({ email: '', password: '', showPassword: false })
+  const [adminAccount, setAdminAccount] = useState({ email: '' })
 
   const selectedPlan = useMemo(
     () => PLANS.find((p) => p.key === selectedPlanKey) || PLANS[0],
@@ -258,20 +258,11 @@ export function NewSubscriberPage() {
         return
       }
       const adminEmail = adminAccount.email.trim()
-      const adminPassword = String(adminAccount.password || '')
       if (!adminEmail) {
         toast.push({
           type: 'error',
           title: 'Missing fields',
           message: 'Admin Email is required to create the Primary Admin account.',
-        })
-        return
-      }
-      if (adminPassword.length < 8) {
-        toast.push({
-          type: 'error',
-          title: 'Weak password',
-          message: 'Initial Password must be at least 8 characters.',
         })
         return
       }
@@ -284,19 +275,20 @@ export function NewSubscriberPage() {
       // (logging the Super Admin out). To avoid that, this must be done server-side using
       // the Firebase Admin SDK (e.g. a Callable Cloud Function).
       //
-      // Implement (server-side): createClientAdmin({ email, password, organizationId, fullName })
-      // It should create the Auth user and return { uid }.
+      // The createClientAdmin function now creates the user WITHOUT a password
+      // and generates a setup token. The user will set their password via email link.
       let newAdminUid = null
+      let setupToken = null
       try {
         const functions = getFunctions(app)
         const createClientAdmin = httpsCallable(functions, 'createClientAdmin')
         const res = await createClientAdmin({
           email: adminEmail,
-          password: adminPassword,
           organizationId: orgDocRef.id,
           fullName: payload.primaryContact.fullName,
         })
         newAdminUid = res?.data?.uid || null
+        setupToken = res?.data?.setupToken || null
       } catch (err) {
         // If you haven't deployed the cloud function yet, you'll land here.
         // Deploying it is required to create client admin accounts without session switching.
@@ -308,6 +300,26 @@ export function NewSubscriberPage() {
 
       if (!newAdminUid) {
         throw new Error('Primary Admin user was created but no uid was returned.')
+      }
+
+      // Send password setup email
+      try {
+        const functions = getFunctions(app)
+        const sendPasswordSetupEmail = httpsCallable(functions, 'sendPasswordSetupEmail')
+        await sendPasswordSetupEmail({
+          setupToken,
+          email: adminEmail,
+          fullName: payload.primaryContact.fullName,
+          organizationName: payload.name,
+        })
+      } catch (err) {
+        // Log error but don't fail the entire process - admin can manually send email
+        console.error('Failed to send password setup email:', err)
+        toast.push({
+          type: 'warning',
+          title: 'Email not sent',
+          message: 'Account created but password setup email failed. Please manually send the setup link to the admin.',
+        })
       }
 
       // Create Firestore user profile for the new Primary Admin.
@@ -619,27 +631,11 @@ export function NewSubscriberPage() {
                   autoComplete="off"
                 />
               </label>
-              <label>
-                Initial Password *
-                <div className="password-row">
-                  <input
-                    value={adminAccount.password}
-                    onChange={(e) => setAdminAccount((p) => ({ ...p, password: e.target.value }))}
-                    placeholder="At least 8 characters"
-                    type={adminAccount.showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => setAdminAccount((p) => ({ ...p, showPassword: !p.showPassword }))}
-                    aria-label={adminAccount.showPassword ? 'Hide password' : 'Show password'}
-                    title={adminAccount.showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {adminAccount.showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </label>
+              <div className="password-info-box">
+                <p style={{ margin: 0, fontSize: '13px', color: 'rgba(203,214,255,0.85)' }}>
+                  <strong>Password Setup:</strong> The admin will receive an email with a secure link to set their own password. This link expires in 24 hours.
+                </p>
+              </div>
             </div>
           </article>
 

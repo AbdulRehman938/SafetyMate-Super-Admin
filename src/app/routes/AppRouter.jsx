@@ -20,10 +20,12 @@ import { SettingsPage } from '../../features/settings/pages/SettingsPage.jsx'
 import { UserProfilePage } from '../../features/users/pages/UserProfilePage.jsx'
 import { ModuleRequestsPage } from '../../features/module-requests/pages/ModuleRequestsPage.jsx'
 import { LoginPage } from '../../features/auth/pages/LoginPage.jsx'
+import { SetupPasswordPage } from '../../features/auth/pages/SetupPasswordPage.jsx'
 import { MobileAppBlockedPage } from '../../features/mobile/pages/MobileAppBlockedPage.jsx'
 import { ClientLayout } from '../../features/client/ClientLayout.jsx'
 import { ClientHomePage } from '../../features/client/pages/ClientHomePage.jsx'
 import { ClientDashboardPage } from '../../features/client/pages/ClientDashboardPage.jsx'
+import { ChangePasswordPage } from '../../features/client/pages/ChangePasswordPage.jsx'
 import { RiskAssessmentPage } from '../../features/client/pages/RiskAssessmentPage.jsx'
 import { WorkforcePage } from '../../features/client/pages/WorkforcePage.jsx'
 import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
@@ -127,6 +129,11 @@ export function AppRouter() {
         </div>
       </section>
     )
+  }
+
+  // Public route for password setup (no auth required)
+  if (window.location.pathname === '/setup-password') {
+    return <SetupPasswordPage />
   }
 
   if (!authUser) {
@@ -287,6 +294,7 @@ export function AppRouter() {
           <Route path="/client/certificates"   element={<CertificatesPage />} />
           <Route path="/client/workforce"      element={<WorkforcePage />} />
           <Route path="/client/ppe"            element={<PPEPage />} />
+          <Route path="/client/change-password" element={<ChangePasswordPage />} />
 
           {/* ── Fleet module ── */}
           <Route path="/client/fleet"                element={<ClientFleetPage view="dashboard" />} />

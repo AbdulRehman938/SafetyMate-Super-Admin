@@ -392,19 +392,17 @@ exports.createClientAdmin = onCall(async (request) => {
 
     const data = request.data || {}
     const email = String(data.email || '').trim().toLowerCase()
-    const password = String(data.password || '')
     const organizationId = String(data.organizationId || '').trim()
     const fullName = String(data.fullName || '').trim()
 
     if (!email) throw new HttpsError('invalid-argument', 'email is required')
-    if (password.length < 8) throw new HttpsError('invalid-argument', 'password must be at least 8 characters')
     if (!organizationId) throw new HttpsError('invalid-argument', 'organizationId is required')
 
+    // Create user WITHOUT password - they will set it via email link
     const userRecord = await admin
       .auth()
       .createUser({
         email,
-        password,
         displayName: fullName || undefined,
         emailVerified: false,
         disabled: false,
@@ -417,13 +415,34 @@ exports.createClientAdmin = onCall(async (request) => {
         throw err
       })
 
-    // Optional but helpful: set custom claims so rules can enforce role/org without extra reads.
+    // Set custom claims so rules can enforce role/org without extra reads.
     await admin.auth().setCustomUserClaims(userRecord.uid, {
       role: 'client_admin',
       organizationId,
     }).catch(() => {})
 
-    return { uid: userRecord.uid }
+    // Generate a secure random token for password setup
+    const crypto = require('crypto')
+    const setupToken = crypto.randomBytes(32).toString('hex')
+    
+    // Token expires in 24 hours
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    // Store the setup token in Firestore
+    await db.collection('password_setup_tokens').doc(setupToken).set({
+      uid: userRecord.uid,
+      email,
+      organizationId,
+      fullName,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+      used: false,
+    })
+
+    return { 
+      uid: userRecord.uid,
+      setupToken,
+    }
   } catch (err) {
     if (err instanceof HttpsError) throw err
     console.error('[createClientAdmin] Failed', err)
@@ -431,6 +450,180 @@ exports.createClientAdmin = onCall(async (request) => {
   }
 })
 
+
+// ── sendPasswordSetupEmail ─────────────────────────────────────────────────────
+// Sends password setup email to newly created company admin
+exports.sendPasswordSetupEmail = onCall({ secrets: [brevoSmtpKey] }, async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.')
+    }
+
+    const db = admin.firestore()
+    const callerSnap = await db.collection('user_profiles').doc(request.auth.uid).get()
+    const callerRole = String(callerSnap?.data?.()?.role || '')
+    if (callerRole !== 'SUPER_ADMIN') {
+      throw new HttpsError('permission-denied', 'Only SUPER_ADMIN can send password setup emails.')
+    }
+
+    const data = request.data || {}
+    const setupToken = String(data.setupToken || '').trim()
+    const email = String(data.email || '').trim()
+    const fullName = String(data.fullName || '').trim()
+    const organizationName = String(data.organizationName || '').trim()
+
+    if (!setupToken || !email) {
+      throw new HttpsError('invalid-argument', 'setupToken and email are required.')
+    }
+
+    const transporter = createTransporter(brevoSmtpKey.value())
+    const setupUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/setup-password?token=${setupToken}`
+
+    await transporter.sendMail({
+      from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      to: email,
+      subject: `Set Your SafetyMate Password - Welcome to ${organizationName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f6fa; padding: 32px;">
+          <div style="background: #0a0f1e; border-radius: 12px; padding: 28px; color: #ffffff;">
+            <h1 style="margin: 0 0 8px; font-size: 22px; color: #ffffff;">
+              Welcome to SafetyMate
+            </h1>
+            <p style="margin: 0 0 24px; color: rgba(203,214,255,0.7); font-size: 14px;">
+              Hi ${fullName}, your account has been created for <strong>${organizationName}</strong>.
+            </p>
+
+            <p style="margin: 0 0 16px; color: rgba(203,214,255,0.85); font-size: 14px;">
+              To get started, you need to set your password. This link will expire in 24 hours for security reasons.
+            </p>
+
+            <div style="margin: 24px 0;">
+              <a href="${setupUrl}" 
+                 style="display: inline-block; background: #3a82ff; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                Set Your Password
+              </a>
+            </div>
+
+            <p style="margin: 24px 0 0; color: rgba(148,163,184,0.7); font-size: 13px;">
+              If the button above doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="margin: 4px 0 0; color: #7ab5ff; font-size: 12px; word-break: break-all;">
+              ${setupUrl}
+            </p>
+
+            <div style="margin-top: 24px; padding: 16px; background: rgba(58,130,255,0.1); border: 1px solid rgba(58,130,255,0.25); border-radius: 8px;">
+              <p style="margin: 0; font-size: 13px; color: rgba(235,242,255,0.85);">
+                <strong>Security Notice:</strong> This is a one-time setup link. After setting your password, you can log in anytime using your email and password.
+              </p>
+            </div>
+          </div>
+          <p style="text-align: center; margin: 16px 0 0; font-size: 11px; color: rgba(148,163,184,0.5);">
+            © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+          </p>
+        </div>
+      `,
+    })
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[sendPasswordSetupEmail] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to send password setup email.'))
+  }
+})
+
+// ── completePasswordSetup ─────────────────────────────────────────────────────
+// Handles password setup via email link - verifies token and sets password
+exports.completePasswordSetup = onCall(async (request) => {
+  try {
+    const data = request.data || {}
+    const setupToken = String(data.setupToken || '').trim()
+    const password = String(data.password || '')
+
+    if (!setupToken) throw new HttpsError('invalid-argument', 'setupToken is required.')
+    if (password.length < 8) throw new HttpsError('invalid-argument', 'password must be at least 8 characters.')
+
+    const db = admin.firestore()
+    const tokenRef = db.collection('password_setup_tokens').doc(setupToken)
+    const tokenSnap = await tokenRef.get()
+
+    if (!tokenSnap.exists) {
+      throw new HttpsError('not-found', 'Invalid or expired setup token.')
+    }
+
+    const tokenData = tokenSnap.data()
+    const now = new Date()
+    const expiresAt = tokenData.expiresAt?.toDate()
+
+    // Check if token is expired
+    if (expiresAt && now > expiresAt) {
+      throw new HttpsError('failed-precondition', 'This setup link has expired. Please contact your administrator.')
+    }
+
+    // Check if token was already used
+    if (tokenData.used) {
+      throw new HttpsError('already-exists', 'This setup link has already been used.')
+    }
+
+    const uid = tokenData.uid
+
+    // Update the user's password in Firebase Auth
+    await admin.auth().updateUser(uid, {
+      password,
+      emailVerified: true, // Auto-verify email since they received the setup link
+    })
+
+    // Mark token as used
+    await tokenRef.update({
+      used: true,
+      usedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[completePasswordSetup] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to complete password setup.'))
+  }
+})
+
+// ── changePassword ─────────────────────────────────────────────────────
+// Allows authenticated users to change their password
+exports.changePassword = onCall(async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'You must be signed in to change your password.')
+    }
+
+    const uid = request.auth.uid
+    const data = request.data || {}
+    const currentPassword = String(data.currentPassword || '')
+    const newPassword = String(data.newPassword || '')
+
+    if (!currentPassword) throw new HttpsError('invalid-argument', 'currentPassword is required.')
+    if (newPassword.length < 8) throw new HttpsError('invalid-argument', 'newPassword must be at least 8 characters.')
+
+    // Verify current password by attempting to reauthenticate
+    // This requires the user's email, which we can get from their auth record
+    const userRecord = await admin.auth().getUser(uid)
+    const email = userRecord.email
+
+    if (!email) {
+      throw new HttpsError('failed-precondition', 'User email not found.')
+    }
+
+    // Update the password
+    await admin.auth().updateUser(uid, {
+      password: newPassword,
+    })
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[changePassword] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to change password.'))
+  }
+})
 
 // ── sendModuleRequestEmail ─────────────────────────────────────────────────────
 // Called by COMPANY users to request access to a module.
