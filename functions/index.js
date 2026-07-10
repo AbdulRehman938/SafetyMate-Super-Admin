@@ -8,6 +8,10 @@ const { defineSecret } = require('firebase-functions/params')
 // Set via: firebase functions:secrets:set BREVO_SMTP_KEY
 const brevoSmtpKey = defineSecret('BREVO_SMTP_KEY')
 
+// Frontend URL — stored as a Firebase secret
+// Set via: firebase functions:secrets:set FRONTEND_URL
+const frontendUrl = defineSecret('FRONTEND_URL')
+
 // Email addresses
 const SUPER_ADMIN_NOTIFY_EMAIL = 'safetymateadmin@yopmail.com'
 const SENDER_EMAIL             = 'iamrehman941@gmail.com'
@@ -453,7 +457,7 @@ exports.createClientAdmin = onCall(async (request) => {
 
 // ── sendPasswordSetupEmail ─────────────────────────────────────────────────────
 // Sends password setup email to newly created company admin
-exports.sendPasswordSetupEmail = onCall({ secrets: [brevoSmtpKey] }, async (request) => {
+exports.sendPasswordSetupEmail = onCall({ secrets: [brevoSmtpKey, frontendUrl] }, async (request) => {
   try {
     if (!request.auth?.uid) {
       throw new HttpsError('unauthenticated', 'You must be signed in.')
@@ -477,7 +481,7 @@ exports.sendPasswordSetupEmail = onCall({ secrets: [brevoSmtpKey] }, async (requ
     }
 
     const transporter = createTransporter(brevoSmtpKey.value())
-    const setupUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/setup-password?token=${setupToken}`
+    const setupUrl = `${frontendUrl.value() || 'http://localhost:5173'}/setup-password?token=${setupToken}`
 
     await transporter.sendMail({
       from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
