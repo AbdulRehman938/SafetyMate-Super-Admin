@@ -6,7 +6,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 import { app } from '../../../config/firebase.js'
 import { AlertCircle, Eye, EyeOff, Lock, CheckCircle2, ArrowRight } from 'lucide-react'
 
-export function SetupPasswordPage() {
+export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [error, setError] = useState('')
@@ -14,9 +14,9 @@ export function SetupPasswordPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const setupToken = searchParams.get('token')
+  const resetToken = searchParams.get('token')
 
-  const setupSchema = Yup.object().shape({
+  const resetSchema = Yup.object().shape({
     password: Yup.string()
       .min(8, 'Password must be at least 8 characters')
       .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -33,22 +33,22 @@ export function SetupPasswordPage() {
       password: '',
       confirmPassword: '',
     },
-    validationSchema: setupSchema,
+    validationSchema: resetSchema,
     onSubmit: async (values, { setSubmitting }) => {
       setError('')
       setSuccess(false)
 
-      if (!setupToken) {
-        setError('Invalid setup link. Please contact your administrator.')
+      if (!resetToken) {
+        setError('Invalid reset link. Please contact your administrator.')
         setSubmitting(false)
         return
       }
 
       try {
         const functions = getFunctions(app)
-        const completePasswordSetup = httpsCallable(functions, 'completePasswordSetup')
-        await completePasswordSetup({
-          setupToken,
+        const completePasswordReset = httpsCallable(functions, 'completePasswordReset')
+        await completePasswordReset({
+          resetToken,
           password: values.password,
         })
         setSuccess(true)
@@ -58,12 +58,12 @@ export function SetupPasswordPage() {
           window.location.href = '/login'
         }, 3000)
       } catch (err) {
-        const errorMessage = err?.message || 'Failed to set password. Please try again.'
+        const errorMessage = err?.message || 'Failed to reset password. Please try again.'
         
         if (errorMessage.includes('expired')) {
-          setError('This setup link has expired. Please contact your administrator to request a new one.')
+          setError('This reset link has expired. Please request a new password reset from the login page.')
         } else if (errorMessage.includes('already been used')) {
-          setError('This setup link has already been used. You can now log in with your password.')
+          setError('This reset link has already been used. You can now log in with your password.')
           setTimeout(() => {
             window.location.href = '/login'
           }, 3000)
@@ -76,7 +76,7 @@ export function SetupPasswordPage() {
     },
   })
 
-  if (!setupToken) {
+  if (!resetToken) {
     return (
       <section className="login-shell">
         <div className="login-content-wrap">
@@ -91,7 +91,7 @@ export function SetupPasswordPage() {
           <article className="panel login-card">
             <div className="login-error" role="alert">
               <AlertCircle size={16} />
-              <span>Invalid setup link. Please contact your administrator.</span>
+              <span>Invalid reset link. Please contact your administrator.</span>
             </div>
           </article>
         </div>
@@ -114,7 +114,7 @@ export function SetupPasswordPage() {
           <article className="panel login-card">
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <CheckCircle2 size={64} style={{ color: '#4deba0', marginBottom: '24px' }} />
-              <h2 style={{ marginBottom: '16px', color: '#ffffff' }}>Password Set Successfully!</h2>
+              <h2 style={{ marginBottom: '16px', color: '#ffffff' }}>Password Reset Successfully!</h2>
               <p style={{ color: 'rgba(203,214,255,0.7)', marginBottom: '24px' }}>
                 You can now log in with your email and new password.
               </p>
@@ -137,20 +137,20 @@ export function SetupPasswordPage() {
             <span className="brand-safety">Safety</span>
             <span className="brand-mate">Mate</span>
           </h1>
-          <p className="login-kicker">SET YOUR PASSWORD</p>
+          <p className="login-kicker">RESET YOUR PASSWORD</p>
         </header>
 
         <article className="panel login-card">
-          <h2 className="login-title">Create Your Password</h2>
-          <p className="login-subtitle">Secure your account with a strong password</p>
+          <h2 className="login-title">Create New Password</h2>
+          <p className="login-subtitle">Secure your account with a new password</p>
 
           <form className="login-form" onSubmit={formik.handleSubmit}>
             <div className="form-group">
-              <label htmlFor="setup-password">Password</label>
+              <label htmlFor="reset-password">New Password</label>
               <div className="input-with-icon">
                 <Lock size={16} className="input-icon" />
                 <input
-                  id="setup-password"
+                  id="reset-password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   placeholder="••••••••"
@@ -181,11 +181,11 @@ export function SetupPasswordPage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="setup-confirm-password">Confirm Password</label>
+              <label htmlFor="reset-confirm-password">Confirm New Password</label>
               <div className="input-with-icon">
                 <Lock size={16} className="input-icon" />
                 <input
-                  id="setup-confirm-password"
+                  id="reset-confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   placeholder="••••••••"
@@ -236,10 +236,10 @@ export function SetupPasswordPage() {
 
             <button className="primary-btn secure-signin-btn" type="submit" disabled={formik.isSubmitting}>
               {formik.isSubmitting ? (
-                'Setting Password…'
+                'Resetting Password…'
               ) : (
                 <>
-                  Set Password
+                  Reset Password
                   <ArrowRight size={16} className="btn-arrow" />
                 </>
               )}

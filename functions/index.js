@@ -16,9 +16,9 @@ const frontendUrl = defineSecret('FRONTEND_URL')
 const SUPER_ADMIN_NOTIFY_EMAIL = 'safetymateadmin@yopmail.com'
 const SENDER_EMAIL             = 'iamrehman941@gmail.com'
 const SENDER_NAME              = 'SafetyMate'
-// BREVO_LOGIN_EMAIL: the email you used to CREATE your Brevo account
-// This is used as the SMTP username — it may differ from SENDER_EMAIL
-const BREVO_LOGIN_EMAIL        = 'iamrehman941@gmail.com'
+// BREVO_LOGIN_EMAIL: the Brevo SMTP login username (provided by Brevo)
+// This is used as the SMTP username — it's NOT your Gmail
+const BREVO_LOGIN_EMAIL        = '9c3806001@smtp-brevo.com'
 
 /**
  * Creates a nodemailer transporter using Brevo SMTP.
@@ -455,6 +455,68 @@ exports.createClientAdmin = onCall(async (request) => {
 })
 
 
+// ── cleanupUserCreation ───────────────────────────────────────────────────────
+// Called when email sending fails - rolls back user creation
+exports.cleanupUserCreation = onCall(async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.')
+    }
+
+    const db = admin.firestore()
+    const callerSnap = await db.collection('user_profiles').doc(request.auth.uid).get()
+    const callerRole = String(callerSnap?.data?.()?.role || '')
+    if (callerRole !== 'SUPER_ADMIN') {
+      throw new HttpsError('permission-denied', 'Only SUPER_ADMIN can cleanup user creation.')
+    }
+
+    const data = request.data || {}
+    const uid = String(data.uid || '').trim()
+    const organizationId = String(data.organizationId || '').trim()
+    const setupToken = String(data.setupToken || '').trim()
+
+    if (!uid) throw new HttpsError('invalid-argument', 'uid is required.')
+
+    // Delete Firebase Auth user
+    try {
+      await admin.auth().deleteUser(uid)
+    } catch (err) {
+      console.error('[cleanupUserCreation] Failed to delete auth user:', err)
+    }
+
+    // Delete organization document if provided
+    if (organizationId) {
+      try {
+        await db.collection('organizations').doc(organizationId).delete()
+      } catch (err) {
+        console.error('[cleanupUserCreation] Failed to delete organization:', err)
+      }
+    }
+
+    // Delete password setup token if provided
+    if (setupToken) {
+      try {
+        await db.collection('password_setup_tokens').doc(setupToken).delete()
+      } catch (err) {
+        console.error('[cleanupUserCreation] Failed to delete setup token:', err)
+      }
+    }
+
+    // Delete user profile if exists
+    try {
+      await db.collection('user_profiles').doc(uid).delete()
+    } catch (err) {
+      console.error('[cleanupUserCreation] Failed to delete user profile:', err)
+    }
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[cleanupUserCreation] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to cleanup user creation.'))
+  }
+})
+
 // ── sendPasswordSetupEmail ─────────────────────────────────────────────────────
 // Sends password setup email to newly created company admin
 exports.sendPasswordSetupEmail = onCall({ secrets: [brevoSmtpKey, frontendUrl] }, async (request) => {
@@ -569,13 +631,45 @@ exports.completePasswordSetup = onCall(async (request) => {
       throw new HttpsError('already-exists', 'This setup link has already been used.')
     }
 
+    // Check if user has already set their password (via user profile)
     const uid = tokenData.uid
+    const userProfileRef = db.collection('user_profiles').doc(uid)
+    const userProfileSnap = await userProfileRef.get()
+    
+    if (userProfileSnap.exists) {
+      const profileData = userProfileSnap.data()
+      if (profileData.passwordSet) {
+        // User already set password - expire the token and prevent reuse
+        await tokenRef.update({
+          used: true,
+          usedAt: admin.firestore.FieldValue.serverTimestamp(),
+        })
+        throw new HttpsError('already-exists', 'You have already set your password. Please log in with your credentials.')
+      }
+    }
 
     // Update the user's password in Firebase Auth
     await admin.auth().updateUser(uid, {
       password,
       emailVerified: true, // Auto-verify email since they received the setup link
     })
+
+    // Ensure custom claims are set with client_admin role
+    await admin.auth().setCustomUserClaims(uid, {
+      role: 'client_admin',
+      organizationId: tokenData.organizationId,
+    }).catch(() => {})
+
+    // Create or update user profile with password_set flag and role
+    await userProfileRef.set({
+      role: 'client_admin',
+      organizationId: tokenData.organizationId,
+      fullName: tokenData.fullName,
+      email: tokenData.email,
+      passwordSet: true,
+      passwordSetAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true })
 
     // Mark token as used
     await tokenRef.update({
@@ -588,6 +682,212 @@ exports.completePasswordSetup = onCall(async (request) => {
     if (err instanceof HttpsError) throw err
     console.error('[completePasswordSetup] Failed', err)
     throw new HttpsError('internal', String(err?.message || 'Failed to complete password setup.'))
+  }
+})
+
+// ── requestPasswordReset ───────────────────────────────────────────────────────
+// Called by company users from login page - sends password reset request to super admin
+exports.requestPasswordReset = onCall(async (request) => {
+  try {
+    const data = request.data || {}
+    const email = String(data.email || '').trim()
+
+    if (!email) throw new HttpsError('invalid-argument', 'email is required.')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpsError('invalid-argument', 'Invalid email format.')
+
+    const db = admin.firestore()
+
+    // Check if user exists and is a client_admin
+    const usersQuery = await db.collection('user_profiles')
+      .where('email', '==', email)
+      .where('role', '==', 'client_admin')
+      .limit(1)
+      .get()
+
+    if (usersQuery.empty) {
+      throw new HttpsError('not-found', 'No account found with this email address.')
+    }
+
+    const userDoc = usersQuery.docs[0]
+    const userData = userDoc.data()
+    const uid = userDoc.id
+    const organizationId = userData.organizationId
+
+    // Create a password reset request
+    await db.collection('password_reset_requests').add({
+      uid,
+      email,
+      organizationId,
+      fullName: userData.fullName || '',
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    return { ok: true, message: 'Password reset request sent to administrator.' }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[requestPasswordReset] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to request password reset.'))
+  }
+})
+
+// ── sendPasswordResetEmail ───────────────────────────────────────────────────
+// Called by SUPER_ADMIN - sends password reset link to company user
+exports.sendPasswordResetEmail = onCall({ secrets: [brevoSmtpKey, frontendUrl] }, async (request) => {
+  try {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.')
+    }
+
+    const db = admin.firestore()
+    const callerSnap = await db.collection('user_profiles').doc(request.auth.uid).get()
+    const callerRole = String(callerSnap?.data?.()?.role || '')
+    if (callerRole !== 'SUPER_ADMIN') {
+      throw new HttpsError('permission-denied', 'Only SUPER_ADMIN can send password reset emails.')
+    }
+
+    const data = request.data || {}
+    const requestId = String(data.requestId || '').trim()
+
+    if (!requestId) throw new HttpsError('invalid-argument', 'requestId is required.')
+
+    // Get the reset request
+    const requestRef = db.collection('password_reset_requests').doc(requestId)
+    const requestSnap = await requestRef.get()
+
+    if (!requestSnap.exists) {
+      throw new HttpsError('not-found', 'Reset request not found.')
+    }
+
+    const requestData = requestSnap.data()
+    if (requestData.status !== 'pending') {
+      throw new HttpsError('failed-precondition', 'This request has already been processed.')
+    }
+
+    // Generate a secure reset token
+    const crypto = require('crypto')
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    
+    // Token expires in 24 hours
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    // Store the reset token
+    await db.collection('password_reset_tokens').doc(resetToken).set({
+      uid: requestData.uid,
+      email: requestData.email,
+      organizationId: requestData.organizationId,
+      fullName: requestData.fullName,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+      used: false,
+    })
+
+    // Update the request status
+    await requestRef.update({
+      status: 'sent',
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    // Send email
+    const transporter = createTransporter(brevoSmtpKey.value())
+    const resetUrl = `${frontendUrl.value() || 'http://localhost:5173'}/reset-password?token=${resetToken}`
+
+    await transporter.sendMail({
+      from: `"${SENDER_NAME}" <${SENDER_EMAIL}>`,
+      to: requestData.email,
+      subject: `Reset Your SafetyMate Password`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f6fa; padding: 32px;">
+          <div style="background: #0a0f1e; border-radius: 12px; padding: 28px; color: #ffffff;">
+            <h1 style="margin: 0 0 8px; font-size: 22px; color: #ffffff;">
+              Reset Your Password
+            </h1>
+            <p style="margin: 0 0 24px; color: rgba(203,214,255,0.7); font-size: 14px;">
+              Hi ${requestData.fullName}, we received a request to reset your SafetyMate password.
+            </p>
+
+            <p style="margin: 0 0 16px; color: rgba(203,214,255,0.85); font-size: 14px;">
+              Click the button below to reset your password. This link will expire in 24 hours for security reasons.
+            </p>
+
+            <div style="margin: 24px 0;">
+              <a href="${resetUrl}" 
+                 style="display: inline-block; background: #3a82ff; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                Reset Password
+              </a>
+            </div>
+
+            <p style="margin: 0 0 8px; color: rgba(203,214,255,0.7); font-size: 13px;">
+              If you didn't request this password reset, please ignore this email.
+            </p>
+          </div>
+          <p style="text-align: center; margin: 16px 0 0; font-size: 11px; color: rgba(148,163,184,0.5);">
+            © 2026 BGB Group (Pty) Ltd. All Rights Reserved. SafetyMate™
+          </p>
+        </div>
+      `,
+    })
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[sendPasswordResetEmail] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to send password reset email.'))
+  }
+})
+
+// ── completePasswordReset ─────────────────────────────────────────────────────
+// Handles password reset via email link - verifies token and sets new password
+exports.completePasswordReset = onCall(async (request) => {
+  try {
+    const data = request.data || {}
+    const resetToken = String(data.resetToken || '').trim()
+    const password = String(data.password || '')
+
+    if (!resetToken) throw new HttpsError('invalid-argument', 'resetToken is required.')
+    if (password.length < 8) throw new HttpsError('invalid-argument', 'password must be at least 8 characters.')
+
+    const db = admin.firestore()
+    const tokenRef = db.collection('password_reset_tokens').doc(resetToken)
+    const tokenSnap = await tokenRef.get()
+
+    if (!tokenSnap.exists) {
+      throw new HttpsError('not-found', 'Invalid or expired reset token.')
+    }
+
+    const tokenData = tokenSnap.data()
+    const now = new Date()
+    const expiresAt = tokenData.expiresAt?.toDate()
+
+    // Check if token is expired
+    if (expiresAt && now > expiresAt) {
+      throw new HttpsError('failed-precondition', 'This reset link has expired. Please request a new password reset.')
+    }
+
+    // Check if token was already used
+    if (tokenData.used) {
+      throw new HttpsError('already-exists', 'This reset link has already been used.')
+    }
+
+    const uid = tokenData.uid
+
+    // Update the user's password in Firebase Auth
+    await admin.auth().updateUser(uid, {
+      password,
+      emailVerified: true,
+    })
+
+    // Mark token as used
+    await tokenRef.update({
+      used: true,
+      usedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    return { ok: true }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    console.error('[completePasswordReset] Failed', err)
+    throw new HttpsError('internal', String(err?.message || 'Failed to complete password reset.'))
   }
 })
 

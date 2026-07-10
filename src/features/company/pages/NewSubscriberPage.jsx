@@ -140,7 +140,6 @@ export function NewSubscriberPage() {
   const [billingCycle, setBillingCycle] = useState('Monthly')
   const [selectedPlanKey, setSelectedPlanKey] = useState('Starter')
   const [allocatedUsers, setAllocatedUsers] = useState(10)
-  const [adminAccount, setAdminAccount] = useState({ email: '' })
 
   const selectedPlan = useMemo(
     () => PLANS.find((p) => p.key === selectedPlanKey) || PLANS[0],
@@ -257,12 +256,12 @@ export function NewSubscriberPage() {
         })
         return
       }
-      const adminEmail = adminAccount.email.trim()
+      const adminEmail = contact.email.trim()
       if (!adminEmail) {
         toast.push({
           type: 'error',
           title: 'Missing fields',
-          message: 'Admin Email is required to create the Primary Admin account.',
+          message: 'Email Address in Primary Contact is required to create the Primary Admin account.',
         })
         return
       }
@@ -313,13 +312,21 @@ export function NewSubscriberPage() {
           organizationName: payload.name,
         })
       } catch (err) {
-        // Log error but don't fail the entire process - admin can manually send email
-        console.error('Failed to send password setup email:', err)
+        // Call backend cleanup function to rollback user creation
+        console.error('Failed to send password setup email, calling cleanup:', err)
+        try {
+          const cleanupUserCreation = httpsCallable(functions, 'cleanupUserCreation')
+          await cleanupUserCreation({ uid: newAdminUid, organizationId: orgDocRef.id, setupToken })
+        } catch (cleanupErr) {
+          console.error('Failed to cleanup user creation:', cleanupErr)
+        }
+
         toast.push({
-          type: 'warning',
-          title: 'Email not sent',
-          message: 'Account created but password setup email failed. Please manually send the setup link to the admin.',
+          type: 'error',
+          title: 'Subscriber creation failed',
+          message: 'Failed to send password setup email. Subscriber creation has been rolled back. Please check your Brevo SMTP configuration and try again.',
         })
+        return
       }
 
       // Create Firestore user profile for the new Primary Admin.
@@ -615,27 +622,6 @@ export function NewSubscriberPage() {
                   onSelect={() => setSelectedPlanKey(p.key)}
                 />
               ))}
-            </div>
-          </article>
-
-          <article id="ns-admin" className="dashboard-card form-section">
-            <SectionHeader icon={<User2 size={14} />} title="3. Primary Admin Account" />
-            <div className="form-grid-2">
-              <label>
-                Admin Email *
-                <input
-                  value={adminAccount.email}
-                  onChange={(e) => setAdminAccount((p) => ({ ...p, email: e.target.value }))}
-                  placeholder="admin@company.com"
-                  type="email"
-                  autoComplete="off"
-                />
-              </label>
-              <div className="password-info-box">
-                <p style={{ margin: 0, fontSize: '13px', color: 'rgba(203,214,255,0.85)' }}>
-                  <strong>Password Setup:</strong> The admin will receive an email with a secure link to set their own password. This link expires in 24 hours.
-                </p>
-              </div>
             </div>
           </article>
 

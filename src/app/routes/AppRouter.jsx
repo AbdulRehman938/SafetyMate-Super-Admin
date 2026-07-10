@@ -19,8 +19,10 @@ import { SecurityLogsPage } from '../../features/security/pages/SecurityLogsPage
 import { SettingsPage } from '../../features/settings/pages/SettingsPage.jsx'
 import { UserProfilePage } from '../../features/users/pages/UserProfilePage.jsx'
 import { ModuleRequestsPage } from '../../features/module-requests/pages/ModuleRequestsPage.jsx'
+import { PasswordResetRequestsPage } from '../../features/password-reset/pages/PasswordResetRequestsPage.jsx'
 import { LoginPage } from '../../features/auth/pages/LoginPage.jsx'
 import { SetupPasswordPage } from '../../features/auth/pages/SetupPasswordPage.jsx'
+import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage.jsx'
 import { MobileAppBlockedPage } from '../../features/mobile/pages/MobileAppBlockedPage.jsx'
 import { ClientLayout } from '../../features/client/ClientLayout.jsx'
 import { ClientHomePage } from '../../features/client/pages/ClientHomePage.jsx'
@@ -134,6 +136,11 @@ export function AppRouter() {
   // Public route for password setup (no auth required)
   if (window.location.pathname === '/setup-password') {
     return <SetupPasswordPage />
+  }
+
+  // Public route for password reset (no auth required)
+  if (window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />
   }
 
   if (!authUser) {
@@ -373,6 +380,7 @@ export function AppRouter() {
         <Route path="/billing" element={<BillingPage />} />
         <Route path="/security-logs" element={<SecurityLogsPage />} />
         <Route path="/module-requests" element={<ModuleRequestsPage />} />
+        <Route path="/password-resets" element={<PasswordResetRequestsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/users/:uid" element={<UserProfilePage />} />
         <Route path="/mobile" element={<MobileAppBlockedPage />} />
