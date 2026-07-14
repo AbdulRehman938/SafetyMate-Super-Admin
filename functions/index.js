@@ -363,9 +363,18 @@ exports.createClientAdmin = onCall(async (request) => {
     const organizationId = String(data.organizationId || '').trim()
     const fullName = String(data.fullName || '').trim()
 
+    // Role of the account being created. Defaults to client_admin for backward compatibility.
+    const ALLOWED_ROLES = ['client_admin', 'TRAINING_PROVIDER', 'FLEET', 'FIRE_EXTINGUISHER', 'FIRE_DETECTION']
+    const requestedRole = String(data.role || 'client_admin').trim()
+    const role = ALLOWED_ROLES.includes(requestedRole) ? requestedRole : 'client_admin'
+    if (data.role && !ALLOWED_ROLES.includes(requestedRole)) {
+      throw new HttpsError('invalid-argument', `role must be one of: ${ALLOWED_ROLES.join(', ')}`)
+    }
+
     if (!email) throw new HttpsError('invalid-argument', 'email is required')
     if (password.length < 8) throw new HttpsError('invalid-argument', 'password must be at least 8 characters')
     if (!organizationId) throw new HttpsError('invalid-argument', 'organizationId is required')
+
 
     const userRecord = await admin
       .auth()
@@ -386,9 +395,10 @@ exports.createClientAdmin = onCall(async (request) => {
 
     // Optional but helpful: set custom claims so rules can enforce role/org without extra reads.
     await admin.auth().setCustomUserClaims(userRecord.uid, {
-      role: 'client_admin',
+      role,
       organizationId,
     }).catch(() => {})
+
 
     return { uid: userRecord.uid }
   } catch (err) {

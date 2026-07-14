@@ -130,8 +130,29 @@ export function CalendarPage({
   const activeYear = currentDate.getFullYear()
 
   // ── Date parsing helper ──────────────────────────────────
+  const toDateInputString = (value) => {
+    if (!value) return ''
+    if (typeof value === 'string') return value
+    if (value instanceof Date) return value.toISOString()
+    if (typeof value?.toDate === 'function') {
+      const date = value.toDate()
+      return date instanceof Date && !Number.isNaN(date.getTime()) ? date.toISOString() : ''
+    }
+    if (typeof value === 'object') {
+      if (typeof value.seconds === 'number') {
+        const ms = value.seconds * 1000 + Math.floor((Number(value.nanoseconds) || 0) / 1e6)
+        const date = new Date(ms)
+        return Number.isNaN(date.getTime()) ? '' : date.toISOString()
+      }
+      if (typeof value.toString === 'function' && value.toString !== Object.prototype.toString) {
+        return value.toString()
+      }
+    }
+    return String(value)
+  }
+
   const getDatesForRequest = (req) => {
-    const dateStr = req.preferredDate || ''
+    const dateStr = toDateInputString(req.preferredDate || req.startDate || req.date || '')
     const dates = []
 
     try {
@@ -144,7 +165,7 @@ export function CalendarPage({
       }
     } catch {}
 
-    const rangeMatch = dateStr.match(/([a-zA-Z]+)\s+(\d+)\s*-\s*([a-zA-Z]+)?\s*(\d+),\s*(\d{4})/)
+    const rangeMatch = String(dateStr).match(/([a-zA-Z]+)\s+(\d+)\s*-\s*([a-zA-Z]+)?\s*(\d+),\s*(\d{4})/)
     if (rangeMatch) {
       const startMonthName = rangeMatch[1]
       const startDay = parseInt(rangeMatch[2])

@@ -5,11 +5,50 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { app, db, storage } from '../../../config/firebase.js'
 import { useToast } from '../../../shared/toast/toastContext.js'
-import { Building2, CreditCard, Eye, EyeOff, ImageIcon, MapPin, UploadCloud, User2, X } from 'lucide-react'
+import { Building2, CreditCard, Eye, EyeOff, Flame, ImageIcon, MapPin, ShieldCheck, Truck, UploadCloud, User2, X } from 'lucide-react'
+
+const ACCOUNT_TYPES = [
+  {
+    key: 'client_admin',
+    role: 'client_admin',
+    label: 'Client / Company Admin',
+    description: 'Full multi-module workspace for a subscribing company.',
+    icon: Building2,
+  },
+  {
+    key: 'TRAINING_PROVIDER',
+    role: 'TRAINING_PROVIDER',
+    label: 'Training Provider',
+    description: 'Manages training requests, calendar and certificates.',
+    icon: User2,
+  },
+  {
+    key: 'FLEET',
+    role: 'FLEET',
+    label: 'Fleet',
+    description: 'Vehicle twins, inspections and fuel intelligence.',
+    icon: Truck,
+  },
+  {
+    key: 'FIRE_EXTINGUISHER',
+    role: 'FIRE_EXTINGUISHER',
+    label: 'Fire Extinguisher',
+    description: 'Extinguisher asset registry, inspections and compliance.',
+    icon: Flame,
+  },
+  {
+    key: 'FIRE_DETECTION',
+    role: 'FIRE_DETECTION',
+    label: 'Fire Detection',
+    description: 'Hydrants, panels, inspections and compliance monitoring.',
+    icon: ShieldCheck,
+  },
+]
 
 const PLANS = [
   {
     key: 'Starter',
+
     label: 'Starter Plan',
     plan: 'Starter',
     monthlyPrice: 199,
@@ -125,7 +164,9 @@ export function NewSubscriberPage() {
 
   const [submitting, setSubmitting] = useState(false)
 
+  const [accountTypeKey, setAccountTypeKey] = useState('client_admin')
   const [legal, setLegal] = useState({ name: '', regNumber: '', vatId: '' })
+
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreviewUrl, setLogoPreviewUrl] = useState('')
   const logoInputRef = useRef(null)
@@ -146,6 +187,12 @@ export function NewSubscriberPage() {
     () => PLANS.find((p) => p.key === selectedPlanKey) || PLANS[0],
     [selectedPlanKey],
   )
+
+  const selectedAccountType = useMemo(
+    () => ACCOUNT_TYPES.find((t) => t.key === accountTypeKey) || ACCOUNT_TYPES[0],
+    [accountTypeKey],
+  )
+
 
   useEffect(() => {
     if (!logoFile) {
@@ -295,7 +342,9 @@ export function NewSubscriberPage() {
           password: adminPassword,
           organizationId: orgDocRef.id,
           fullName: payload.primaryContact.fullName,
+          role: selectedAccountType.role,
         })
+
         newAdminUid = res?.data?.uid || null
       } catch (err) {
         // If you haven't deployed the cloud function yet, you'll land here.
@@ -312,12 +361,13 @@ export function NewSubscriberPage() {
 
       // Create Firestore user profile for the new Primary Admin.
       await setDoc(doc(db, 'user_profiles', newAdminUid), {
-        role: 'client_admin',
+        role: selectedAccountType.role,
         organizationId: orgDocRef.id,
         fullName: payload.primaryContact.fullName,
         email: adminEmail,
         createdAt: serverTimestamp(),
       })
+
 
       // MVP manual-invoicing flow:
       // create first unpaid invoice immediately after subscriber creation.
@@ -359,8 +409,11 @@ export function NewSubscriberPage() {
           monthlyPrice: payload.monthlyPrice,
           primaryContact: payload.primaryContact,
           primaryAdmin: { uid: newAdminUid, email: adminEmail },
+          accountTypeLabel: selectedAccountType.label,
+          accountRole: selectedAccountType.role,
           createdAt: new Date(),
         },
+
         replace: true,
       })
     } catch (e) {
@@ -383,11 +436,46 @@ export function NewSubscriberPage() {
 
       <div className="new-subscriber-shell">
         <div className="new-subscriber-content">
+          <article id="ns-account-type" className="dashboard-card form-section">
+            <SectionHeader icon={<User2 size={14} />} title="Account Type" />
+            <p className="account-type-hint">
+              Choose which kind of account this subscriber will be provisioned as. The selected role determines
+              which dashboard the new admin lands on after signing in.
+            </p>
+            <div className="account-type-grid">
+              {ACCOUNT_TYPES.map((t) => {
+                const Icon = t.icon
+                const selected = t.key === accountTypeKey
+                return (
+                  <button
+                    type="button"
+                    key={t.key}
+                    className={`account-type-card ${selected ? 'account-type-card-selected' : ''}`}
+                    onClick={() => setAccountTypeKey(t.key)}
+                    aria-pressed={selected}
+                  >
+                    <span className="account-type-ic" aria-hidden="true">
+                      <Icon size={18} />
+                    </span>
+                    <span className="account-type-body">
+                      <b>{t.label}</b>
+                      <small>{t.description}</small>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="account-type-selected-note">
+              Creating account as: <b>{selectedAccountType.label}</b>
+            </p>
+          </article>
+
           <article id="ns-legal" className="dashboard-card form-section">
             <SectionHeader
               icon={<Building2 size={14} />}
               title="1. Legal & Registration Info"
             />
+
             <div className="form-grid-2">
               <label>
                 Company Name *
@@ -647,6 +735,9 @@ export function NewSubscriberPage() {
             <div className="summary">
               <p className="summary-title">SUMMARY</p>
               <p className="summary-text">
+                Account type: <b>{selectedAccountType.label}</b>
+              </p>
+              <p className="summary-text">
                 Selected: <b>{selectedPlan.plan}</b> (${selectedPlan.monthlyPrice}/mo)
               </p>
             </div>
@@ -660,9 +751,10 @@ export function NewSubscriberPage() {
                 disabled={submitting}
                 onClick={onCreate}
               >
-                {submitting ? 'Creating Organization…' : 'Create Subscriber'}
+                {submitting ? 'Creating…' : `Create ${selectedAccountType.label}`}
               </button>
             </div>
+
           </footer>
         </div>
       </div>
