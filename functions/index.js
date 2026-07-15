@@ -399,10 +399,18 @@ exports.createClientAdmin = onCall(async (request) => {
     const organizationId = String(data.organizationId || '').trim()
     const fullName = String(data.fullName || '').trim()
 
+    // Role of the account being created. Defaults to client_admin for backward compatibility.
+    const ALLOWED_ROLES = ['client_admin', 'TRAINING_PROVIDER', 'FLEET', 'FIRE_EXTINGUISHER', 'FIRE_DETECTION']
+    const requestedRole = String(data.role || 'client_admin').trim()
+    const role = ALLOWED_ROLES.includes(requestedRole) ? requestedRole : 'client_admin'
+    if (data.role && !ALLOWED_ROLES.includes(requestedRole)) {
+      throw new HttpsError('invalid-argument', `role must be one of: ${ALLOWED_ROLES.join(', ')}`)
+    }
+
     if (!email) throw new HttpsError('invalid-argument', 'email is required')
     if (!organizationId) throw new HttpsError('invalid-argument', 'organizationId is required')
 
-    // Create user WITHOUT password - they will set it via email link
+
     const userRecord = await admin
       .auth()
       .createUser({
@@ -421,32 +429,12 @@ exports.createClientAdmin = onCall(async (request) => {
 
     // Set custom claims so rules can enforce role/org without extra reads.
     await admin.auth().setCustomUserClaims(userRecord.uid, {
-      role: 'client_admin',
+      role,
       organizationId,
     }).catch(() => {})
 
-    // Generate a secure random token for password setup
-    const crypto = require('crypto')
-    const setupToken = crypto.randomBytes(32).toString('hex')
-    
-    // Token expires in 24 hours
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
-    // Store the setup token in Firestore
-    await db.collection('password_setup_tokens').doc(setupToken).set({
-      uid: userRecord.uid,
-      email,
-      organizationId,
-      fullName,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
-      used: false,
-    })
-
-    return { 
-      uid: userRecord.uid,
-      setupToken,
-    }
+    return { uid: userRecord.uid }
   } catch (err) {
     if (err instanceof HttpsError) throw err
     console.error('[createClientAdmin] Failed', err)

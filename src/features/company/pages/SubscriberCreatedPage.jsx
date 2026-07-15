@@ -39,6 +39,11 @@ export function SubscriberCreatedPage() {
 
         <div className="created-grid">
           <div>
+            <p>ACCOUNT TYPE</p>
+            <b>{data.accountTypeLabel || 'Client / Company Admin'}</b>
+          </div>
+          <div>
+
             <p>SUBSCRIPTION PLAN</p>
             <b>
               {data.plan || '—'} ({data.monthlyPrice != null ? `$${data.monthlyPrice}/mo` : '—'})
