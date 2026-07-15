@@ -20,29 +20,29 @@ const ACCOUNT_TYPES = [
     role: 'TRAINING_PROVIDER',
     label: 'Training Provider',
     description: 'Manages training requests, calendar and certificates.',
-    icon: User2,
+    icon: User2
   },
-  {
-    key: 'FLEET',
-    role: 'FLEET',
-    label: 'Fleet',
-    description: 'Vehicle twins, inspections and fuel intelligence.',
-    icon: Truck,
-  },
-  {
-    key: 'FIRE_EXTINGUISHER',
-    role: 'FIRE_EXTINGUISHER',
-    label: 'Fire Extinguisher',
-    description: 'Extinguisher asset registry, inspections and compliance.',
-    icon: Flame,
-  },
-  {
-    key: 'FIRE_DETECTION',
-    role: 'FIRE_DETECTION',
-    label: 'Fire Detection',
-    description: 'Hydrants, panels, inspections and compliance monitoring.',
-    icon: ShieldCheck,
-  },
+  // {
+  //   key: 'FLEET',
+  //   role: 'FLEET',
+  //   label: 'Fleet',
+  //   description: 'Vehicle twins, inspections and fuel intelligence.',
+  //   icon: Truck,
+  // },
+  // {
+  //   key: 'FIRE_EXTINGUISHER',
+  //   role: 'FIRE_EXTINGUISHER',
+  //   label: 'Fire Extinguisher',
+  //   description: 'Extinguisher asset registry, inspections and compliance.',
+  //   icon: Flame,
+  // },
+  // {
+  //   key: 'FIRE_DETECTION',
+  //   role: 'FIRE_DETECTION',
+  //   label: 'Fire Detection',
+  //   description: 'Hydrants, panels, inspections and compliance monitoring.',
+  //   icon: ShieldCheck,
+  // },
 ]
 
 const PLANS = [
@@ -666,52 +666,84 @@ export function NewSubscriberPage() {
             </div>
           </article>
 
-          <article id="ns-subscription" className="dashboard-card form-section">
-            <div className="subscription-head">
-              <SectionHeader icon={<CreditCard size={14} />} title="4. Subscription Setup" />
-              <div className={`segmented ${billingCycle === 'Annual' ? 'seg-right' : 'seg-left'}`}>
-                <span className="seg-slider" aria-hidden="true" />
-                <button
-                  type="button"
-                  className={billingCycle === 'Monthly' ? 'seg-active' : ''}
-                  onClick={() => setBillingCycle('Monthly')}
-                >
-                  Monthly
-                </button>
-                <button
-                  type="button"
-                  className={billingCycle === 'Annual' ? 'seg-active' : ''}
-                  onClick={() => setBillingCycle('Annual')}
-                >
-                  Annual (Save 20%)
-                </button>
+          {accountTypeKey !== 'TRAINING_PROVIDER' && (
+            <article id="ns-subscription" className="dashboard-card form-section">
+              <div className="subscription-head">
+                <SectionHeader icon={<CreditCard size={14} />} title="4. Subscription Setup" />
+                <div className={`segmented ${billingCycle === 'Annual' ? 'seg-right' : 'seg-left'}`}>
+                  <span className="seg-slider" aria-hidden="true" />
+                  <button
+                    type="button"
+                    className={billingCycle === 'Monthly' ? 'seg-active' : ''}
+                    onClick={() => setBillingCycle('Monthly')}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    className={billingCycle === 'Annual' ? 'seg-active' : ''}
+                    onClick={() => setBillingCycle('Annual')}
+                  >
+                    Annual (Save 20%)
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <label className="allocated-users-field">
-              Allocated Users *
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={allocatedUsers}
-                onChange={(e) => setAllocatedUsers(Number(e.target.value))}
-                placeholder="Seats on invoice"
-              />
-              <span className="allocated-users-hint">Number of user seats this organization is paying for (manual billing).</span>
-            </label>
-
-            <div className="plan-grid">
-              {PLANS.map((p) => (
-                <PlanCard
-                  key={p.key}
-                  plan={p}
-                  selected={p.key === selectedPlanKey}
-                  onSelect={() => setSelectedPlanKey(p.key)}
+              <label className="allocated-users-field">
+                Allocated Users *
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={allocatedUsers}
+                  onChange={(e) => setAllocatedUsers(Number(e.target.value))}
+                  placeholder="Seats on invoice"
                 />
-              ))}
-            </div>
-          </article>
+                <span className="allocated-users-hint">Number of user seats this organization is paying for (manual billing).</span>
+              </label>
+
+              <div className="plan-grid">
+                {PLANS.map((p) => (
+                  <PlanCard
+                    key={p.key}
+                    plan={p}
+                    selected={p.key === selectedPlanKey}
+                    onSelect={() => setSelectedPlanKey(p.key)}
+                  />
+                ))}
+              </div>
+            </article>
+          )}
+
+          {accountTypeKey === 'TRAINING_PROVIDER' && (
+            <article className="dashboard-card form-section" style={{ 
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%)',
+              border: '1px solid rgba(34,197,94,0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: 10, 
+                  background: 'rgba(34,197,94,0.15)', 
+                  border: '1px solid rgba(34,197,94,0.3)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}>
+                  <User2 size={20} style={{ color: '#22c55e' }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'rgba(235,242,255,0.97)' }}>
+                    Training Provider Account
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: 'rgba(148,163,184,0.8)' }}>
+                    No subscription required. Training providers can manage training requests, calendar, and certificates without billing setup.
+                  </p>
+                </div>
+              </div>
+            </article>
+          )}
 
           <footer className="dashboard-card new-subscriber-footer">
             <div className="summary">
@@ -719,9 +751,11 @@ export function NewSubscriberPage() {
               <p className="summary-text">
                 Account type: <b>{selectedAccountType.label}</b>
               </p>
-              <p className="summary-text">
-                Selected: <b>{selectedPlan.plan}</b> (${selectedPlan.monthlyPrice}/mo)
-              </p>
+              {accountTypeKey !== 'TRAINING_PROVIDER' && (
+                <p className="summary-text">
+                  Selected: <b>{selectedPlan.plan}</b> (${selectedPlan.monthlyPrice}/mo)
+                </p>
+              )}
             </div>
             <div className="footer-actions">
               <button type="button" className="secondary-btn" onClick={() => navigate('/company')}>
