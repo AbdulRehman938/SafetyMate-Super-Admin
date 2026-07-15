@@ -7,8 +7,7 @@ import {
   Menu,
   Megaphone,
   Search,
-  Settings,
-  ShieldCheck,
+  Settings,ShieldCheck,
   UserCircle2,
   WalletCards,
 } from 'lucide-react'
