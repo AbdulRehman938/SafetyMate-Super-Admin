@@ -18,6 +18,8 @@ import { CertificateTemplateDownloads } from '../components/CertificateTemplateD
 import { CustomSelect } from '../components/CustomSelect.jsx'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
 import { parseExpiryDate, formatReadableDate, getCertStatus, getDaysRemaining, getRenewalDate } from '../utils/dateHelpers.js'
+import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
+import { db } from '../../../config/firebase.js'
 
 /* ── Employee searchable dropdown ────────────────────────────────── */
 function empInitials(name) {
@@ -179,20 +181,6 @@ const ISSUING_BODY_MAP = [
   { match: /osha/i, body: 'OSHA Alliance' },
 ]
 
-const COURSES_LIST = [
-  'Advanced Fire Safety',
-  'OSHA 30-Hour',
-  'Crisis Mgmt',
-  'First Aid Cert',
-  'Cyber Awareness',
-  'Working at Heights',
-  'Confined Space Entry',
-  'Hazardous Materials LVE',
-  'Fire Safety Level 1',
-  'Emergency Responder Drill',
-  'High-Altitude Safety',
-]
-
 // Unique certificate ID generator
 const getIDNumber = (course, workerId) => {
   const initials = course.split(' ').map((w) => w[0]).join('').toUpperCase()
@@ -212,10 +200,13 @@ export function IssueCertificatePage({ onCancel, employees = [], organizations =
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
 
-  const [certificateType, setCertificateType] = useState('Advanced Fire Safety')
+  const [certificateType, setCertificateType] = useState('')
   const [issuingBody, setIssuingBody] = useState('National Fire Inst.')
   const [issueDate, setIssueDate] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
+
+  // Dynamic courses from Firestore
+  const [coursesList, setCoursesList] = useState([])
 
   // Submitting & Errors
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -234,6 +225,35 @@ export function IssueCertificatePage({ onCancel, employees = [], organizations =
   const searchInputRef = useRef(null)
   const dropdownRef = useRef(null)
   const fileInputRef = useRef(null)
+
+  // Load courses from Firestore on mount
+  useEffect(() => {
+    async function loadCourses() {
+      try {
+        const courseSnap = await getDoc(doc(db, 'training_options', 'courses'))
+        if (courseSnap.exists() && Array.isArray(courseSnap.data().values)) {
+          setCoursesList(courseSnap.data().values)
+        }
+      } catch (err) {
+        console.warn('Could not load courses from Firestore:', err.message)
+      }
+    }
+    loadCourses()
+  }, [])
+
+  // Save a newly created course to Firestore and update local state
+  async function handleAddCourse(newValue) {
+    try {
+      await setDoc(
+        doc(db, 'training_options', 'courses'),
+        { values: arrayUnion(newValue) },
+        { merge: true }
+      )
+      setCoursesList((prev) => Array.from(new Set([...prev, newValue])))
+    } catch (err) {
+      console.warn('Could not save new course:', err.message)
+    }
+  }
 
   // Compute dirty flag
   const isDirty =
@@ -925,9 +945,11 @@ export function IssueCertificatePage({ onCancel, employees = [], organizations =
                 <CustomSelect
                   value={certificateType}
                   onChange={setCertificateType}
-                  options={COURSES_LIST}
+                  options={coursesList}
                   searchable
                   searchPlaceholder="Search certificate..."
+                  allowCustom
+                  onAddOption={handleAddCourse}
                 />
               </div>
 

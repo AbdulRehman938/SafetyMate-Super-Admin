@@ -18,15 +18,24 @@ import { BillingPage } from '../../features/billing/pages/BillingPage.jsx'
 import { SecurityLogsPage } from '../../features/security/pages/SecurityLogsPage.jsx'
 import { SettingsPage } from '../../features/settings/pages/SettingsPage.jsx'
 import { UserProfilePage } from '../../features/users/pages/UserProfilePage.jsx'
+import { ModuleRequestsPage } from '../../features/module-requests/pages/ModuleRequestsPage.jsx'
+import { PasswordResetRequestsPage } from '../../features/password-reset/pages/PasswordResetRequestsPage.jsx'
 import { LoginPage } from '../../features/auth/pages/LoginPage.jsx'
+import { SetupPasswordPage } from '../../features/auth/pages/SetupPasswordPage.jsx'
+import { ResetPasswordPage } from '../../features/auth/pages/ResetPasswordPage.jsx'
 import { MobileAppBlockedPage } from '../../features/mobile/pages/MobileAppBlockedPage.jsx'
 import { ClientLayout } from '../../features/client/ClientLayout.jsx'
+import { ClientHomePage } from '../../features/client/pages/ClientHomePage.jsx'
 import { ClientDashboardPage } from '../../features/client/pages/ClientDashboardPage.jsx'
+import { ChangePasswordPage } from '../../features/client/pages/ChangePasswordPage.jsx'
 import { RiskAssessmentPage } from '../../features/client/pages/RiskAssessmentPage.jsx'
 import { WorkforcePage } from '../../features/client/pages/WorkforcePage.jsx'
 import { IncidentsPage } from '../../features/client/pages/IncidentsPage.jsx'
 import { CertificatesPage } from '../../features/client/pages/CertificatesPage.jsx'
 import { PPEPage } from '../../features/client/pages/PPEPage.jsx'
+import { ClientFleetPage } from '../../features/client/pages/ClientFleetPage.jsx'
+import { ClientFireExtPage } from '../../features/client/pages/ClientFireExtPage.jsx'
+import { ClientFireDetPage } from '../../features/client/pages/ClientFireDetPage.jsx'
 import { TrainingDashboardPage } from '../../features/training-dashboard/pages/TrainingDashboardPage.jsx'
 import { FleetDashboardPage }       from '../../features/fleet-dashboard/pages/FleetDashboardPage.jsx'
 import { SiteMapPage }              from '../../features/fleet-dashboard/pages/SiteMapPage.jsx'
@@ -54,14 +63,7 @@ import { InspectionHistoryPage } from '../../features/fireDetection-dashboard/pa
 import { RegisterPanelPage } from '../../features/fireDetection-dashboard/pages/RegisterPanelPage.jsx'
 import { PanelInspectionPage } from '../../features/fireDetection-dashboard/pages/PanelInspectionPage.jsx'
 import { ComplianceMonitoringPage } from '../../features/fireDetection-dashboard/pages/ComplianceMonitoringPage.jsx'
-import { FireSafetyDashboardPage } from '../../features/client/pages/FireSafetyDashboardPage.jsx'
-import { TrainingManagementPage } from '../../features/client/pages/TrainingManagementPage.jsx'
-import { ReportsAnalyticsPage } from '../../features/client/pages/ReportsAnalyticsPage.jsx'
-import { SafetyFilesPage } from '../../features/client/pages/SafetyFilesPage.jsx'
-import { ContractorManagementPage } from '../../features/client/pages/ContractorManagementPage.jsx'
-import { ClientSettingsPage } from '../../features/client/pages/ClientSettingsPage.jsx'
 import { useAuth } from '../providers/authContext.js'
-import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
 
 export function AppRouter() {
   const {
@@ -127,9 +129,18 @@ export function AppRouter() {
             <p className="loading-state-sub">Checking your session…</p>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
+  }
+
+  // Public route for password setup (no auth required)
+  if (window.location.pathname === '/setup-password') {
+    return <SetupPasswordPage />
+  }
+
+  // Public route for password reset (no auth required)
+  if (window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />
   }
 
   if (!authUser) {
@@ -153,7 +164,6 @@ export function AppRouter() {
             <p className="loading-state-sub">Loading your profile and permissions…</p>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -182,7 +192,6 @@ export function AppRouter() {
             </button>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -209,7 +218,6 @@ export function AppRouter() {
             </button>
           </article>
         </div>
-        <CopyrightFooter variant="login" />
       </section>
     )
   }
@@ -286,52 +294,64 @@ export function AppRouter() {
     return (
       <Routes>
         <Route element={<ClientLayout />}>
-          <Route path="/client/dashboard" element={<ClientDashboardPage />} />
-          <Route path="/client/safety-files" element={<SafetyFilesPage />} />
-          <Route path="/client/fleet" element={<FleetDashboardPage />} />
-          <Route path="/client/fleet/dashboard" element={<FleetDashboardPage />} />
-          <Route path="/client/fleet/site-map" element={<SiteMapPage />} />
-          <Route path="/client/fleet/twins" element={<VehicleTwinsPage />} />
-          <Route path="/client/fleet/inspections" element={<InspectionLogPage />} />
-          <Route path="/client/fleet/fuel" element={<FuelIntelligencePage />} />
-          <Route path="/client/fleet/profile" element={<ProfileSettingsPage />} />
-          <Route path="/client/fire-safety" element={<FireSafetyDashboardPage />} />
-          <Route path="/client/training" element={<TrainingManagementPage />} />
+          <Route path="/client/home"           element={<ClientHomePage />} />
+          <Route path="/client/dashboard"      element={<ClientDashboardPage />} />
           <Route path="/client/risk-assessment" element={<RiskAssessmentPage />} />
-          <Route path="/client/incidents" element={<IncidentsPage />} />
-          <Route path="/client/certificates" element={<CertificatesPage />} />
-          <Route path="/client/contractors" element={<ContractorManagementPage />} />
-          <Route path="/client/workforce" element={<WorkforcePage />} />
-          <Route path="/client/ppe" element={<PPEPage />} />
-          <Route path="/client/reports" element={<ReportsAnalyticsPage />} />
-          <Route path="/client/settings" element={<ClientSettingsPage />} />
+          <Route path="/client/incidents"      element={<IncidentsPage />} />
+          <Route path="/client/certificates"   element={<CertificatesPage />} />
+          <Route path="/client/workforce"      element={<WorkforcePage />} />
+          <Route path="/client/ppe"            element={<PPEPage />} />
+          <Route path="/client/change-password" element={<ChangePasswordPage />} />
+
+          {/* ── Fleet module ── */}
+          <Route path="/client/fleet"                element={<ClientFleetPage view="dashboard" />} />
+          <Route path="/client/fleet/site-map"       element={<ClientFleetPage view="site-map" />} />
+          <Route path="/client/fleet/vehicles"       element={<ClientFleetPage view="vehicles" />} />
+          <Route path="/client/fleet/inspections"    element={<ClientFleetPage view="inspections" />} />
+          <Route path="/client/fleet/fuel"           element={<ClientFleetPage view="fuel" />} />
+
+          {/* ── Fire Extinguisher module ── */}
+          <Route path="/client/fire-ext"                           element={<ClientFireExtPage view="dashboard" />} />
+          <Route path="/client/fire-ext/assets"                    element={<ClientFireExtPage view="assets" />} />
+          <Route path="/client/fire-ext/assets/new"                element={<ClientFireExtPage view="register" />} />
+          <Route path="/client/fire-ext/assets/:id"                element={<ClientFireExtPage view="detail" />} />
+          <Route path="/client/fire-ext/assets/:assetId/inspect"   element={<ClientFireExtPage view="inspect" />} />
+          <Route path="/client/fire-ext/compliance"                element={<ClientFireExtPage view="compliance" />} />
+          {/* Mirror routes so FE pages' internal navigate('/extinguisher/...') still works for COMPANY users */}
+          <Route path="/extinguisher/dashboard"                    element={<ClientFireExtPage view="dashboard" />} />
+          <Route path="/extinguisher/assets"                       element={<ClientFireExtPage view="assets" />} />
+          <Route path="/extinguisher/assets/new"                   element={<ClientFireExtPage view="register" />} />
+          <Route path="/extinguisher/assets/:id"                   element={<ClientFireExtPage view="detail" />} />
+          <Route path="/extinguisher/assets/:assetId/inspect"      element={<ClientFireExtPage view="inspect" />} />
+          <Route path="/extinguisher/compliance"                   element={<ClientFireExtPage view="compliance" />} />
+          <Route path="/extinguisher/profile"                      element={<ClientFireExtPage view="dashboard" />} />
+
+          {/* ── Fire Detection module ── */}
+          <Route path="/client/fire-det"                          element={<ClientFireDetPage view="dashboard" />} />
+          <Route path="/client/fire-det/assets"                   element={<ClientFireDetPage view="assets" />} />
+          <Route path="/client/fire-det/assets/:id"               element={<ClientFireDetPage view="assetDetail" />} />
+          <Route path="/client/fire-det/panels"                   element={<ClientFireDetPage view="panels" />} />
+          <Route path="/client/fire-det/panels/new"               element={<ClientFireDetPage view="registerPanel" />} />
+          <Route path="/client/fire-det/panels/:id"               element={<ClientFireDetPage view="panelDetail" />} />
+          <Route path="/client/fire-det/inspections"              element={<ClientFireDetPage view="inspections" />} />
+          <Route path="/client/fire-det/inspection-history/:id"   element={<ClientFireDetPage view="inspectionHistory" />} />
+          <Route path="/client/fire-det/panel-inspection"         element={<ClientFireDetPage view="panelInspection" />} />
+          <Route path="/client/fire-det/compliance"               element={<ClientFireDetPage view="compliance" />} />
+          {/* Mirror routes so FD pages' internal navigate('/detection/...') calls work for COMPANY users */}
+          <Route path="/detection/dashboard"                      element={<ClientFireDetPage view="dashboard" />} />
+          <Route path="/detection/assets"                         element={<ClientFireDetPage view="assets" />} />
+          <Route path="/detection/assets/:id"                     element={<ClientFireDetPage view="assetDetail" />} />
+          <Route path="/detection/panels"                         element={<ClientFireDetPage view="panels" />} />
+          <Route path="/detection/panels/new"                     element={<ClientFireDetPage view="registerPanel" />} />
+          <Route path="/detection/panels/:id"                     element={<ClientFireDetPage view="panelDetail" />} />
+          <Route path="/detection/inspection"                     element={<ClientFireDetPage view="inspections" />} />
+          <Route path="/detection/inspection-history/:id"         element={<ClientFireDetPage view="inspectionHistory" />} />
+          <Route path="/detection/panel-inspection"               element={<ClientFireDetPage view="panelInspection" />} />
+          <Route path="/detection/compliance"                     element={<ClientFireDetPage view="compliance" />} />
+          <Route path="/detection/registry"                       element={<ClientFireDetPage view="assets" />} />
+          <Route path="/" element={<Navigate to="/client/home" replace />} />
+          <Route path="*" element={<Navigate to="/client/home" replace />} />
         </Route>
-        <Route path="/client/fire-safety/extinguisher" element={<Navigate to="/client/fire-safety/extinguisher/dashboard" replace />} />
-        <Route element={<FELayout />}>
-          <Route path="/client/fire-safety/extinguisher/dashboard" element={<FEDashboardPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets" element={<FEAssetRegistryPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets/new" element={<FERegisterAssetPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets/:id" element={<FEDetailPage />} />
-          <Route path="/client/fire-safety/extinguisher/assets/:assetId/inspect" element={<FEInspectionPage />} />
-          <Route path="/client/fire-safety/extinguisher/compliance" element={<FECompliancePage />} />
-          <Route path="/client/fire-safety/extinguisher/profile" element={<FEProfilePage />} />
-        </Route>
-        <Route path="/client/fire-safety/detection" element={<Navigate to="/client/fire-safety/detection/dashboard" replace />} />
-        <Route element={<FDLayout />}>
-          <Route path="/client/fire-safety/detection/dashboard" element={<FDDashboardPage />} />
-          <Route path="/client/fire-safety/detection/assets" element={<AssetRegistryPage />} />
-          <Route path="/client/fire-safety/detection/assets/:id" element={<HydrantDetailPage />} />
-          <Route path="/client/fire-safety/detection/inspection" element={<InspectionPage />} />
-          <Route path="/client/fire-safety/detection/inspection-history/:id" element={<InspectionHistoryPage />} />
-          <Route path="/client/fire-safety/detection/panels" element={<PanelRegistryPage />} />
-          <Route path="/client/fire-safety/detection/panels/:id" element={<PanelDetailPage />} />
-          <Route path="/client/fire-safety/detection/panels/new" element={<RegisterPanelPage />} />
-          <Route path="/client/fire-safety/detection/panel-inspection" element={<PanelInspectionPage />} />
-          <Route path="/client/fire-safety/detection/compliance" element={<ComplianceMonitoringPage />} />
-          <Route path="/client/fire-safety/detection/profile" element={<FDProfilePage />} />
-        </Route>
-        <Route path="/" element={<Navigate to="/client/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
       </Routes>
     )
   }
@@ -359,6 +379,8 @@ export function AppRouter() {
         <Route path="/announcements" element={<AnnouncementComposerPage />} />
         <Route path="/billing" element={<BillingPage />} />
         <Route path="/security-logs" element={<SecurityLogsPage />} />
+        <Route path="/module-requests" element={<ModuleRequestsPage />} />
+        <Route path="/password-resets" element={<PasswordResetRequestsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/users/:uid" element={<UserProfilePage />} />
         <Route path="/mobile" element={<MobileAppBlockedPage />} />

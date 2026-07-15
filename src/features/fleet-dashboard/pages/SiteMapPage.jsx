@@ -7,7 +7,6 @@ import { FleetMap } from '../components/FleetMap.jsx'
 import { ReadinessDonut } from '../components/ReadinessDonut.jsx'
 import { RegisterVehiclePage } from './RegisterVehiclePage.jsx'
 import { cap } from '../utils/fleetHelpers.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fleet.css'
 
 const PAGE_SIZE = 10
@@ -30,7 +29,6 @@ function serviceHealth(vehicle) {
 
 export function SiteMapPage() {
   const navigate = useNavigate()
-  const fleetPath = useModulePath('/fleet', '/client/fleet')
   const { vehicles, inspections, openAlerts, loading, resolveAlert, avgHealth, activeVehicles, totalVehicles, crewReady, addVehicle, updateVehicle } = useFleetData()
 
   const [selectedVehicle, setSelectedVehicle] = useState(null)
@@ -378,7 +376,7 @@ export function SiteMapPage() {
           <button
             type="button"
             className="fleet-btn fleet-btn--primary "
-            onClick={() => navigate(fleetPath('/dashboard'))}
+            onClick={() => navigate('/fleet/dashboard')}
             style={{ fontSize:'12px', padding:'7px 16px', whiteSpace: isMobile ? 'nowrap' : 'normal' }}
           >
             <RefreshCw size={12} /> ASSIGN UNIT

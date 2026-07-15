@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { timeAgoShort, formatLogTime, initials, avatarColor, exportToCSV } from '../utils/feHelpers.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fe.css'
 
 const PAGE_SIZE = 10
@@ -165,7 +164,6 @@ export function FEDashboardPage() {
     resolveAlert,
   } = useFireExtData()
   const navigate = useNavigate()
-  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
 
   const [logSearch, setLogSearch] = useState('')
   const [logPage,   setLogPage]   = useState(1)
@@ -228,7 +226,7 @@ export function FEDashboardPage() {
         <button
           type="button"
           className="fe-btn fe-btn--primary"
-          onClick={() => navigate(fePath('/assets/new'))}
+          onClick={() => navigate('/extinguisher/assets/new')}
         >
           <Plus size={15} strokeWidth={2.5} /> New Asset Registration
         </button>

@@ -9,12 +9,10 @@ import {
 import { useFireDetectionData } from '../hooks/useFireDetectionData.js'
 import QRCode from 'qrcode'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fd.css'
 
 export function AssetRegistryPage() {
   const navigate = useNavigate()
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
   
   const {
     assets, alerts, loading,
@@ -590,7 +588,7 @@ export function AssetRegistryPage() {
   const handleLaunchInspection = () => {
     if (!selectedAsset) return
     // Navigate to Inspection Page with selected asset id
-    navigate(fdPath(`/inspection?id=${selectedAsset.id}`))
+    navigate(`/detection/inspection?id=${selectedAsset.id}`)
   }
 
   if (loading) {
@@ -795,7 +793,7 @@ export function AssetRegistryPage() {
                 {assets.map((asset) => (
                   <tr
                     key={asset.id}
-                    onClick={() => navigate(fdPath(`/assets/${asset.id}`))}
+                    onClick={() => navigate(`/detection/assets/${asset.id}`)}
                     style={{
                       borderBottom: '1px solid rgba(255,255,255,0.04)',
                       cursor: 'pointer',

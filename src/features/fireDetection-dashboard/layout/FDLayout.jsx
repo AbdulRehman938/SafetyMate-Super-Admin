@@ -3,17 +3,16 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Archive, ShieldCheck, Menu, LogOut, User } from 'lucide-react'
 import { useAuth } from '../../../app/providers/authContext.js'
 import { initials, avatarColor } from '../utils/fdHelpers.js'
-import { CopyrightFooter } from '../../../shared/components/CopyrightFooter.jsx'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
+import { AppFooter } from '../../../shared/components/AppFooter.jsx'
 import '../fd.css'
 
 const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-  { path: '/assets', label: 'Asset Registry', Icon: Archive },
-  { path: '/inspection', label: 'Inspection', Icon: ShieldCheck },
-  { path: '/panels', label: 'Panel Registry', Icon: Archive },
-  { path: '/panel-inspection', label: 'Panel Inspection', Icon: ShieldCheck },
-  { path: '/compliance', label: 'Compliance Monitoring', Icon: ShieldCheck },
+  { to: '/detection/dashboard',   label: 'Dashboard',             Icon: LayoutDashboard },
+  { to: '/detection/assets',       label: 'Asset Registry',        Icon: Archive         },
+  { to: '/detection/inspection',   label: 'Inspection',            Icon: ShieldCheck     },
+  { to: '/detection/panels',       label: 'Panel Registry',        Icon: Archive         },
+  { to: '/detection/panel-inspection', label: 'Panel Inspection', Icon: ShieldCheck     },
+  { to: '/detection/compliance',  label: 'Compliance Monitoring', Icon: ShieldCheck     },
 ]
 
 function getGreeting(name) {
@@ -27,7 +26,6 @@ function getGreeting(name) {
 export function FDLayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const fdPath = useModulePath('/detection', '/client/fire-safety/detection')
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -91,8 +89,8 @@ export function FDLayout() {
         <nav className="fd-nav">
           {NAV_ITEMS.map((item) => (
             <NavLink
-              key={item.path}
-              to={fdPath(item.path)}
+              key={item.to}
+              to={item.to}
               className={({ isActive }) => `fd-nav-link${isActive ? ' active' : ''}`}
               onClick={() => isMobile && setMobileSidebarOpen(false)}
             >
@@ -109,7 +107,7 @@ export function FDLayout() {
             className="fd-profile-btn"
             onClick={() => {
               if (isMobile) setMobileSidebarOpen(false)
-              navigate(fdPath('/profile'))
+              navigate('/detection/profile')
             }}
             title={sidebarCollapsed && !isMobile ? displayName : undefined}
           >
@@ -165,7 +163,7 @@ export function FDLayout() {
           <button
             type="button"
             className="fd-icon-btn"
-            onClick={() => navigate(fdPath('/profile'))}
+            onClick={() => navigate('/detection/profile')}
             title="Profile Settings"
             style={{ marginLeft: 'auto', flexShrink: 0 }}
           >
@@ -177,7 +175,7 @@ export function FDLayout() {
         <main className="fd-page-content">
           <Outlet />
         </main>
-        <CopyrightFooter />
+        <AppFooter variant="page" />
       </div>
     </div>
   )

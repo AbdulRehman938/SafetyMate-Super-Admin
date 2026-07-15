@@ -15,6 +15,7 @@ import { ChevronDown, Check, Search, X, Plus } from 'lucide-react'
  *   disabled     — bool
  *   id           — optional id for the trigger button
  *   allowCustom  — bool (default false), allows users to add custom values
+ *   onAddOption  — function(value) called when a custom option is added
  */
 export function CustomSelect({
   value,
@@ -27,6 +28,7 @@ export function CustomSelect({
   disabled,
   id,
   allowCustom = false,
+  onAddOption,
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -280,9 +282,11 @@ export function CustomSelect({
                       'prov-custom-select-option--custom',
                       focusedIdx >= filtered.length ? 'prov-custom-select-option--focused' : '',
                     ].filter(Boolean).join(' ')}
-                    onMouseDown={(e) => {
+                    onMouseDown={async (e) => {
                       e.preventDefault()
-                      onChange(query.trim())
+                      const newValue = query.trim()
+                      onChange(newValue)
+                      if (onAddOption) await onAddOption(newValue)
                       setOpen(false)
                     }}
                     onMouseEnter={() => setFocusedIdx(filtered.length)}

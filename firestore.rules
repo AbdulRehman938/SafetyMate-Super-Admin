@@ -150,9 +150,25 @@ service cloud.firestore {
     }
 
     match /fe_compliance_config/{configId} {
-      allow read:   if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+      allow read:   if isAuth();
       allow create,
-            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'SUPER_ADMIN');
+            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'COMPANY' || myRole() == 'client_admin' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    // Persisted dropdown options for FE registration form
+    match /fe_options/{optionId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_EXTINGUISHER' || myRole() == 'COMPANY' || myRole() == 'client_admin' || myRole() == 'SUPER_ADMIN');
+      allow delete: if isSuperAdmin();
+    }
+
+    // Persisted dropdown options for FD registration form
+    match /fd_options/{optionId} {
+      allow read:   if isAuth();
+      allow create,
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'COMPANY' || myRole() == 'client_admin' || myRole() == 'SUPER_ADMIN');
       allow delete: if isSuperAdmin();
     }
 
@@ -211,9 +227,9 @@ service cloud.firestore {
     }
 
     match /fd_compliance_notifications/{configId} {
-      allow read:   if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+      allow read:   if isAuth();
       allow create,
-            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'SUPER_ADMIN');
+            update: if isAuth() && (myRole() == 'FIRE_DETECTION' || myRole() == 'COMPANY' || myRole() == 'client_admin' || myRole() == 'SUPER_ADMIN');
       allow delete: if isSuperAdmin();
     }
 

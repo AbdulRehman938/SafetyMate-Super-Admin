@@ -4,13 +4,11 @@ import { ArrowLeft, QrCode, Download, Printer, Activity, MapPin, ShieldAlert, Ca
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import QRCode from 'qrcode'
 import { formatDate } from '../utils/feHelpers.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fe.css'
 
 export function FEDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
   const { assets, loading } = useFireExtData()
   const qrCanvasRef = useRef(null)
 
@@ -169,7 +167,7 @@ export function FEDetailPage() {
         <h2 style={{ marginBottom: 8, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)' }}>Asset Not Found</h2>
         <p style={{ marginBottom: 24, fontSize: 14 }}>The requested asset could not be found.</p>
         <button
-          onClick={() => navigate(fePath('/assets'))}
+          onClick={() => navigate('/extinguisher/assets')}
           style={{
             padding: '12px 24px',
             background: '#3a82ff',
@@ -195,7 +193,7 @@ export function FEDetailPage() {
       <div style={{ marginBottom: 24 }}>
         <button
           type="button"
-          onClick={() => navigate(fePath('/assets'))}
+          onClick={() => navigate('/extinguisher/assets')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -395,7 +393,7 @@ export function FEDetailPage() {
         <div style={{ padding: '16px 18px', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <button
             type="button"
-            onClick={() => navigate(fePath(`/assets/${asset.id}/inspect?new=1`))}
+            onClick={() => navigate(`/extinguisher/assets/${asset.id}/inspect?new=1`)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -415,7 +413,7 @@ export function FEDetailPage() {
           </button>
           <button
             type="button"
-            onClick={() => navigate(fePath(`/assets/${asset.id}/inspect`))}
+            onClick={() => navigate(`/extinguisher/assets/${asset.id}/inspect`)}
             style={{
               display: 'flex',
               alignItems: 'center',

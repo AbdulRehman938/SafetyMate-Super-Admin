@@ -7,11 +7,10 @@ import {
   ArrowLeft, ClipboardList, Calendar, Camera, X,
   CheckCircle, XCircle, Save, Printer, RefreshCw,
 } from 'lucide-react'
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore'
+import { collection, getDocs, query, where, doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
 import { db } from '../../../config/firebase.js'
 import { useFireExtData } from '../hooks/useFireExtData.js'
 import { useAuth } from '../../../app/providers/authContext.js'
-import { useModulePath } from '../../../shared/navigation/modulePaths.js'
 import '../fe.css'
 
 /* ─────────────────────────────────────────────────────────────
@@ -148,7 +147,265 @@ const schema = Yup.object({
 })
 
 /* ─────────────────────────────────────────────────────────────
-   Custom dark dropdown
+   Creatable searchable dropdown
+   — always shows a search input inside the panel
+   — options come entirely from Firestore (no hardcoded defaults)
+   — typing a value that doesn't exist shows an "Add" button
+───────────────────────────────────────────────────────────── */
+function FeCreatableSelect({ id, value, onChange, onBlur, options, placeholder, error, touched, onAddOption, fieldName }) {
+  const [open,   setOpen]   = useState(false)
+  const [search, setSearch] = useState('')
+  const ref      = useRef(null)
+  const searchRef = useRef(null)
+
+  /* close on outside click */
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false)
+        setSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  /* focus the search input whenever the panel opens */
+  useEffect(() => {
+    if (open && searchRef.current) {
+      setTimeout(() => searchRef.current?.focus(), 30)
+    }
+  }, [open])
+
+  /* filtered list */
+  const filtered = search.trim()
+    ? options.filter((o) => {
+        const lbl = typeof o === 'string' ? o : o.label
+        return lbl.toLowerCase().includes(search.trim().toLowerCase())
+      })
+    : options
+
+  /* hide "Add" only when there's a perfect case-insensitive match */
+  const hasExactMatch = options.some(
+    (o) => (typeof o === 'string' ? o : o.label).toLowerCase() === search.trim().toLowerCase()
+  )
+  const showAdd = search.trim().length > 0 && !hasExactMatch
+
+  const handleSelect = (val) => {
+    onChange(val)
+    setSearch('')
+    setOpen(false)
+    if (onBlur) onBlur()
+  }
+
+  const handleAdd = async () => {
+    const newVal = search.trim()
+    if (!newVal) return
+    if (onAddOption) await onAddOption(fieldName, newVal)
+    onChange(newVal)
+    setSearch('')
+    setOpen(false)
+    if (onBlur) onBlur()
+  }
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filtered.length === 1) {
+        handleSelect(typeof filtered[0] === 'string' ? filtered[0] : filtered[0].value)
+      } else if (showAdd) {
+        handleAdd()
+      }
+    }
+    if (e.key === 'Escape') {
+      setOpen(false)
+      setSearch('')
+    }
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+
+      {/* ── closed trigger button ── */}
+      <button
+        id={id}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        onBlur={(e) => {
+          if (ref.current && !ref.current.contains(e.relatedTarget)) {
+            if (onBlur) onBlur(e)
+          }
+        }}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 12px',
+          background: 'rgba(255,255,255,0.04)',
+          border: `1px solid ${error && touched ? 'rgba(255,83,95,0.5)' : open ? 'rgba(58,130,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+          borderRadius: 9,
+          color: value ? 'rgba(235,242,255,0.9)' : 'rgba(148,163,184,0.45)',
+          fontSize: 13.5,
+          fontWeight: value ? 600 : 400,
+          cursor: 'pointer',
+          textAlign: 'left',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value || placeholder}
+        </span>
+        <svg
+          width="12" height="12" viewBox="0 0 24 24"
+          fill="none" stroke="rgba(148,163,184,0.5)" strokeWidth="2"
+          style={{ flexShrink: 0, marginLeft: 6, transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }}
+        >
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </button>
+
+      {/* ── dropdown panel ── */}
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0, right: 0,
+          zIndex: 300,
+          background: '#0d1220',
+          border: '1px solid rgba(58,130,255,0.25)',
+          borderRadius: 10,
+          boxShadow: '0 20px 48px rgba(0,0,0,0.8)',
+          overflow: 'hidden',
+        }}>
+
+          {/* always-visible search bar */}
+          <div style={{
+            padding: '8px 10px',
+            borderBottom: '1px solid rgba(255,255,255,0.07)',
+            background: 'rgba(255,255,255,0.02)',
+          }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <svg
+                width="13" height="13" viewBox="0 0 24 24"
+                fill="none" stroke="rgba(148,163,184,0.45)" strokeWidth="2"
+                style={{ position: 'absolute', left: 9, pointerEvents: 'none', flexShrink: 0 }}
+              >
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search or type to add new…"
+                autoComplete="off"
+                spellCheck={false}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '7px 10px 7px 30px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 7,
+                  color: 'rgba(235,242,255,0.9)',
+                  fontSize: 12.5,
+                  outline: 'none',
+                }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); setSearch('') }}
+                  style={{
+                    position: 'absolute', right: 7,
+                    background: 'none', border: 'none', padding: 2,
+                    cursor: 'pointer', color: 'rgba(148,163,184,0.5)',
+                    display: 'flex', lineHeight: 1,
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* options list */}
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+
+            {filtered.length > 0 && filtered.map((opt) => {
+              const val = typeof opt === 'string' ? opt : opt.value
+              const lbl = typeof opt === 'string' ? opt : opt.label
+              const isSel = val === value
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(val) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    width: '100%', padding: '9px 14px', border: 'none',
+                    background: isSel ? 'rgba(58,130,255,0.14)' : 'transparent',
+                    color: isSel ? '#8ab8ff' : 'rgba(203,214,255,0.85)',
+                    fontSize: 13, fontWeight: isSel ? 700 : 500,
+                    textAlign: 'left', cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => { if (!isSel) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                  onMouseLeave={(e) => { if (!isSel) e.currentTarget.style.background = 'transparent' }}
+                >
+                  {isSel && (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                      <path d="M20 6 9 17l-5-5"/>
+                    </svg>
+                  )}
+                  {lbl}
+                </button>
+              )
+            })}
+
+            {filtered.length === 0 && !showAdd && (
+              <p style={{ margin: 0, padding: '14px', fontSize: 12, color: 'rgba(148,163,184,0.4)', textAlign: 'center' }}>
+                No options yet
+              </p>
+            )}
+
+            {/* "Add new" row */}
+            {showAdd && (
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); handleAdd() }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '9px 14px', border: 'none',
+                  borderTop: filtered.length > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                  background: 'rgba(22,201,136,0.08)',
+                  color: '#4deba0',
+                  fontSize: 13, fontWeight: 700,
+                  textAlign: 'left', cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(22,201,136,0.15)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(22,201,136,0.08)'}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add &ldquo;{search.trim()}&rdquo;
+              </button>
+            )}
+
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Custom dark dropdown (original - keeping for other use cases)
 ───────────────────────────────────────────────────────────── */
 function FeSelect({ id, value, onChange, onBlur, options, placeholder, error, touched }) {
   const [open, setOpen] = useState(false)
@@ -434,7 +691,6 @@ function printTag(unitId, canvasEl) {
 ───────────────────────────────────────────────────────────── */
 export function FERegisterAssetPage() {
   const navigate = useNavigate()
-  const fePath = useModulePath('/extinguisher', '/client/fire-safety/extinguisher')
   const [searchParams] = useSearchParams()
   const draftId = searchParams.get('draft')
   const { addAsset, updateAsset, addActivityEntry } = useFireExtData()
@@ -548,10 +804,10 @@ export function FERegisterAssetPage() {
         })
         if (status === 'active') {
           printTag(unitId, qrCanvasRef.current)
-          navigate(fePath('/assets'))
+          navigate('..')
         } else {
           setToast({ type: 'ok', text: `Draft updated — Unit ID: ${unitId}` })
-          setTimeout(() => navigate(fePath('/assets')), 1800)
+          setTimeout(() => navigate('..'), 1800)
         }
       } else {
         // ── Creating new asset ──
@@ -592,10 +848,10 @@ export function FERegisterAssetPage() {
         })
         if (status === 'active') {
           printTag(unitId, qrCanvasRef.current)
-          navigate(fePath('/assets'))
+          navigate('..')
         } else {
           setToast({ type: 'ok', text: `Draft saved — Unit ID: ${unitId}` })
-          setTimeout(() => navigate(fePath('/assets')), 1800)
+          setTimeout(() => navigate('..'), 1800)
         }
       }
     } catch (err) {
@@ -694,15 +950,49 @@ export function FERegisterAssetPage() {
     reader.readAsDataURL(file)
   }
 
-  const EXT_TYPES = [
-    'CO2 - Carbon Dioxide','Dry Powder','Foam','Water',
-    'Wet Chemical','Halon','Clean Agent',
-  ]
-  const FACILITY_SITES = [
-    'Main HQ - Industrial Park','Warehouse A','Warehouse B',
-    'Data Centre','Office Block North','Office Block South',
-    'Loading Dock','Server Room','Workshop',
-  ]
+  /* ── Dynamic dropdown options (loaded from Firestore + defaults) ── */
+  const [extTypes,      setExtTypes]      = useState([])
+  const [facilitySites, setFacilitySites] = useState([])
+
+  // Load persisted options from Firestore on mount
+  useEffect(() => {
+    async function loadOptions() {
+      try {
+        const extSnap  = await getDoc(doc(db, 'fe_options', 'extinguisherTypes'))
+        const siteSnap = await getDoc(doc(db, 'fe_options', 'facilitySites'))
+
+        if (extSnap.exists() && Array.isArray(extSnap.data().values)) {
+          setExtTypes(extSnap.data().values)
+        }
+        if (siteSnap.exists() && Array.isArray(siteSnap.data().values)) {
+          setFacilitySites(siteSnap.data().values)
+        }
+      } catch (err) {
+        console.warn('Could not load FE options from Firestore:', err.message)
+      }
+    }
+    loadOptions()
+  }, [])
+
+  // Save a newly created option to Firestore and update local state
+  async function handleAddOption(fieldName, newValue) {
+    try {
+      const docId = fieldName === 'extinguisherType' ? 'extinguisherTypes' : 'facilitySites'
+      await setDoc(
+        doc(db, 'fe_options', docId),
+        { values: arrayUnion(newValue) },
+        { merge: true }
+      )
+      if (fieldName === 'extinguisherType') {
+        setExtTypes((prev) => Array.from(new Set([...prev, newValue])))
+      } else {
+        setFacilitySites((prev) => Array.from(new Set([...prev, newValue])))
+      }
+    } catch (err) {
+      console.warn('Could not save new option:', err.message)
+      // Still works locally even if Firestore fails
+    }
+  }
 
   if (draftLoading) return (
     <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'55vh', gap:12, color:'rgba(148,163,184,0.8)' }}>
@@ -748,11 +1038,12 @@ export function FERegisterAssetPage() {
             <div className="fe-reg-body">
               <div className="fe-reg-row2">
                 <Field label="EXTINGUISHER TYPE" required error={fe.extinguisherType} touched={ft.extinguisherType}>
-                  <FeSelect id="extinguisherType" value={fv.extinguisherType}
+                  <FeCreatableSelect id="extinguisherType" value={fv.extinguisherType}
                     onChange={(val) => formik.setFieldValue('extinguisherType',val)}
                     onBlur={() => formik.setFieldTouched('extinguisherType',true)}
-                    options={EXT_TYPES} placeholder="CO2 - Carbon Dioxide"
-                    error={fe.extinguisherType} touched={ft.extinguisherType}/>
+                    options={extTypes} placeholder="Search or add type…"
+                    error={fe.extinguisherType} touched={ft.extinguisherType}
+                    onAddOption={handleAddOption} fieldName="extinguisherType"/>
                 </Field>
                 <Field label="SERIAL NUMBER" required error={fe.serialNumber} touched={ft.serialNumber}>
                   <TextInput id="serialNumber" value={fv.serialNumber}
@@ -767,11 +1058,12 @@ export function FERegisterAssetPage() {
                     placeholder="e.g. 5.0 kg" error={fe.capacityKg} touched={ft.capacityKg}/>
                 </Field>
                 <Field label="FACILITY SITE" required error={fe.facilitySite} touched={ft.facilitySite}>
-                  <FeSelect id="facilitySite" value={fv.facilitySite}
+                  <FeCreatableSelect id="facilitySite" value={fv.facilitySite}
                     onChange={(val) => formik.setFieldValue('facilitySite',val)}
                     onBlur={() => formik.setFieldTouched('facilitySite',true)}
-                    options={FACILITY_SITES} placeholder="Main HQ - Industrial Park"
-                    error={fe.facilitySite} touched={ft.facilitySite}/>
+                    options={facilitySites} placeholder="Search or add site…"
+                    error={fe.facilitySite} touched={ft.facilitySite}
+                    onAddOption={handleAddOption} fieldName="facilitySite"/>
                 </Field>
               </div>
               <div className="fe-reg-row3">

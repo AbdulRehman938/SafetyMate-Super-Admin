@@ -3,6 +3,8 @@ import { Calendar, Clock, MapPin, User, ShieldAlert, Check, X, Search } from 'lu
 import { CustomSelect } from '../components/CustomSelect.jsx'
 import { CustomDatePicker } from '../components/CustomDatePicker.jsx'
 import { TimeRangePicker } from '../components/TimeRangePicker.jsx'
+import { collection, doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore'
+import { db } from '../../../config/firebase.js'
 
 function getTodayStr() {
   return new Date().toISOString().split('T')[0]
@@ -48,7 +50,6 @@ function getEmployeeName(emp) {
 
 export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employees = [] }) {
   const todayStr = getTodayStr()
-
   const [course, setCourse] = useState('')
   const [instructor, setInstructor] = useState('')
   const [company, setCompany] = useState('')
@@ -64,6 +65,49 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
     vrHeadsets: false,
     hazmatSuits: false,
   })
+
+  // Dynamic options from Firestore
+  const [coursesList, setCoursesList] = useState([])
+  const [locationsList, setLocationsList] = useState([])
+
+  // Load persisted options from Firestore on mount
+  useEffect(() => {
+    async function loadOptions() {
+      try {
+        const courseSnap = await getDoc(doc(db, 'training_options', 'courses'))
+        const locationSnap = await getDoc(doc(db, 'training_options', 'locations'))
+
+        if (courseSnap.exists() && Array.isArray(courseSnap.data().values)) {
+          setCoursesList(courseSnap.data().values)
+        }
+        if (locationSnap.exists() && Array.isArray(locationSnap.data().values)) {
+          setLocationsList(locationSnap.data().values)
+        }
+      } catch (err) {
+        console.warn('Could not load training options from Firestore:', err.message)
+      }
+    }
+    loadOptions()
+  }, [])
+
+  // Save a newly created option to Firestore and update local state
+  async function handleAddOption(fieldName, newValue) {
+    try {
+      const docId = fieldName === 'course' ? 'courses' : 'locations'
+      await setDoc(
+        doc(db, 'training_options', docId),
+        { values: arrayUnion(newValue) },
+        { merge: true }
+      )
+      if (fieldName === 'course') {
+        setCoursesList((prev) => Array.from(new Set([...prev, newValue])))
+      } else {
+        setLocationsList((prev) => Array.from(new Set([...prev, newValue])))
+      }
+    } catch (err) {
+      console.warn('Could not save new option:', err.message)
+    }
+  }
 
   const instructorsList = employees.length > 0
     ? employees.map((emp) => getEmployeeName(emp))
@@ -125,28 +169,6 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
     resetForm()
   }
 
-  const coursesList = [
-    'Advanced Fire Safety',
-    'OSHA 30-Hour',
-    'Crisis Mgmt',
-    'First Aid Cert',
-    'Cyber Awareness',
-    'Working at Heights',
-    'Confined Space Entry',
-    'Hazardous Materials LVE',
-    'Fire Safety Level 1',
-    'Emergency Responder Drill',
-    'High-Altitude Safety',
-  ]
-
-  const locationsList = [
-    'Training Lab A - Tech Park',
-    'Room 402',
-    'Auditorium B',
-    'Digital Hub',
-    'Sim Lab 1',
-  ]
-
   const selectedCompanyName = (() => {
     const org = organizations?.find((o) => o.id === company)
     return org?.name || org?.companyName || org?.organizationName || 'Select client'
@@ -187,6 +209,7 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                 searchable
                 searchPlaceholder="Search course..."
                 allowCustom
+                onAddOption={(val) => handleAddOption('course', val)}
               />
             </div>
             <div className="sched-field">
@@ -244,7 +267,10 @@ export function ScheduleSessionPage({ onSubmit, onCancel, organizations, employe
                   value={location}
                   onChange={setLocation}
                   options={locationsList.map((loc) => ({ value: loc, label: loc }))}
+                  searchable
+                  searchPlaceholder="Search location..."
                   allowCustom
+                  onAddOption={(val) => handleAddOption('location', val)}
                 />
               </div>
               <div className="sched-field">

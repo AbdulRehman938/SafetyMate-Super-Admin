@@ -240,7 +240,9 @@ export function OverviewPage({
                       </div>
 
                       <div className="prov-dates-cell">
-                        <span className="prov-dates-primary">{req.preferredDate}</span>
+                        <span className="prov-dates-primary">
+                          {req.preferredDate?.toDate ? req.preferredDate.toDate().toLocaleDateString() : req.preferredDate}
+                        </span>
                         <span className="prov-dates-sub">{req.timeDetail || 'TBD'}</span>
                       </div>
 

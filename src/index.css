@@ -335,8 +335,6 @@ body {
   overflow: hidden;
   border-radius: 0;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
 .topnav {
@@ -470,8 +468,6 @@ body {
 }
 
 .topnav-content {
-  flex: 1 1 auto;
-  min-height: 0;
   padding: 18px;
 }
 
@@ -688,7 +684,7 @@ b {
 .sidebar {
   border-right: 1px solid var(--border2);
   background: linear-gradient(180deg, rgba(10, 14, 29, 0.92), rgba(7, 10, 22, 0.9));
-  padding: 20px 14px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -696,7 +692,7 @@ b {
   top: 0;
   width: var(--sidebar-w);
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden; /* container never scrolls — only the nav does */
   box-shadow: 24px 0 48px rgba(0, 0, 0, 0.35);
   z-index: 200;
 }
@@ -830,7 +826,7 @@ b {
 }
 
 .content-shell {
-  padding: 12px 18px 16px;
+  padding: 12px 18px 0;
   background: var(--bg2);
   color: var(--text);
   height: 100vh;
@@ -3816,6 +3812,12 @@ input::placeholder {
   animation: spin 0.9s linear infinite;
 }
 
+/* Generic spin utility used by Loader2 icons */
+.spin {
+  animation: spin 0.8s linear infinite;
+  display: block;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -5860,6 +5862,11 @@ h2 {
 }
 
 /* Footer & Copyright styles */
+.login-footer {
+  text-align: center;
+  margin-top: 28px;
+}
+
 .warning-text {
   font-family: monospace;
   font-size: 9px;
@@ -5876,31 +5883,72 @@ h2 {
   margin: 0;
 }
 
-.shell-copyright {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 14px 20px 18px;
+.bottom-copyright {
+  position: absolute;
+  bottom: 24px;
   font-family: monospace;
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: rgba(203, 214, 255, 0.32);
+  color: rgba(203, 214, 255, 0.2);
+}
+
+/* ── AppFooter — BGB Group copyright bar ────────────────────────
+   Shared across all layouts. Two variants:
+   --page    : full-width bar pinned to bottom of content area
+   --sidebar : compact strip at the bottom of the sidebar
+   ───────────────────────────────────────────────────────────── */
+.app-footer {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   user-select: none;
 }
 
-.shell-copyright--dashboard {
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(0, 0, 0, 0.08);
+.app-footer__text {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.45);
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-align: center;
 }
 
-.shell-copyright--login {
-  position: absolute;
-  bottom: 24px;
-  left: 0;
-  right: 0;
-  padding: 0 20px;
+.app-footer__brand {
+  color: rgba(148, 163, 184, 0.65);
+  font-weight: 600;
+}
+
+/* page variant — sits below <main> inside content-shell */
+.app-footer--page {
+  padding: 10px 18px;
+  background: transparent;
+}
+
+/* sidebar variant — sits inside the sidebar column */
+.app-footer--sidebar {
+  padding: 10px 14px;
+  background: transparent;
+}
+.app-footer--sidebar .app-footer__text {
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  color: rgba(148, 163, 184, 0.28);
+}
+.app-footer--sidebar .app-footer__brand {
+  color: rgba(148, 163, 184, 0.42);
+}
+
+@media (max-width: 768px) {
+  .app-footer--page {
+    padding: 8px 14px;
+  }
+  .app-footer__text {
+    font-size: 9.5px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -5930,13 +5978,12 @@ h2 {
   .login-card {
     padding: 36px 28px;
   }
-  .shell-copyright--login {
+  .bottom-copyright {
     position: relative;
     bottom: auto;
-    left: auto;
-    right: auto;
     margin-top: 40px;
     margin-bottom: 20px;
+    text-align: center;
   }
   .encrypt-tooltip {
     position: fixed;

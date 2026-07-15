@@ -163,7 +163,7 @@ export function CalendarPage({
         }
         return dates
       }
-    } catch {}
+    } catch { }
 
     const rangeMatch = String(dateStr).match(/([a-zA-Z]+)\s+(\d+)\s*-\s*([a-zA-Z]+)?\s*(\d+),\s*(\d{4})/)
     if (rangeMatch) {
@@ -174,7 +174,7 @@ export function CalendarPage({
       const year = parseInt(rangeMatch[5])
 
       if (year === activeYear) {
-        const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
         const startMonth = months.findIndex(m => startMonthName.toLowerCase().startsWith(m))
         const endMonth = months.findIndex(m => endMonthName.toLowerCase().startsWith(m))
 
@@ -454,7 +454,7 @@ export function CalendarPage({
         <div className="prov-cal-mobile-month">
           {/* Dot grid — 7-col, very compact, just day number + dots */}
           <div className="prov-cal-dot-grid">
-            {['S','M','T','W','T','F','S'].map((d, i) => (
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
               <div key={i} className="prov-cal-dot-header">{d}</div>
             ))}
             {cells.map((day, i) => {
@@ -765,8 +765,8 @@ export function CalendarPage({
             {viewType === 'Month'
               ? currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
               : viewType === 'Week'
-              ? `Week of ${currentDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-              : currentDate.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                ? `Week of ${currentDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                : currentDate.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </h2>
           <div className="prov-cal-nav-btns">
             <button
@@ -996,10 +996,10 @@ export function CalendarPage({
                     event.company?.toLowerCase().includes(q)
                   )
                 }).length === 0 && (
-                  <div className="prov-empty-state">
-                    <p className="prov-empty-sub">No courses match your search.</p>
-                  </div>
-                )}
+                    <div className="prov-empty-state">
+                      <p className="prov-empty-sub">No courses match your search.</p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

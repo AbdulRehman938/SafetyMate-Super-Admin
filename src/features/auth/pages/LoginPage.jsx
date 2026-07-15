@@ -2,14 +2,18 @@ import { useState, useRef, useEffect } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../../../config/firebase.js'
-import { AlertCircle, Eye, EyeOff, Lock, Mail, ArrowRight, HelpCircle } from 'lucide-react'
-import { CopyrightFooter } from '../../../shared/components/CopyrightFooter.jsx'
+import { getFunctions, httpsCallable } from 'firebase/functions'
+import { auth, app } from '../../../config/firebase.js'
+import { AlertCircle, Eye, EyeOff, Lock, Mail, ArrowRight, HelpCircle, X } from 'lucide-react'
+import { AppFooter } from '../../../shared/components/AppFooter.jsx'
 
 export function LoginPage({ initialError = '' }) {
   const [error, setError] = useState(initialError)
   const [showPassword, setShowPassword] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
+  const [forgotPasswordError, setForgotPasswordError] = useState('')
   const tooltipRef = useRef(null)
 
   useEffect(() => {
@@ -39,6 +43,27 @@ export function LoginPage({ initialError = '' }) {
       .min(6, 'Password must be at least 6 characters')
       .required('Password is required'),
   })
+
+  const forgotPasswordSchema = Yup.object().shape({
+    email: Yup.string()
+      .email('Please enter a valid email address')
+      .required('Email address is required'),
+  })
+
+  const handleForgotPassword = async (email) => {
+    setForgotPasswordError('')
+    setForgotPasswordSuccess(false)
+    
+    try {
+      const functions = getFunctions(app)
+      const requestPasswordReset = httpsCallable(functions, 'requestPasswordReset')
+      await requestPasswordReset({ email })
+      setForgotPasswordSuccess(true)
+    } catch (err) {
+      const errorMessage = err?.message || 'Failed to request password reset. Please try again.'
+      setForgotPasswordError(errorMessage)
+    }
+  }
 
   const formik = useFormik({
     initialValues: {
@@ -109,7 +134,7 @@ export function LoginPage({ initialError = '' }) {
             <span className="brand-safety">Safety</span>
             <span className="brand-mate">Mate</span>
           </h1>
-          <p className="login-kicker">SINGLE ADMINISTRATOR ACCESS ONLY</p>
+          <p className="login-kicker">SECURE PLATFORM ACCESS</p>
           <p className="login-node">SYSTEM NODE: CORE-01</p>
         </header>
 
@@ -197,7 +222,153 @@ export function LoginPage({ initialError = '' }) {
                 </>
               )}
             </button>
+
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(58,130,255,0.8)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: '4px 8px',
+                }}
+              >
+                Forgot Password?
+              </button>
+            </div>
           </form>
+
+          {/* Forgot Password Modal */}
+          {showForgotPassword && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+              }}
+              onClick={() => setShowForgotPassword(false)}
+            >
+              <div
+                style={{
+                  background: '#0a0f1e',
+                  borderRadius: '12px',
+                  padding: '32px',
+                  maxWidth: '400px',
+                  width: '90%',
+                  color: '#ffffff',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px' }}>Forgot Password</h3>
+                  <button
+                    onClick={() => setShowForgotPassword(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'rgba(203,214,255,0.7)',
+                      cursor: 'pointer',
+                      padding: '4px',
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {forgotPasswordSuccess ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <p style={{ color: '#4deba0', marginBottom: '16px' }}>
+                      Password reset request sent to administrator.
+                    </p>
+                    <p style={{ color: 'rgba(203,214,255,0.7)', fontSize: '13px' }}>
+                      The administrator will send you a reset link via email.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowForgotPassword(false)
+                        setForgotPasswordSuccess(false)
+                      }}
+                      style={{
+                        background: '#3a82ff',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        marginTop: '16px',
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p style={{ color: 'rgba(203,214,255,0.7)', marginBottom: '20px', fontSize: '14px' }}>
+                      Enter your email address to request a password reset from the administrator.
+                    </p>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: 'rgba(203,214,255,0.85)' }}>
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="name@company.com"
+                        defaultValue={formik.values.email}
+                        onChange={(e) => {
+                          formik.setFieldValue('email', e.target.value)
+                          setForgotPasswordError('')
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          color: '#ffffff',
+                          fontSize: '14px',
+                        }}
+                      />
+                    </div>
+
+                    {forgotPasswordError && (
+                      <div style={{ color: '#ff535f', fontSize: '13px', marginBottom: '16px' }}>
+                        {forgotPasswordError}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => handleForgotPassword(formik.values.email)}
+                      style={{
+                        width: '100%',
+                        background: '#3a82ff',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Request Password Reset
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </article>
 
         {/* Footer messages */}
@@ -206,7 +377,9 @@ export function LoginPage({ initialError = '' }) {
         </footer>
       </div>
 
-      <CopyrightFooter variant="login" />
+      <div className="bottom-copyright">
+        <AppFooter variant="page" />
+      </div>
     </section>
   )
 }

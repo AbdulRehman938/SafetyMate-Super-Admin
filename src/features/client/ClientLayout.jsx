@@ -1,76 +1,113 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import ReactDOM from 'react-dom'
 import {
   AlertTriangle,
+  Archive,
   Award,
   Bell,
   Calendar,
   Check,
-  ChartColumn,
   ClipboardList,
   Flame,
   Fuel,
-  FolderKanban,
+  Home,
   LayoutDashboard,
   LayoutGrid,
   LogOut,
   Map,
   Menu,
   Package,
-  Settings,
+  ShieldCheck,
+  Siren,
   Truck,
   UserCircle2,
   Users,
   Wrench,
   X,
+  ChevronRight,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion'
 import { useAuth } from '../../app/providers/authContext.js'
 import { GlobalSearch } from './components/GlobalSearch.jsx'
 import { getDashboardPathForRole } from '../../shared/auth/currentUser.js'
 import { useNotifications } from '../training-dashboard/hooks/useNotifications.js'
-import { CopyrightFooter } from '../../shared/components/CopyrightFooter.jsx'
-import { getSubscribedModuleKeys, shouldShowClientModule } from './clientModules.js'
+import { AppFooter } from '../../shared/components/AppFooter.jsx'
 import './client.css'
 
+// ── Navigation configs ────────────────────────────────────────────────────────
+// COMPANY / client_admin: structured with sections and accordion groups.
+// Other roles: flat arrays as before.
+
+const COMPANY_NAV = {
+  type: 'structured',
+  sections: [
+    {
+      label: 'Safety Operations',
+      flat: [
+        { to: '/client/home',            label: 'Home',                icon: Home          },
+        { to: '/client/dashboard',       label: 'Safety Dashboard',    icon: LayoutDashboard },
+        { to: '/client/risk-assessment', label: 'Risk Assessments',    icon: ClipboardList },
+        { to: '/client/incidents',       label: 'Incidents',           icon: AlertTriangle },
+        { to: '/client/certificates',    label: 'Safety Files',        icon: Award         },
+        { to: '/client/workforce',       label: 'Workforce',           icon: Users         },
+        { to: '/client/ppe',             label: 'PPE & Assets',        icon: Package       },
+      ],
+    },
+    {
+      label: 'Platform Modules',
+      groups: [
+        {
+          key: 'fleet',
+          label: 'Fleet Management',
+          icon: Truck,
+          mainTo: '/client/fleet',
+          moduleKey: 'fleet',
+          sub: [
+            { to: '/client/fleet/site-map',    label: 'Site Map',          icon: Map             },
+            { to: '/client/fleet/vehicles',    label: 'Vehicle Twins',     icon: Truck           },
+            { to: '/client/fleet/inspections', label: 'Inspection Log',    icon: Wrench          },
+            { to: '/client/fleet/fuel',        label: 'Fuel Intelligence', icon: Fuel            },
+          ],
+        },
+        {
+          key: 'fire-ext',
+          label: 'Fire Extinguisher',
+          icon: Flame,
+          mainTo: '/client/fire-ext',
+          moduleKey: 'fire_extinguisher',
+          sub: [
+            { to: '/client/fire-ext/assets',    label: 'Asset Registry', icon: Archive         },
+            { to: '/client/fire-ext/compliance',label: 'Compliance',     icon: ShieldCheck     },
+          ],
+        },
+        {
+          key: 'fire-det',
+          label: 'Fire Detection',
+          icon: Siren,
+          mainTo: '/client/fire-det',
+          moduleKey: 'fire_detection',
+          sub: [
+            { to: '/client/fire-det/assets',       label: 'Asset Registry', icon: Archive         },
+            { to: '/client/fire-det/panels',       label: 'Panel Registry', icon: Archive         },
+            { to: '/client/fire-det/inspections',  label: 'Inspections',    icon: Wrench          },
+            { to: '/client/fire-det/compliance',   label: 'Compliance',     icon: ShieldCheck     },
+          ],
+        },
+      ],
+    },
+  ],
+}
+
 const NAVS_BY_ROLE = {
-  COMPANY: [
-    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard, alwaysVisible: true },
-    { to: '/client/safety-files', label: 'Safety Files', icon: FolderKanban, moduleKey: 'safety-files' },
-    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList, moduleKey: 'risk-assessments' },
-    { to: '/client/training', label: 'Training', icon: Award, moduleKey: 'training' },
-    { to: '/client/fleet', label: 'Fleet', icon: Truck, moduleKey: 'fleet' },
-    { to: '/client/fire-safety', label: 'Fire Safety', icon: Flame, moduleKey: 'fire-safety' },
-    { to: '/client/contractors', label: 'Contractors', icon: Users, moduleKey: 'contractors' },
-    { to: '/client/reports', label: 'Reports', icon: ChartColumn, moduleKey: 'reports' },
-    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle, moduleKey: 'incidents' },
-    { to: '/client/certificates', label: 'Certificates', icon: Award, moduleKey: 'certificates' },
-    { to: '/client/workforce', label: 'Workforce', icon: Users, moduleKey: 'workforce' },
-    { to: '/client/ppe', label: 'PPE & Assets', icon: Package, moduleKey: 'ppe' },
-    { to: '/client/settings', label: 'Settings', icon: Settings, alwaysVisible: true },
-  ],
-  client_admin: [
-    { to: '/client/dashboard', label: 'Dashboard', icon: LayoutDashboard, alwaysVisible: true },
-    { to: '/client/safety-files', label: 'Safety Files', icon: FolderKanban, moduleKey: 'safety-files' },
-    { to: '/client/risk-assessment', label: 'Risk Assessment', icon: ClipboardList, moduleKey: 'risk-assessments' },
-    { to: '/client/training', label: 'Training', icon: Award, moduleKey: 'training' },
-    { to: '/client/fleet', label: 'Fleet', icon: Truck, moduleKey: 'fleet' },
-    { to: '/client/fire-safety', label: 'Fire Safety', icon: Flame, moduleKey: 'fire-safety' },
-    { to: '/client/contractors', label: 'Contractors', icon: Users, moduleKey: 'contractors' },
-    { to: '/client/reports', label: 'Reports', icon: ChartColumn, moduleKey: 'reports' },
-    { to: '/client/incidents', label: 'Incidents', icon: AlertTriangle, moduleKey: 'incidents' },
-    { to: '/client/certificates', label: 'Certificates', icon: Award, moduleKey: 'certificates' },
-    { to: '/client/workforce', label: 'Workforce', icon: Users, moduleKey: 'workforce' },
-    { to: '/client/ppe', label: 'PPE & Assets', icon: Package, moduleKey: 'ppe' },
-    { to: '/client/settings', label: 'Settings', icon: Settings, alwaysVisible: true },
-  ],
+  COMPANY:          COMPANY_NAV,
+  client_admin:     COMPANY_NAV,
   TRAINING_PROVIDER: [
-    { to: '/training/dashboard', label: 'Overview', icon: LayoutGrid },
-    { to: '/training/requests', label: 'Training Requests', icon: ClipboardList },
-    { to: '/training/calendar', label: 'Course Calendar', icon: Calendar },
-    { to: '/training/certificates', label: 'Certificate Portal', icon: Award },
+    { to: '/training/dashboard',   label: 'Overview',          icon: LayoutGrid  },
+    { to: '/training/requests',    label: 'Training Requests', icon: ClipboardList },
+    { to: '/training/calendar',    label: 'Course Calendar',   icon: Calendar    },
+    { to: '/training/certificates',label: 'Certificate Portal',icon: Award       },
   ],
   FLEET: [
     { to: '/fleet/dashboard',   label: 'Dashboard',        icon: LayoutDashboard },
@@ -110,7 +147,8 @@ function formatTimeAgo(val) {
 
 export function ClientLayout() {
   const navigate = useNavigate()
-  const { profile, authUser, signOut } = useAuth()
+  const location = useLocation()
+  const { profile, authUser, signOut, modules } = useAuth()
   const displayName = profile?.fullName || profile?.name || profile?.email || '—'
   const getGreeting = () => {
     const hr = new Date().getHours()
@@ -121,22 +159,30 @@ export function ClientLayout() {
     return `Good Evening, ${firstName}`
   }
   const role = profile?.role || 'COMPANY'
-  const subscribedModuleKeys = useMemo(() => getSubscribedModuleKeys(profile), [profile])
-  const navItems = useMemo(() => {
-    const items = NAVS_BY_ROLE[role] || NAVS_BY_ROLE.COMPANY
-    return items.filter((item) =>
-      shouldShowClientModule(item.moduleKey, subscribedModuleKeys, item.alwaysVisible || !item.moduleKey),
-    )
-  }, [role, subscribedModuleKeys])
+  const navConfig = NAVS_BY_ROLE[role] || NAVS_BY_ROLE.COMPANY
+  // For non-structured roles, keep flat array in navItems
+  const navItems = navConfig.type === 'structured' ? [] : navConfig
 
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_BP).matches)
   const [sidebarOpen, setSidebarOpen] = useState(() => !window.matchMedia(MOBILE_BP).matches)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [pendingPath, setPendingPath] = useState(null)
 
+  // Accordion open/close state for structured nav groups
+  const [openGroups, setOpenGroups] = useState({})
+
+  const toggleGroup = (key) => {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  // Check if any sub-link of a group matches the current path
+  const isGroupActive = (group) =>
+    group.sub.some((s) => location.pathname === s.to || location.pathname.startsWith(s.to + '/'))
+
   // Notification panel state
   const [notifOpen,      setNotifOpen]      = useState(false)
   const [notifModalOpen, setNotifModalOpen] = useState(false)
+  const notifRef   = useRef(null)
   const bellBtnRef = useRef(null)
   const [bellRect,  setBellRect]  = useState(null)
   const [isMobileView, setIsMobileView] = useState(() => window.innerWidth <= 768)
@@ -283,41 +329,171 @@ export function ClientLayout() {
         )}
 
         <nav className="sidebar-nav client-sidebar-nav" style={role === 'FLEET' ? { gap: '10px' } : undefined}>
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isCollapsed = role === 'FLEET' && sidebarCollapsed
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
-                style={role === 'FLEET' ? {
-                  textTransform: 'uppercase',
-                  fontSize: '11.5px',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  padding: isCollapsed ? '12px 0' : '12px 20px',
-                  borderRadius: '0px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: isCollapsed ? 'center' : 'flex-start',
-                } : undefined}
-                title={isCollapsed ? item.label : undefined}
-                onClick={(e) => {
-                  closeSidebarIfMobile()
-                  if (window.isIssueCertificateFormDirty) {
-                    e.preventDefault()
-                    setPendingPath(item.to)
-                  }
-                }}
-              >
-                <span className="nav-icon" style={isCollapsed ? { margin: 0 } : undefined}>
-                  <Icon size={14} />
-                </span>
-                {!isCollapsed && item.label}
-              </NavLink>
-            )
-          })}
+          {navConfig.type === 'structured' ? (
+            // ── Structured nav (COMPANY / client_admin) ────────────────
+            navConfig.sections.map((section) => (
+              <div key={section.label}>
+                <p className="client-nav-section">{section.label}</p>
+
+                {/* Flat links in this section */}
+                {section.flat && section.flat.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                      onClick={(e) => {
+                        closeSidebarIfMobile()
+                        if (window.isIssueCertificateFormDirty) {
+                          e.preventDefault()
+                          setPendingPath(item.to)
+                        }
+                      }}
+                    >
+                      <span className="nav-icon"><Icon size={14} /></span>
+                      {item.label}
+                    </NavLink>
+                  )
+                })}
+
+                {/* Accordion groups in this section */}
+                {section.groups && section.groups
+                  // Only show groups the company has access to
+                  .filter((group) => !group.moduleKey || modules.includes(group.moduleKey))
+                  .map((group) => {
+                  const GroupIcon = group.icon
+                  const isActive = isGroupActive(group)
+                  const isOpen = openGroups[group.key] ?? isActive
+                  return (
+                    <div key={group.key} className="client-nav-group">
+                      {/* Parent row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                        {/* Clicking the label navigates to main page */}
+                        <button
+                          type="button"
+                          className={`client-nav-group-header${isActive ? ' client-nav-group-header--active' : ''}`}
+                          style={{ flex: 1, paddingRight: 4 }}
+                          onClick={() => {
+                            closeSidebarIfMobile()
+                            if (window.isIssueCertificateFormDirty) {
+                              setPendingPath(group.mainTo)
+                            } else {
+                              navigate(group.mainTo)
+                            }
+                          }}
+                        >
+                          <span className="client-nav-group-icon"><GroupIcon size={14} /></span>
+                          <span className="client-nav-group-label">{group.label}</span>
+                        </button>
+                        {/* Arrow toggles sub-links */}
+                        <button
+                          type="button"
+                          aria-label={isOpen ? `Collapse ${group.label}` : `Expand ${group.label}`}
+                          aria-expanded={isOpen}
+                          onClick={() => toggleGroup(group.key)}
+                          style={{
+                            flexShrink: 0,
+                            width: 30,
+                            height: 36,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            borderRadius: 8,
+                            color: 'rgba(148,163,184,0.5)',
+                            transition: 'background 150ms, color 150ms',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                            e.currentTarget.style.color = 'rgba(148,163,184,0.9)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent'
+                            e.currentTarget.style.color = 'rgba(148,163,184,0.5)'
+                          }}
+                        >
+                          <ChevronRight
+                            size={13}
+                            style={{
+                              transition: 'transform 200ms ease',
+                              transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            }}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Sub-links */}
+                      <div className={`client-nav-sub${isOpen ? ' client-nav-sub--open' : ''}`}>
+                        {group.sub.map((sub) => {
+                          const SubIcon = sub.icon
+                          return (
+                            <NavLink
+                              key={sub.to}
+                              to={sub.to}
+                              end={sub.to === group.mainTo}
+                              className={({ isActive }) =>
+                                `client-nav-sub-link${isActive ? ' client-nav-sub-link--active' : ''}`
+                              }
+                              onClick={(e) => {
+                                closeSidebarIfMobile()
+                                if (window.isIssueCertificateFormDirty) {
+                                  e.preventDefault()
+                                  setPendingPath(sub.to)
+                                }
+                              }}
+                            >
+                              <span className="client-nav-sub-link-icon"><SubIcon size={12} /></span>
+                              {sub.label}
+                            </NavLink>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))
+          ) : (
+            // ── Flat nav (FLEET / TRAINING_PROVIDER / FIRE roles) ──────
+            navItems.map((item) => {
+              const Icon = item.icon
+              const isCollapsed = role === 'FLEET' && sidebarCollapsed
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                  style={role === 'FLEET' ? {
+                    textTransform: 'uppercase',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    padding: isCollapsed ? '12px 0' : '12px 20px',
+                    borderRadius: '0px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: isCollapsed ? 'center' : 'flex-start',
+                  } : undefined}
+                  title={isCollapsed ? item.label : undefined}
+                  onClick={(e) => {
+                    closeSidebarIfMobile()
+                    if (window.isIssueCertificateFormDirty) {
+                      e.preventDefault()
+                      setPendingPath(item.to)
+                    }
+                  }}
+                >
+                  <span className="nav-icon" style={isCollapsed ? { margin: 0 } : undefined}>
+                    <Icon size={14} />
+                  </span>
+                  {!isCollapsed && item.label}
+                </NavLink>
+              )
+            })
+          )}
         </nav>
 
         {role === 'FLEET' ? (
@@ -776,7 +952,7 @@ export function ClientLayout() {
         <main className="page-content client-page-content">
           <Outlet />
         </main>
-        <CopyrightFooter />
+        <AppFooter variant="page" />
       </motion.div>
 
       {/* ── Navigation guard modal ── */}
